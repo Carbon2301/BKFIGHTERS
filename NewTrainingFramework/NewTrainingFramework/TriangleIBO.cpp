@@ -1,4 +1,4 @@
-// NewTrainingFramework.cpp : Defines the entry point for the console application.
+﻿// NewTrainingFramework.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
@@ -65,49 +65,5 @@ void Draw(ESContext* esContext)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	eglSwapBuffers(esContext->eglDisplay, esContext->eglSurface);
-}
-
-void Update ( ESContext *esContext, float deltaTime )
-{
-
-}
-
-void Key ( ESContext *esContext, unsigned char key, bool bIsPressed)
-{
-
-}
-
-void CleanUp()
-{
-	glDeleteBuffers(1, &vboId);
-	glDeleteBuffers(1, &iboId);
-}
-
-int _tmain(int argc, _TCHAR* argv[])
-{
-	ESContext esContext;
-
-    esInitContext ( &esContext );
-
-	esCreateWindow ( &esContext, "Hello Triangle", Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB | ES_WINDOW_DEPTH);
-
-	if ( Init ( &esContext ) != 0 )
-		return 0;
-
-	esRegisterDrawFunc ( &esContext, Draw );
-	esRegisterUpdateFunc ( &esContext, Update );
-	esRegisterKeyFunc ( &esContext, Key);
-
-	esMainLoop ( &esContext );
-	printf("GL_VERSION: %s\n", glGetString(GL_VERSION));
-	//releasing OpenGL resources
-	CleanUp();
-
-	//identifying memory leaks
-	MemoryDump();
-	printf("Press any key...\n");
-	_getch();
-
-	return 0;
 }
 
