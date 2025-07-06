@@ -8,8 +8,22 @@ out highp vec2 v_uv;  // Truyền UV cho fragment shader
 
 void main()
 {
-    vec4 posL = vec4(a_posL, 1.0);
+    // Scale model xuống và center nó
+    // Model Woman: Y từ 0.3->1.8, X từ 0->0.2, Z từ -0.16->0.17
+    vec3 scaledPos = a_posL;
+    
+    // Center model: Y center ở 1.05, translate về 0
+    scaledPos.y = scaledPos.y - 1.05;
+    
+    // Scale down để fit trong clip space (-1, 1)
+    scaledPos = scaledPos * 0.8;
+    
+    vec4 posL = vec4(scaledPos, 1.0);
     gl_Position = posL;
+    
+    // Set point size for GL_POINTS rendering
+    gl_PointSize = 3.0;
+    
     v_color = a_color;
     v_uv = a_uv;  // Truyền UV coordinates
 }
