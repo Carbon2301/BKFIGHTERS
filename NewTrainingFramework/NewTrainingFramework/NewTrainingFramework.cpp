@@ -9,8 +9,18 @@
 #include <conio.h>
 #include "../Utilities/utilities.h" // if you use STL, please include this line AFTER all other include
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 Model girlModel;
 Shaders myShaders;
+
+// Camera variables
+Vector3 cameraPos(0.0f, 0.5f, 3.0f);     // Camera position
+Vector3 cameraTarget(0.0f, 0.0f, 0.0f);  // Look at origin
+Vector3 cameraUp(0.0f, 1.0f, 0.0f);      // Up direction
+float modelRotationY = 0.0f;              // Model rotation for animation
 
 int Init(ESContext* esContext)
 {
@@ -69,6 +79,43 @@ void Draw(ESContext* esContext)
 
 	glUseProgram(myShaders.program);
 
+	// === MVP Matrix Setup ===
+	
+	// 1. Model Matrix (World transformation)
+	Matrix modelMatrix;
+	modelMatrix.SetIdentity();
+	
+	// Center model: Woman model Y từ 0.3->1.8, center ở 1.05
+	Matrix translation;
+	translation.SetTranslation(0.0f, -1.05f, 0.0f);
+	
+	// Scale model down để phù hợp với scene
+	Matrix scale;
+	scale.SetScale(0.5f, 0.5f, 0.5f);
+	
+	// Rotate model for animation
+	Matrix rotation;
+	rotation.SetRotationY(modelRotationY);
+	
+	// Combine: Model = T × R × S (right to left multiplication)
+	modelMatrix = translation * rotation * scale;
+	
+	// 2. View Matrix (Camera transformation)
+	Matrix viewMatrix;
+	viewMatrix.SetLookAt(cameraPos, cameraTarget, cameraUp);
+	
+	// 3. Projection Matrix
+	Matrix projMatrix;
+	float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+	projMatrix.SetPerspective(45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f);
+	
+	// 4. MVP = Model × View × Projection (row-major order)
+	Matrix mvpMatrix = modelMatrix * viewMatrix * projMatrix;
+	
+	// Send MVP matrix to shader
+	GLint mvpLocation = glGetUniformLocation(myShaders.program, "u_mvpMatrix");
+	glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, &mvpMatrix.m[0][0]);
+
 	// Set texture uniform
 	GLint textureLocation = glGetUniformLocation(myShaders.program, "u_texture");
 	glUniform1i(textureLocation, 0);  // Bind to texture unit 0
@@ -81,13 +128,57 @@ void Draw(ESContext* esContext)
 
 void Update ( ESContext *esContext, float deltaTime )
 {
-
+	// Auto-rotate model
+	modelRotationY += deltaTime * 0.5f; // 0.5 radians per second
+	if (modelRotationY > 2.0f * M_PI) {
+		modelRotationY -= 2.0f * M_PI;
+	}
 }
 
 void Key ( ESContext *esContext, unsigned char key, bool bIsPressed)
 {
 	if (bIsPressed) {
+		float moveSpeed = 0.1f;
 		switch(key) {
+			// === Camera Controls ===
+			case 'W':
+			case 'w':
+				// Move camera forward
+				cameraPos.z -= moveSpeed;
+				std::cout << "Camera moved forward" << std::endl;
+				break;
+			case 'S':
+			case 's':
+				// Move camera backward  
+				cameraPos.z += moveSpeed;
+				std::cout << "Camera moved backward" << std::endl;
+				break;
+			case 'A':
+			case 'a':
+				// Move camera left
+				cameraPos.x -= moveSpeed;
+				std::cout << "Camera moved left" << std::endl;
+				break;
+			case 'D':
+			case 'd':
+				// Move camera right
+				cameraPos.x += moveSpeed;
+				std::cout << "Camera moved right" << std::endl;
+				break;
+			case 'Q':
+			case 'q':
+				// Move camera up
+				cameraPos.y += moveSpeed;
+				std::cout << "Camera moved up" << std::endl;
+				break;
+			case 'E':
+			case 'e':
+				// Move camera down
+				cameraPos.y -= moveSpeed;
+				std::cout << "Camera moved down" << std::endl;
+				break;
+				
+			// === Rendering Modes ===
 			case '1': 
 				std::cout << "Switched to pure texture mode" << std::endl;
 				// User can uncomment option 1 in fragment shader
@@ -100,9 +191,14 @@ void Key ( ESContext *esContext, unsigned char key, bool bIsPressed)
 				std::cout << "Switched to pure vertex color mode" << std::endl;
 				// User can uncomment option 3 in fragment shader
 				break;
-			case 'r':
+				
+			// === Info ===
 			case 'R':
-				std::cout << "Model rendering info logged" << std::endl;
+			case 'r':
+				std::cout << "=== Camera Info ===" << std::endl;
+				std::cout << "Camera Position: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
+				std::cout << "Model Rotation: " << modelRotationY * 180.0f / M_PI << " degrees" << std::endl;
+				std::cout << "Controls: WASD=move, QE=up/down, 1-3=render modes" << std::endl;
 				break;
 		}
 	}

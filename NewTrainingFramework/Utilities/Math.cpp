@@ -541,6 +541,36 @@ Matrix & Matrix::SetPerspective(GLfloat fovY, GLfloat aspect, GLfloat nearPlane,
 	return *this;
 }
 
+Matrix & Matrix::SetLookAt(Vector3 &eye, Vector3 &target, Vector3 &up)
+{
+	// Tính các vector cho camera coordinate system
+	Vector3 forward = target - eye;
+	forward.Normalize();
+	
+	Vector3 right = forward.Cross(up);
+	right.Normalize();
+	
+	Vector3 newUp = right.Cross(forward);
+	newUp.Normalize();
+	
+	// Đảo chiều forward để phù hợp với right-handed coordinate
+	forward = forward * (-1.0f);
+	
+	// Tạo View Matrix = R^T × T^(-1)
+	// R^T (rotation transpose)
+	m[0][0] = right.x;   m[0][1] = newUp.x;   m[0][2] = forward.x;  m[0][3] = 0.0f;
+	m[1][0] = right.y;   m[1][1] = newUp.y;   m[1][2] = forward.y;  m[1][3] = 0.0f;
+	m[2][0] = right.z;   m[2][1] = newUp.z;   m[2][2] = forward.z;  m[2][3] = 0.0f;
+	
+	// T^(-1) (negative translation)
+	m[3][0] = -right.Dot(eye);
+	m[3][1] = -newUp.Dot(eye);
+	m[3][2] = -forward.Dot(eye);
+	m[3][3] = 1.0f;
+	
+	return *this;
+}
+
 Matrix Matrix::Transpose()
 {
 	Matrix res;
