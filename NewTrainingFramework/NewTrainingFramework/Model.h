@@ -9,7 +9,8 @@ extern char* LoadTGA(const char* szFileName, int* width, int* height, int* bpp);
 class Model {
 public:
     std::vector<Vertex> vertices;  // Chứa data đã sẵn sàng để render
-    
+    std::vector<GLushort> indices;
+
     GLuint vboId;
     GLuint iboId;
     GLuint textureId;

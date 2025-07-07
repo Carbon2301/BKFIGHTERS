@@ -7,7 +7,7 @@
 #include "Globals.h"
 #include "Model.h"
 #include <conio.h>
-#include "../Utilities/utilities.h" // if you use STL, please include this line AFTER all other include
+#include "../Utilities/utilities.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -17,10 +17,10 @@ Model girlModel;
 Shaders myShaders;
 
 // Camera variables
-Vector3 cameraPos(0.0f, 0.5f, 3.0f);     // Camera position
-Vector3 cameraTarget(0.0f, 0.0f, 0.0f);  // Look at origin
-Vector3 cameraUp(0.0f, 1.0f, 0.0f);      // Up direction
-float modelRotationY = 0.0f;              // Model rotation for animation
+Vector3 cameraPos(0.0f, 0.5f, 3.0f);
+Vector3 cameraTarget(0.0f, 0.0f, 0.0f);
+Vector3 cameraUp(0.0f, 1.0f, 0.0f);
+float modelRotationY = 0.0f;
 
 int Init(ESContext* esContext)
 {
@@ -32,20 +32,19 @@ int Init(ESContext* esContext)
 
 	// Try loading different models
 	const char* modelFiles[] = {
-		"../Resources/Models/Girl.nfg",     // Your custom model
-		"../Resources/Models/Woman1.nfg",   // Original model  
-		"../Resources/Models/Woman2.nfg"    // Alternative model
+		"../Resources/Models/Woman1.nfg",  
+		"../Resources/Models/Woman2.nfg"
 	};
 	
 	const char* textureFiles[] = {
-		"../Resources/Textures/Girl.tga",
 		"../Resources/Textures/Woman1.tga",
 		"../Resources/Textures/Woman2.tga"
 	};
 	
 	// Try loading first available model
 	bool modelLoaded = false;
-	for (int i = 0; i < 3; i++) {
+	int numModels = sizeof(modelFiles) / sizeof(modelFiles[0]);
+	for (int i = 0; i < numModels; i++) {
 		if (girlModel.LoadFromNFG(modelFiles[i])) {
 			std::cout << "✅ Loaded model: " << modelFiles[i] << std::endl;
 			
@@ -87,7 +86,7 @@ void Draw(ESContext* esContext)
 	
 	// Center model: Woman model Y từ 0.3->1.8, center ở 1.05
 	Matrix translation;
-	translation.SetTranslation(0.0f, -1.05f, 0.0f);
+	translation.SetTranslation(0.0f, 0.0f, 0.0f);
 	
 	// Scale model down để phù hợp với scene
 	Matrix scale;

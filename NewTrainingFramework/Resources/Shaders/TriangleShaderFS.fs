@@ -13,11 +13,11 @@ void main()
 	vec4 texColor = texture(u_texture, v_uv);  // Sample texture
 	
 	// Option 1: Pure texture (realistic)
-	// o_color = texColor;
+	o_color = texColor;
 	
 	// Option 2: Rainbow normal colors (current - artistic)
-	vec3 finalColor = v_color * texColor.rgb;
-	o_color = vec4(finalColor, 1.0);
+	//vec3 finalColor = v_color * texColor.rgb;
+	//o_color = vec4(finalColor, 1.0);
 	
 	// Option 3: Pure vertex colors (no texture)
 	// o_color = vec4(v_color, 1.0);
