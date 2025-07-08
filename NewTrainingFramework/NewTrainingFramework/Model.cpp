@@ -14,7 +14,7 @@ Model::~Model() {
 bool Model::LoadFromNFG(const char* filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::cout << "❌ Không thể mở file NFG: " << filename << std::endl;
+        std::cout << "Không thể mở file NFG: " << filename << std::endl;
         return false;
     }
 
@@ -28,7 +28,7 @@ bool Model::LoadFromNFG(const char* filename) {
     while (std::getline(file, line)) {
         if (line.find("NrVertices:") != std::string::npos) {
             sscanf(line.c_str(), "NrVertices: %d", &numVertices);
-            std::cout << "🔹 Loading " << numVertices << " vertices..." << std::endl;
+            std::cout << "Loading " << numVertices << " vertices..." << std::endl;
             break;
         }
     }
@@ -56,7 +56,7 @@ bool Model::LoadFromNFG(const char* filename) {
             vertices.push_back(vertex);
         }
         else {
-            std::cout << "⚠️ Failed to parse vertex line: " << line << std::endl;
+            std::cout << "Failed to parse vertex line: " << line << std::endl;
         }
     }
 
@@ -65,7 +65,7 @@ bool Model::LoadFromNFG(const char* filename) {
     while (std::getline(file, line)) {
         if (line.find("NrIndices:") != std::string::npos) {
             sscanf(line.c_str(), "NrIndices: %d", &numIndices);
-            std::cout << "🔹 Loading " << numIndices << " indices..." << std::endl;
+            std::cout << "Loading " << numIndices << " indices..." << std::endl;
             break;
         }
     }
@@ -110,14 +110,14 @@ bool Model::LoadTexture(const char* filename) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    std::cout << "✅ Loaded texture: " << filename << " (" << width << "x" << height << ")" << std::endl;
+    std::cout << "Loaded texture: " << filename << " (" << width << "x" << height << ")" << std::endl;
     delete[] textureData;
     return true;
 }
 
 void Model::CreateBuffers() {
     if (vertices.empty() || indices.empty()) {
-        std::cout << "❌ No vertex or index data!" << std::endl;
+        std::cout << "No vertex or index data!" << std::endl;
         return;
     }
 

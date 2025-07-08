@@ -7,25 +7,20 @@
 
 class SceneManager {
 private:
-    // Singleton instance
+
     static SceneManager* s_instance;
-    
-    // Scene objects
+
     std::vector<std::unique_ptr<Object>> m_objects;
     std::vector<std::unique_ptr<Camera>> m_cameras;
-    
-    // Active camera index
+
     int m_activeCameraIndex;
-    
-    // Private constructor for singleton
+
     SceneManager();
-    
+   
 public:
-    // Singleton access
     static SceneManager* GetInstance();
     static void DestroyInstance();
-    
-    // Destructor
+
     ~SceneManager();
     
     // Load scene from SM.txt file
@@ -44,18 +39,14 @@ public:
     void SetActiveCamera(int index);
     int GetActiveCameraIndex() const { return m_activeCameraIndex; }
     int GetCameraCount() const { return (int)m_cameras.size(); }
-    
-    // Scene operations
+
     void Update(float deltaTime);
     void Draw();
-    
-    // Input handling (for camera controls)
+
     void HandleInput(unsigned char key, bool isPressed);
-    
-    // Utility
+
     void Clear();
     void PrintSceneInfo();
-    
-    // Object iteration
+
     const std::vector<std::unique_ptr<Object>>& GetObjects() const { return m_objects; }
 }; 

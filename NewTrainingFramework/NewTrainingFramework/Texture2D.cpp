@@ -18,7 +18,7 @@ bool Texture2D::LoadFromFile(const std::string& filepath, const std::string& til
     // Load texture data using existing TGA loader
     char* textureData = LoadTGA(filepath.c_str(), &m_width, &m_height, &m_channels);
     if (!textureData) {
-        std::cout << "❌ Failed to load texture: " << filepath << std::endl;
+        std::cout << "Failed to load texture: " << filepath << std::endl;
         return false;
     }
     
@@ -52,7 +52,7 @@ bool Texture2D::LoadFromFile(const std::string& filepath, const std::string& til
     m_filepath = filepath;
     delete[] textureData;
     
-    std::cout << "✅ Loaded texture: " << filepath << " (" << m_width << "x" << m_height << ", " << m_channels << " channels)" << std::endl;
+    std::cout << "Loaded texture: " << filepath << " (" << m_width << "x" << m_height << ", " << m_channels << " channels)" << std::endl;
     return true;
 }
 

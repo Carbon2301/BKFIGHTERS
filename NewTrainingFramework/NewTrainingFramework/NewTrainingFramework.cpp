@@ -33,23 +33,23 @@ int Init(ESContext* esContext)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	std::cout << "\n🚀 Initializing New Training Framework Engine..." << std::endl;
+	std::cout << "\nInitializing New Training Framework Engine..." << std::endl;
 	
 	// Initialize Resource Manager
 	g_resourceManager = ResourceManager::GetInstance();
 	if (!g_resourceManager->LoadFromFile("RM.txt")) {
-		std::cout << "❌ Failed to load resources!" << std::endl;
+		std::cout << "Failed to load resources!" << std::endl;
 		return -1;
 	}
 	
 	// Initialize Scene Manager  
 	g_sceneManager = SceneManager::GetInstance();
 	if (!g_sceneManager->LoadFromFile("SM.txt")) {
-		std::cout << "❌ Failed to load scene!" << std::endl;
+		std::cout << "Failed to load scene!" << std::endl;
 		return -1;
 	}
 	
-	std::cout << "✅ Engine initialized successfully!" << std::endl;
+	std::cout << "Engine initialized successfully!" << std::endl;
 	std::cout << "\n=== Controls ===" << std::endl;
 	std::cout << "WASD - Move camera" << std::endl;
 	std::cout << "QE - Camera up/down" << std::endl;
@@ -115,13 +115,13 @@ void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 				
 			// === Rendering Modes Info ===
 			case '1': 
-				std::cout << "💡 To switch to pure texture mode, edit fragment shader option 1" << std::endl;
+				std::cout << "To switch to pure texture mode, edit fragment shader option 1" << std::endl;
 				break;
 			case '2':
-				std::cout << "💡 Current: rainbow normal mode (default)" << std::endl; 
+				std::cout << "Current: rainbow normal mode (default)" << std::endl; 
 				break;
 			case '3':
-				std::cout << "💡 To switch to pure vertex color mode, edit fragment shader option 3" << std::endl;
+				std::cout << "To switch to pure vertex color mode, edit fragment shader option 3" << std::endl;
 				break;
 		}
 	}
@@ -140,7 +140,7 @@ void CleanUp()
 		g_resourceManager = nullptr;
 	}
 	
-	std::cout << "🧹 Engine cleanup completed" << std::endl;
+	std::cout << "Engine cleanup completed" << std::endl;
 }
 
 int _tmain(int argc, _TCHAR* argv[])

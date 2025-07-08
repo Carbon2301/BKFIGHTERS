@@ -8,7 +8,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Static member initialization
 SceneManager* SceneManager::s_instance = nullptr;
 
 SceneManager* SceneManager::GetInstance() {
@@ -27,7 +26,6 @@ void SceneManager::DestroyInstance() {
 
 SceneManager::SceneManager() 
     : m_activeCameraIndex(-1) {
-    // Create default camera
     CreateCamera();
     m_activeCameraIndex = 0;
 }
@@ -39,24 +37,22 @@ SceneManager::~SceneManager() {
 bool SceneManager::LoadFromFile(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
-        std::cout << "❌ Cannot open SceneManager file: " << filepath << std::endl;
+        std::cout << "Cannot open SceneManager file: " << filepath << std::endl;
         return false;
     }
     
-    std::cout << "🎬 Loading scene from: " << filepath << std::endl;
-    
-    // Clear existing scene
+    std::cout << "Loading scene from: " << filepath << std::endl;
+
     RemoveAllObjects();
     
     std::string line;
     int objectCount = 0;
-    
-    // Read object count
+
     while (std::getline(file, line)) {
         if (line.find("#ObjectCount") != std::string::npos) {
             if (std::getline(file, line)) {
                 objectCount = std::stoi(line);
-                std::cout << "🔹 Loading " << objectCount << " objects..." << std::endl;
+                std::cout << "Loading " << objectCount << " objects..." << std::endl;
             }
             break;
         }
@@ -69,8 +65,7 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
         int modelId = -1, shaderId = -1;
         std::vector<int> textureIds;
         Vector3 position(0, 0, 0), rotation(0, 0, 0), scale(1, 1, 1);
-        
-        // Read object data
+
         while (std::getline(file, line)) {
             if (line.find("ID") == 0) {
                 sscanf(line.c_str(), "ID %d", &id);
@@ -120,10 +115,9 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
                 obj->SetShader(shaderId);
             }
             
-            std::cout << "✅ Created object ID " << id << std::endl;
+            std::cout << "Created object ID " << id << std::endl;
         }
         
-        // If we hit start of next object, put the line back for next iteration
         if (line.find("ID") == 0 && i < objectCount - 1) {
             file.seekg(-((long)line.length() + 1), std::ios::cur);
         }
@@ -158,13 +152,13 @@ void SceneManager::RemoveObject(int id) {
     
     if (it != m_objects.end()) {
         m_objects.erase(it, m_objects.end());
-        std::cout << "🗑️ Removed object ID " << id << std::endl;
+        std::cout << "Removed object ID " << id << std::endl;
     }
 }
 
 void SceneManager::RemoveAllObjects() {
     m_objects.clear();
-    std::cout << "🗑️ Removed all objects" << std::endl;
+    std::cout << "Removed all objects" << std::endl;
 }
 
 Camera* SceneManager::CreateCamera() {
@@ -196,12 +190,11 @@ Camera* SceneManager::GetCamera(int index) {
 void SceneManager::SetActiveCamera(int index) {
     if (index >= 0 && index < (int)m_cameras.size()) {
         m_activeCameraIndex = index;
-        std::cout << "📹 Switched to camera " << index << std::endl;
+        std::cout << "Switched to camera " << index << std::endl;
     }
 }
 
 void SceneManager::Update(float deltaTime) {
-    // Update all objects
     for (auto& obj : m_objects) {
         obj->Update(deltaTime);
     }
@@ -284,14 +277,14 @@ void SceneManager::Clear() {
 
 void SceneManager::PrintSceneInfo() {
     std::cout << "\n=== Scene Manager Status ===" << std::endl;
-    std::cout << "📦 Objects: " << m_objects.size() << std::endl;
+    std::cout << "Objects: " << m_objects.size() << std::endl;
     for (const auto& obj : m_objects) {
         std::cout << "  - Object ID " << obj->GetId() << ": Model=" << obj->GetModelId() 
                   << ", Textures=" << obj->GetTextureIds().size() 
                   << ", Shader=" << obj->GetShaderId() << std::endl;
     }
     
-    std::cout << "📹 Cameras: " << m_cameras.size() << " (Active: " << m_activeCameraIndex << ")" << std::endl;
+    std::cout << "Cameras: " << m_cameras.size() << " (Active: " << m_activeCameraIndex << ")" << std::endl;
     
     if (Camera* cam = GetActiveCamera()) {
         std::cout << "  - Position: (" << cam->GetPosition().x << ", " << cam->GetPosition().y << ", " << cam->GetPosition().z << ")" << std::endl;
