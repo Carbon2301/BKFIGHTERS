@@ -6,3 +6,4 @@
 #include "Math.h"
 #include "TGA.h"
 #include "MemoryOperators.h"
+#include "MemoryManager.h"

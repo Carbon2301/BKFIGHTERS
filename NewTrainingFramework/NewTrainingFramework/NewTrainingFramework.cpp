@@ -6,6 +6,10 @@
 #include "Shaders.h"
 #include "Globals.h"
 #include "Model.h"
+#include "ResourceManager.h"
+#include "SceneManager.h"
+#include "Object.h"
+#include "Camera.h"
 #include <conio.h>
 #include "../Utilities/utilities.h"
 
@@ -13,191 +17,111 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-Model girlModel;
-Shaders myShaders;
+// Engine systems
+ResourceManager* g_resourceManager = nullptr;
+SceneManager* g_sceneManager = nullptr;
 
-// Camera variables
-Vector3 cameraPos(0.0f, 0.5f, 3.0f);
-Vector3 cameraTarget(0.0f, 0.0f, 0.0f);
-Vector3 cameraUp(0.0f, 1.0f, 0.0f);
-float modelRotationY = 0.0f;
+// Auto-rotation for demonstration
+float g_autoRotationSpeed = 0.5f;
+bool g_enableAutoRotation = true;
 
 int Init(ESContext* esContext)
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
-	// Enable depth testing for 3D model
+	// Enable depth testing for 3D models
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	// Try loading different models
-	const char* modelFiles[] = {
-		"../Resources/Models/Woman1.nfg",  
-		"../Resources/Models/Woman2.nfg"
-	};
+	std::cout << "\n🚀 Initializing New Training Framework Engine..." << std::endl;
 	
-	const char* textureFiles[] = {
-		"../Resources/Textures/Woman1.tga",
-		"../Resources/Textures/Woman2.tga"
-	};
-	
-	// Try loading first available model
-	bool modelLoaded = false;
-	int numModels = sizeof(modelFiles) / sizeof(modelFiles[0]);
-	for (int i = 0; i < numModels; i++) {
-		if (girlModel.LoadFromNFG(modelFiles[i])) {
-			std::cout << "✅ Loaded model: " << modelFiles[i] << std::endl;
-			
-			// Try loading corresponding texture
-			if (girlModel.LoadTexture(textureFiles[i])) {
-				std::cout << "✅ Loaded texture: " << textureFiles[i] << std::endl;
-			} else {
-				std::cout << "⚠️ No texture found, using vertex colors" << std::endl;
-			}
-			
-			modelLoaded = true;
-			break;
-		}
-	}
-	
-	if (!modelLoaded) {
-		std::cout << "❌ No models found!" << std::endl;
+	// Initialize Resource Manager
+	g_resourceManager = ResourceManager::GetInstance();
+	if (!g_resourceManager->LoadFromFile("RM.txt")) {
+		std::cout << "❌ Failed to load resources!" << std::endl;
 		return -1;
 	}
 	
-	// Create buffers for the model
-	girlModel.CreateBuffers();
-
-	//creation of shaders and program 
-	return myShaders.Init("../Resources/Shaders/TriangleShaderVS.vs", "../Resources/Shaders/TriangleShaderFS.fs");
+	// Initialize Scene Manager  
+	g_sceneManager = SceneManager::GetInstance();
+	if (!g_sceneManager->LoadFromFile("SM.txt")) {
+		std::cout << "❌ Failed to load scene!" << std::endl;
+		return -1;
+	}
+	
+	std::cout << "✅ Engine initialized successfully!" << std::endl;
+	std::cout << "\n=== Controls ===" << std::endl;
+	std::cout << "WASD - Move camera" << std::endl;
+	std::cout << "QE - Camera up/down" << std::endl;
+	std::cout << "R - Show scene info" << std::endl;
+	std::cout << "T - Toggle auto-rotation" << std::endl;
+	std::cout << "1-3 - Rendering modes (edit fragment shader)" << std::endl;
+	std::cout << "===============\n" << std::endl;
+	
+	return 0;
 }
 
 void Draw(ESContext* esContext)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(myShaders.program);
-
-	// === MVP Matrix Setup ===
-	
-	// 1. Model Matrix (World transformation)
-	Matrix modelMatrix;
-	modelMatrix.SetIdentity();
-	
-	// Center model: Woman model Y từ 0.3->1.8, center ở 1.05
-	Matrix translation;
-	translation.SetTranslation(0.0f, 0.0f, 0.0f);
-	
-	// Scale model down để phù hợp với scene
-	Matrix scale;
-	scale.SetScale(0.5f, 0.5f, 0.5f);
-	
-	// Rotate model for animation
-	Matrix rotation;
-	rotation.SetRotationY(modelRotationY);
-	
-	// Combine: Model = T × R × S (right to left multiplication)
-	modelMatrix = translation * rotation * scale;
-	
-	// 2. View Matrix (Camera transformation)
-	Matrix viewMatrix;
-	viewMatrix.SetLookAt(cameraPos, cameraTarget, cameraUp);
-	
-	// 3. Projection Matrix
-	Matrix projMatrix;
-	float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
-	projMatrix.SetPerspective(45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f);
-	
-	// 4. MVP = Model × View × Projection (row-major order)
-	Matrix mvpMatrix = modelMatrix * viewMatrix * projMatrix;
-	
-	// Send MVP matrix to shader
-	GLint mvpLocation = glGetUniformLocation(myShaders.program, "u_mvpMatrix");
-	glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, &mvpMatrix.m[0][0]);
-
-	// Set texture uniform
-	GLint textureLocation = glGetUniformLocation(myShaders.program, "u_texture");
-	glUniform1i(textureLocation, 0);  // Bind to texture unit 0
-
-	// Draw the girl model
-	girlModel.Draw();
+	// Draw scene using SceneManager
+	if (g_sceneManager) {
+		g_sceneManager->Draw();
+	}
 
 	eglSwapBuffers(esContext->eglDisplay, esContext->eglSurface);
 }
 
-void Update ( ESContext *esContext, float deltaTime )
+void Update(ESContext *esContext, float deltaTime)
 {
-	// Auto-rotate model
-	modelRotationY += deltaTime * 0.5f; // 0.5 radians per second
-	if (modelRotationY > 2.0f * M_PI) {
-		modelRotationY -= 2.0f * M_PI;
+	// Update scene
+	if (g_sceneManager) {
+		g_sceneManager->Update(deltaTime);
+	}
+	
+	// Auto-rotation demonstration
+	if (g_enableAutoRotation && g_sceneManager) {
+		// Get first object and rotate it
+		const auto& objects = g_sceneManager->GetObjects();
+		if (!objects.empty()) {
+			Object* firstObj = objects[0].get();
+			const Vector3& currentRot = firstObj->GetRotation();
+			Vector3 newRotation(currentRot.x, currentRot.y, currentRot.z);
+			newRotation.y += deltaTime * g_autoRotationSpeed;
+			if (newRotation.y > 2.0f * (float)M_PI) {
+				newRotation.y -= 2.0f * (float)M_PI;
+			}
+			firstObj->SetRotation(newRotation);
+		}
 	}
 }
 
-void Key ( ESContext *esContext, unsigned char key, bool bIsPressed)
+void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 {
 	if (bIsPressed) {
-		float moveSpeed = 0.1f;
+		// Handle scene manager input (camera controls)
+		if (g_sceneManager) {
+			g_sceneManager->HandleInput(key, bIsPressed);
+		}
+		
+		// Additional engine controls
 		switch(key) {
-			// === Camera Controls ===
-			case 'W':
-			case 'w':
-				// Move camera forward
-				cameraPos.z -= moveSpeed;
-				std::cout << "Camera moved forward" << std::endl;
-				break;
-			case 'S':
-			case 's':
-				// Move camera backward  
-				cameraPos.z += moveSpeed;
-				std::cout << "Camera moved backward" << std::endl;
-				break;
-			case 'A':
-			case 'a':
-				// Move camera left
-				cameraPos.x -= moveSpeed;
-				std::cout << "Camera moved left" << std::endl;
-				break;
-			case 'D':
-			case 'd':
-				// Move camera right
-				cameraPos.x += moveSpeed;
-				std::cout << "Camera moved right" << std::endl;
-				break;
-			case 'Q':
-			case 'q':
-				// Move camera up
-				cameraPos.y += moveSpeed;
-				std::cout << "Camera moved up" << std::endl;
-				break;
-			case 'E':
-			case 'e':
-				// Move camera down
-				cameraPos.y -= moveSpeed;
-				std::cout << "Camera moved down" << std::endl;
+			case 'T':
+			case 't':
+				g_enableAutoRotation = !g_enableAutoRotation;
+				std::cout << "Auto-rotation: " << (g_enableAutoRotation ? "ON" : "OFF") << std::endl;
 				break;
 				
-			// === Rendering Modes ===
+			// === Rendering Modes Info ===
 			case '1': 
-				std::cout << "Switched to pure texture mode" << std::endl;
-				// User can uncomment option 1 in fragment shader
+				std::cout << "💡 To switch to pure texture mode, edit fragment shader option 1" << std::endl;
 				break;
 			case '2':
-				std::cout << "Switched to rainbow normal mode (current)" << std::endl; 
-				// Current mode
+				std::cout << "💡 Current: rainbow normal mode (default)" << std::endl; 
 				break;
 			case '3':
-				std::cout << "Switched to pure vertex color mode" << std::endl;
-				// User can uncomment option 3 in fragment shader
-				break;
-				
-			// === Info ===
-			case 'R':
-			case 'r':
-				std::cout << "=== Camera Info ===" << std::endl;
-				std::cout << "Camera Position: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
-				std::cout << "Model Rotation: " << modelRotationY * 180.0f / M_PI << " degrees" << std::endl;
-				std::cout << "Controls: WASD=move, QE=up/down, 1-3=render modes" << std::endl;
+				std::cout << "💡 To switch to pure vertex color mode, edit fragment shader option 3" << std::endl;
 				break;
 		}
 	}
@@ -205,16 +129,27 @@ void Key ( ESContext *esContext, unsigned char key, bool bIsPressed)
 
 void CleanUp()
 {
-	girlModel.Cleanup();
+	// Cleanup engine systems
+	if (g_sceneManager) {
+		SceneManager::DestroyInstance();
+		g_sceneManager = nullptr;
+	}
+	
+	if (g_resourceManager) {
+		ResourceManager::DestroyInstance();
+		g_resourceManager = nullptr;
+	}
+	
+	std::cout << "🧹 Engine cleanup completed" << std::endl;
 }
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	ESContext esContext;
 
-    esInitContext ( &esContext );
+	esInitContext ( &esContext );
 
-	esCreateWindow ( &esContext, "Hello Triangle", Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB | ES_WINDOW_DEPTH);
+	esCreateWindow ( &esContext, "New Training Framework - Engine Architecture", Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB | ES_WINDOW_DEPTH);
 
 	if ( Init ( &esContext ) != 0 )
 		return 0;
@@ -224,12 +159,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	esRegisterKeyFunc ( &esContext, Key);
 
 	esMainLoop ( &esContext );
-	printf("GL_VERSION: %s\n", glGetString(GL_VERSION));
+
 	//releasing OpenGL resources
 	CleanUp();
 
 	//identifying memory leaks
-	MemoryDump();
+	MemoryManager::GetInstance()->SanityCheck();
+
 	printf("Press any key...\n");
 	_getch();
 

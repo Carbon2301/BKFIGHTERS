@@ -1,0 +1,75 @@
+#pragma once
+#include "../Utilities/Math.h"
+#include <vector>
+#include <memory>
+
+// Forward declarations
+class Model;
+class Texture2D;
+class Shaders;
+
+class Object {
+private:
+    // Transform data
+    Vector3 m_position;
+    Vector3 m_rotation;
+    Vector3 m_scale;
+    Matrix m_worldMatrix;
+    bool m_matrixNeedsUpdate;
+    
+    // Resource references (IDs from ResourceManager)
+    int m_modelId;
+    std::vector<int> m_textureIds;
+    int m_shaderId;
+    
+    // Cached resource pointers (for performance)
+    std::shared_ptr<Model> m_model;
+    std::vector<std::shared_ptr<Texture2D>> m_textures;
+    std::shared_ptr<Shaders> m_shader;
+    
+    // Object ID for identification
+    int m_id;
+    
+    void UpdateWorldMatrix();
+    void CacheResources();
+    
+public:
+    Object();
+    Object(int id);
+    ~Object();
+    
+    // Transform methods
+    void SetPosition(const Vector3& position);
+    void SetRotation(const Vector3& rotation);
+    void SetScale(const Vector3& scale);
+    void SetPosition(float x, float y, float z);
+    void SetRotation(float x, float y, float z);
+    void SetScale(float x, float y, float z);
+    void SetScale(float uniform);
+    
+    const Vector3& GetPosition() const { return m_position; }
+    const Vector3& GetRotation() const { return m_rotation; }
+    const Vector3& GetScale() const { return m_scale; }
+    const Matrix& GetWorldMatrix();
+    
+    // Resource assignment
+    void SetModel(int modelId);
+    void SetTexture(int textureId, int index = 0);
+    void AddTexture(int textureId);
+    void SetShader(int shaderId);
+    
+    int GetModelId() const { return m_modelId; }
+    const std::vector<int>& GetTextureIds() const { return m_textureIds; }
+    int GetShaderId() const { return m_shaderId; }
+    
+    // Object ID
+    void SetId(int id) { m_id = id; }
+    int GetId() const { return m_id; }
+    
+    // Rendering
+    void Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix);
+    void Update(float deltaTime);
+    
+    // Resource management
+    void RefreshResources(); // Re-cache resources from ResourceManager
+}; 
