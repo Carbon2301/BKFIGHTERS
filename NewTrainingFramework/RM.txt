@@ -4,9 +4,12 @@ FILE "Resources/Models/Woman1.nfg"
 ID 1
 FILE "Resources/Models/Woman2.nfg"
 
-# 2DTexture 1
+# 2DTexture 2
 ID 0
 FILE "Resources/Textures/Woman1.tga"
+TILING GL_REPEAT
+ID 1
+FILE "Resources/Textures/Woman2.tga"
 TILING GL_REPEAT
 
 # Shader 1

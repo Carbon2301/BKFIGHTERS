@@ -58,15 +58,16 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
         }
     }
     
-    // Load objects
+    // Load objects  
     for (int i = 0; i < objectCount; ++i) {
         Object* obj = nullptr;
         int id = -1;
         int modelId = -1, shaderId = -1;
         std::vector<int> textureIds;
         Vector3 position(0, 0, 0), rotation(0, 0, 0), scale(1, 1, 1);
+        bool objectDataComplete = false;
 
-        while (std::getline(file, line)) {
+        while (std::getline(file, line) && !objectDataComplete) {
             if (line.find("ID") == 0) {
                 sscanf(line.c_str(), "ID %d", &id);
                 obj = CreateObject(id);
@@ -90,10 +91,7 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
             }
             else if (line.find("SCALE") == 0) {
                 sscanf(line.c_str(), "SCALE %f %f %f", &scale.x, &scale.y, &scale.z);
-            }
-            else if (line.empty() || line.find("ID") == 0) {
-                // End of current object or start of next object
-                break;
+                objectDataComplete = true; // SCALE is the last field for each object
             }
         }
         
@@ -116,10 +114,6 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
             }
             
             std::cout << "Created object ID " << id << std::endl;
-        }
-        
-        if (line.find("ID") == 0 && i < objectCount - 1) {
-            file.seekg(-((long)line.length() + 1), std::ios::cur);
         }
     }
     

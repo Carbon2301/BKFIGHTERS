@@ -53,15 +53,23 @@ bool ResourceManager::LoadFromFile(const std::string& filepath) {
     std::string currentSection;
     
     while (std::getline(file, line)) {
-        if (line.empty() || line[0] == '#') {
+        // Skip empty lines but continue processing
+        if (line.empty()) {
+            continue;
+        }
+        
+        if (line[0] == '#') {
             if (line.find("#Model") != std::string::npos) {
                 currentSection = "Model";
+                std::cout << "DEBUG: Entering Model section" << std::endl;
                 continue;
             } else if (line.find("#2DTexture") != std::string::npos || line.find("# 2DTexture") != std::string::npos) {
                 currentSection = "Texture";
+                std::cout << "DEBUG: Entering Texture section" << std::endl;
                 continue;
             } else if (line.find("#Shader") != std::string::npos || line.find("# Shader") != std::string::npos) {
                 currentSection = "Shader";
+                std::cout << "DEBUG: Entering Shader section" << std::endl;
                 continue;
             }
             continue;
@@ -87,22 +95,32 @@ bool ResourceManager::LoadFromFile(const std::string& filepath) {
             if (line.find("ID") == 0) {
                 int id;
                 sscanf(line.c_str(), "ID %d", &id);
+                std::cout << "DEBUG: Found texture ID " << id << std::endl;
                 
                 std::string filepath, tiling = "GL_REPEAT";
+                
                 if (std::getline(file, line) && line.find("FILE") == 0) {
+                    std::cout << "DEBUG: Found FILE line: " << line << std::endl;
                     size_t start = line.find('"');
                     size_t end = line.rfind('"');
                     if (start != std::string::npos && end != std::string::npos && start < end) {
                         filepath = line.substr(start + 1, end - start - 1);
+                        std::cout << "DEBUG: Extracted filepath: " << filepath << std::endl;
                     }
                 }
+                
                 if (std::getline(file, line) && line.find("TILING") == 0) {
+                    std::cout << "DEBUG: Found TILING line: " << line << std::endl;
                     std::istringstream ss(line);
                     std::string keyword;
                     ss >> keyword >> tiling;
                 }
+                
                 if (!filepath.empty()) {
+                    std::cout << "DEBUG: About to load texture ID " << id << " from " << filepath << std::endl;
                     LoadTexture(id, filepath, tiling);
+                } else {
+                    std::cout << "DEBUG: Filepath is empty for texture ID " << id << std::endl;
                 }
             }
         }
@@ -139,6 +157,20 @@ bool ResourceManager::LoadFromFile(const std::string& filepath) {
     }
     
     file.close();
+    
+    bool hasTexture1 = false;
+    for (const auto& textureData : m_textures) {
+        if (textureData.id == 1) {
+            hasTexture1 = true;
+            break;
+        }
+    }
+    
+    if (!hasTexture1) {
+        std::cout << "FORCE LOADING: texture ID 1 (Woman2.tga)" << std::endl;
+        LoadTexture(1, "../Resources/Textures/Woman2.tga", "GL_REPEAT");
+    }
+    
     PrintLoadedResources();
     return true;
 }

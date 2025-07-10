@@ -99,6 +99,8 @@ void Object::SetModel(int modelId) {
 }
 
 void Object::SetTexture(int textureId, int index) {
+    std::cout << "Object ID " << m_id << " setting texture ID " << textureId << " at index " << index << std::endl;
+    
     // Resize texture arrays if needed
     if (index >= (int)m_textureIds.size()) {
         m_textureIds.resize(index + 1, -1);
@@ -106,7 +108,14 @@ void Object::SetTexture(int textureId, int index) {
     }
     
     m_textureIds[index] = textureId;
-    m_textures[index] = ResourceManager::GetInstance()->GetTexture(textureId);
+    auto texture = ResourceManager::GetInstance()->GetTexture(textureId);
+    m_textures[index] = texture;
+    
+    if (texture) {
+        std::cout << "Object ID " << m_id << " successfully assigned texture ID " << textureId << std::endl;
+    } else {
+        std::cout << "Object ID " << m_id << " FAILED to get texture ID " << textureId << " from ResourceManager!" << std::endl;
+    }
 }
 
 void Object::AddTexture(int textureId) {
@@ -150,8 +159,12 @@ void Object::RefreshResources() {
 void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
     // Check if we have valid resources
     if (!m_model || !m_shader) {
+        std::cout << "Object ID " << m_id << " missing resources: model=" << (m_model ? "OK" : "NULL") 
+                  << ", shader=" << (m_shader ? "OK" : "NULL") << std::endl;
         return;
     }
+    
+    // Skip debug spam - render silently without texture
     
     // Use shader
     glUseProgram(m_shader->program);
@@ -175,6 +188,7 @@ void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
     }
     
     // Bind textures
+    bool hasValidTexture = false;
     for (int i = 0; i < (int)m_textures.size(); ++i) {
         if (m_textures[i]) {
             m_textures[i]->Bind(i);
@@ -185,6 +199,20 @@ void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
                 if (textureLocation != -1) {
                     glUniform1i(textureLocation, i);
                 }
+                hasValidTexture = true;
+            }
+        }
+    }
+    
+    // If no valid texture, use default texture or wireframe mode
+    if (!hasValidTexture) {
+        // Try to use texture ID 0 as fallback
+        auto fallbackTexture = ResourceManager::GetInstance()->GetTexture(0);
+        if (fallbackTexture) {
+            fallbackTexture->Bind(0);
+            GLint textureLocation = glGetUniformLocation(m_shader->program, "u_texture");
+            if (textureLocation != -1) {
+                glUniform1i(textureLocation, 0);
             }
         }
     }

@@ -82,17 +82,16 @@ void Update(ESContext *esContext, float deltaTime)
 	
 	// Auto-rotation demonstration
 	if (g_enableAutoRotation && g_sceneManager) {
-		// Get first object and rotate it
+		// Rotate all objects
 		const auto& objects = g_sceneManager->GetObjects();
-		if (!objects.empty()) {
-			Object* firstObj = objects[0].get();
-			const Vector3& currentRot = firstObj->GetRotation();
+		for (auto& obj : objects) {
+			const Vector3& currentRot = obj->GetRotation();
 			Vector3 newRotation(currentRot.x, currentRot.y, currentRot.z);
 			newRotation.y += deltaTime * g_autoRotationSpeed;
 			if (newRotation.y > 2.0f * (float)M_PI) {
 				newRotation.y -= 2.0f * (float)M_PI;
 			}
-			firstObj->SetRotation(newRotation);
+			obj->SetRotation(newRotation);
 		}
 	}
 }
