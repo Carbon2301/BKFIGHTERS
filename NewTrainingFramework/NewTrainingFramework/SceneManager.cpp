@@ -253,12 +253,79 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
             activeCamera->MoveUp(-moveSpeed);
             std::cout << "Camera moved down" << std::endl;
             break;
+             
+        case 'I':  // Look up
+        case 'i':
+            activeCamera->RotateX(-0.175f);
+            std::cout << "Camera look up" << std::endl;
+            break;
+        case 'K':  // Look down  
+        case 'k':
+            activeCamera->RotateX(0.175f);
+            std::cout << "Camera look down" << std::endl;
+            break;
+        case 'J':  // Look left
+        case 'j':
+            activeCamera->RotateY(-0.175f);
+            std::cout << "Camera look left" << std::endl;
+            break;
+        case 'L':  // Look right
+        case 'l':
+            activeCamera->RotateY(0.175f);
+            std::cout << "Camera look right" << std::endl;
+            break;
+        case 'U':  // Roll left
+        case 'u':
+            activeCamera->RotateZ(-0.175f);
+            std::cout << "Camera roll left" << std::endl;
+            break;
+        case 'O':  // Roll right
+        case 'o':
+            activeCamera->RotateZ(0.175f);
+            std::cout << "Camera roll right" << std::endl;
+            break;
+             
+        // Camera Zoom (using easier keys)
+        case 'Z':  // Zoom in
+        case 'z':
+            activeCamera->ZoomIn(0.9f);
+            std::cout << "Camera zoom in (FOV: " << activeCamera->GetFOV() * 180.0f / 3.14159f << " degrees)" << std::endl;
+            break;
+        case 'X':  // Zoom out
+        case 'x':
+            activeCamera->ZoomOut(1.1f);
+            std::cout << "Camera zoom out (FOV: " << activeCamera->GetFOV() * 180.0f / 3.14159f << " degrees)" << std::endl;
+            break;
+        case 'C':  // Reset zoom to 45 degrees
+        case 'c':
+            activeCamera->SetZoom(45.0f);
+            std::cout << "Camera zoom reset (FOV: 45 degrees)" << std::endl;
+            break;
+             
+        // Scene controls
         case 'R':
         case 'r':
             std::cout << "=== Scene Info ===" << std::endl;
             std::cout << "Camera Position: (" << activeCamera->GetPosition().x << ", " << activeCamera->GetPosition().y << ", " << activeCamera->GetPosition().z << ")" << std::endl;
             std::cout << "Objects: " << m_objects.size() << std::endl;
-            std::cout << "Controls: WASD=move, QE=up/down, R=info" << std::endl;
+            std::cout << "\n=== Controls ===" << std::endl;
+            std::cout << "WASD - Move camera" << std::endl;
+            std::cout << "QE - Camera up/down" << std::endl;
+            std::cout << "IJKL - Look up/left/down/right" << std::endl;
+            std::cout << "UO - Roll left/right" << std::endl;
+            std::cout << "ZX - Zoom in/out" << std::endl;
+            std::cout << "C - Reset zoom" << std::endl;
+            std::cout << "R - Show scene info" << std::endl;
+            std::cout << "T - Toggle auto-rotation" << std::endl;
+            break;
+            
+        case 'T':
+        case 't':
+            // Toggle auto-rotation for all objects
+            for (auto& obj : m_objects) {
+                obj->ToggleAutoRotation();
+            }
+            std::cout << "Toggled auto-rotation for all objects" << std::endl;
             break;
     }
 }

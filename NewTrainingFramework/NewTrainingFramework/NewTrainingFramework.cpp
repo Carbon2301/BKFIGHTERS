@@ -53,6 +53,10 @@ int Init(ESContext* esContext)
 	std::cout << "\n=== Controls ===" << std::endl;
 	std::cout << "WASD - Move camera" << std::endl;
 	std::cout << "QE - Camera up/down" << std::endl;
+	std::cout << "IJKL - Look up/left/down/right" << std::endl;
+	std::cout << "UO - Roll left/right" << std::endl;
+	std::cout << "ZX - Zoom in/out" << std::endl;
+	std::cout << "C - Reset zoom" << std::endl;
 	std::cout << "R - Show scene info" << std::endl;
 	std::cout << "T - Toggle auto-rotation" << std::endl;
 	std::cout << "1-3 - Rendering modes (edit fragment shader)" << std::endl;

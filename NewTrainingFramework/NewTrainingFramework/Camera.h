@@ -9,10 +9,10 @@ private:
     Vector3 m_up;
     
     // Projection parameters
-    float m_fov;         // Field of view in radians
-    float m_aspect;      // Aspect ratio
-    float m_nearPlane;   // Near clipping plane
-    float m_farPlane;    // Far clipping plane
+    float m_fov;       
+    float m_aspect;     
+    float m_nearPlane;  
+    float m_farPlane; 
     
     // Cached matrices
     Matrix m_viewMatrix;
@@ -33,23 +33,27 @@ public:
     Camera(const Vector3& position, const Vector3& target, const Vector3& up);
     ~Camera();
     
-    // Camera positioning
     void SetPosition(const Vector3& position);
     void SetTarget(const Vector3& target);
     void SetUp(const Vector3& up);
     void SetLookAt(const Vector3& position, const Vector3& target, const Vector3& up);
     
-    // Movement
     void MoveForward(float distance);
     void MoveRight(float distance);
     void MoveUp(float distance);
     void Translate(const Vector3& offset);
     
-    // Projection setup
+    void RotateX(float angleRadians);
+    void RotateY(float angleRadians);
+    void RotateZ(float angleRadians);
+    
+    void ZoomIn(float factor = 0.9f);
+    void ZoomOut(float factor = 1.1f);
+    void SetZoom(float fovDegrees);
+    
     void SetPerspective(float fov, float aspect, float nearPlane, float farPlane);
     void SetOrthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane);
     
-    // Matrix getters
     const Matrix& GetViewMatrix();
     const Matrix& GetProjectionMatrix();
     const Matrix& GetViewProjectionMatrix();

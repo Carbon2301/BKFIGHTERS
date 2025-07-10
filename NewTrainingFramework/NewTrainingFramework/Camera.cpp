@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Camera.h"
+#include <cmath>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -200,4 +201,93 @@ Vector3 Camera::GetUpVector() const {
     Vector3 up = right.Cross(forward);
     up.Normalize();
     return up;
+}
+
+void Camera::RotateX(float angleRadians) {
+    Vector3 forward = GetForwardVector();
+    Vector3 right = GetRightVector();
+    
+    float cosA = cos(angleRadians);
+    float sinA = sin(angleRadians);
+    
+    Vector3 newForward;
+    newForward.x = forward.x;
+    newForward.y = forward.y * cosA - forward.z * sinA;
+    newForward.z = forward.y * sinA + forward.z * cosA;
+    
+    m_target.x = m_position.x + newForward.x;
+    m_target.y = m_position.y + newForward.y; 
+    m_target.z = m_position.z + newForward.z;
+    
+    m_viewNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::RotateY(float angleRadians) {
+    Vector3 forward = GetForwardVector();
+    
+    float cosA = cos(angleRadians);
+    float sinA = sin(angleRadians);
+    
+    Vector3 newForward;
+    newForward.x = forward.x * cosA + forward.z * sinA;
+    newForward.y = forward.y;
+    newForward.z = -forward.x * sinA + forward.z * cosA;
+    
+    m_target.x = m_position.x + newForward.x;
+    m_target.y = m_position.y + newForward.y;
+    m_target.z = m_position.z + newForward.z;
+    
+    m_viewNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::RotateZ(float angleRadians) {
+    Vector3 right = GetRightVector();
+    Vector3 up = GetUpVector();
+    
+    float cosA = cos(angleRadians);
+    float sinA = sin(angleRadians);
+    
+    Vector3 newUp;
+    newUp.x = up.x * cosA - right.x * sinA;
+    newUp.y = up.y * cosA - right.y * sinA;
+    newUp.z = up.z * cosA - right.z * sinA;
+    
+    m_up.x = newUp.x;
+    m_up.y = newUp.y;
+    m_up.z = newUp.z;
+    
+    m_viewNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::ZoomIn(float factor) {
+    m_fov *= factor;
+    if (m_fov < 10.0f * (float)M_PI / 180.0f) {
+        m_fov = 10.0f * (float)M_PI / 180.0f;
+    }
+    m_projectionNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::ZoomOut(float factor) {
+    m_fov *= factor;
+    if (m_fov > 120.0f * (float)M_PI / 180.0f) {
+        m_fov = 120.0f * (float)M_PI / 180.0f;
+    }
+    m_projectionNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::SetZoom(float fovDegrees) {
+    m_fov = fovDegrees * (float)M_PI / 180.0f;
+    if (m_fov < 10.0f * (float)M_PI / 180.0f) {
+        m_fov = 10.0f * (float)M_PI / 180.0f;
+    }
+    if (m_fov > 120.0f * (float)M_PI / 180.0f) {
+        m_fov = 120.0f * (float)M_PI / 180.0f;
+    }
+    m_projectionNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
 } 

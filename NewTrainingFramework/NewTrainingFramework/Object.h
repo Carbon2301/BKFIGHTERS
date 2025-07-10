@@ -30,6 +30,10 @@ private:
     // Object ID for identification
     int m_id;
     
+    // Auto-rotation
+    bool m_autoRotate;
+    float m_rotationSpeed;  // degrees per second
+    
     void UpdateWorldMatrix();
     void CacheResources();
     
@@ -69,6 +73,11 @@ public:
     // Rendering
     void Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix);
     void Update(float deltaTime);
+    
+    // Auto-rotation
+    void ToggleAutoRotation();
+    void SetAutoRotation(bool enabled, float speed = 30.0f); // 30 degrees/sec default
+    bool IsAutoRotating() const { return m_autoRotate; }
     
     // Resource management
     void RefreshResources(); // Re-cache resources from ResourceManager

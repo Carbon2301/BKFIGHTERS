@@ -5,6 +5,10 @@
 #include "Texture2D.h"
 #include "Shaders.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 Object::Object() 
     : m_position(0.0f, 0.0f, 0.0f)
     , m_rotation(0.0f, 0.0f, 0.0f)
@@ -12,7 +16,9 @@ Object::Object()
     , m_matrixNeedsUpdate(true)
     , m_modelId(-1)
     , m_shaderId(-1)
-    , m_id(-1) {
+    , m_id(-1)
+    , m_autoRotate(true)
+    , m_rotationSpeed(30.0f) {
     m_worldMatrix.SetIdentity();
 }
 
@@ -23,7 +29,9 @@ Object::Object(int id)
     , m_matrixNeedsUpdate(true)
     , m_modelId(-1)
     , m_shaderId(-1)
-    , m_id(id) {
+    , m_id(id)
+    , m_autoRotate(true)
+    , m_rotationSpeed(30.0f) {
     m_worldMatrix.SetIdentity();
 }
 
@@ -230,6 +238,31 @@ void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
 }
 
 void Object::Update(float deltaTime) {
-    // Base object doesn't have any update logic
-    // Override in derived classes if needed
+    // Auto-rotation logic
+    if (m_autoRotate) {
+        float radiansPerSecond = m_rotationSpeed * (float)M_PI / 180.0f;
+        
+        // Rotate around Y axis (vertical rotation)
+        m_rotation.y += radiansPerSecond * deltaTime;
+        
+        // Keep rotation in [0, 2π] range
+        if (m_rotation.y > 2.0f * (float)M_PI) {
+            m_rotation.y -= 2.0f * (float)M_PI;
+        }
+        
+        m_matrixNeedsUpdate = true;
+    }
+}
+
+// Auto-rotation methods
+void Object::ToggleAutoRotation() {
+    m_autoRotate = !m_autoRotate;
+    std::cout << "Object ID " << m_id << " auto-rotation " << (m_autoRotate ? "ON" : "OFF") << std::endl;
+}
+
+void Object::SetAutoRotation(bool enabled, float speed) {
+    m_autoRotate = enabled;
+    m_rotationSpeed = speed;
+    std::cout << "Object ID " << m_id << " auto-rotation set to " << (enabled ? "ON" : "OFF") 
+              << " at " << speed << " degrees/sec" << std::endl;
 } 
