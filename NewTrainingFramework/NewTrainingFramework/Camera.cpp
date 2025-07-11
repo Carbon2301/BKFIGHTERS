@@ -290,4 +290,100 @@ void Camera::SetZoom(float fovDegrees) {
     }
     m_projectionNeedsUpdate = true;
     m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::OrbitHorizontal(float angleRadians) {
+    Vector3 direction(m_position.x - m_target.x, m_position.y - m_target.y, m_position.z - m_target.z);
+    float distance = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+    
+    // Rotate around Y-axis (vertical axis)
+    float cosA = cos(angleRadians);
+    float sinA = sin(angleRadians);
+    
+    Vector3 newDirection;
+    newDirection.x = direction.x * cosA + direction.z * sinA;
+    newDirection.y = direction.y;
+    newDirection.z = -direction.x * sinA + direction.z * cosA;
+    
+    newDirection.Normalize();
+    newDirection = newDirection * distance;
+    
+    m_position.x = m_target.x + newDirection.x;
+    m_position.y = m_target.y + newDirection.y;
+    m_position.z = m_target.z + newDirection.z;
+    
+    m_viewNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::OrbitVertical(float angleRadians) {
+    Vector3 direction(m_position.x - m_target.x, m_position.y - m_target.y, m_position.z - m_target.z);
+    float distance = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+    
+    float horizontalDistance = sqrt(direction.x * direction.x + direction.z * direction.z);
+    
+    float currentVerticalAngle = atan2(direction.y, horizontalDistance);
+    float newVerticalAngle = currentVerticalAngle + angleRadians;
+    
+    const float maxAngle = 85.0f * (float)M_PI / 180.0f;
+    if (newVerticalAngle > maxAngle) newVerticalAngle = maxAngle;
+    if (newVerticalAngle < -maxAngle) newVerticalAngle = -maxAngle;
+    
+    // Calculate new position
+    float newHorizontalDistance = distance * cos(newVerticalAngle);
+    float newY = distance * sin(newVerticalAngle);
+    
+    if (horizontalDistance > 0.001f) {
+        float scale = newHorizontalDistance / horizontalDistance;
+        direction.x *= scale;
+        direction.z *= scale;
+    }
+    direction.y = newY;
+    
+    // Update camera position
+    m_position.x = m_target.x + direction.x;
+    m_position.y = m_target.y + direction.y;
+    m_position.z = m_target.z + direction.z;
+    
+    m_viewNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::OrbitDistance(float deltaDistance) {
+    Vector3 direction(m_position.x - m_target.x, m_position.y - m_target.y, m_position.z - m_target.z);
+    float currentDistance = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+    
+    float newDistance = currentDistance + deltaDistance;
+    
+    if (newDistance < 0.5f) newDistance = 0.5f;
+    if (newDistance > 100.0f) newDistance = 100.0f;
+    
+    direction.Normalize();
+    direction = direction * newDistance;
+    
+    // Update camera position
+    m_position.x = m_target.x + direction.x;
+    m_position.y = m_target.y + direction.y;
+    m_position.z = m_target.z + direction.z;
+    
+    m_viewNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::SetOrbitDistance(float distance) {
+    if (distance < 0.5f) distance = 0.5f;
+    if (distance > 100.0f) distance = 100.0f;
+    
+    Vector3 direction(m_position.x - m_target.x, m_position.y - m_target.y, m_position.z - m_target.z);
+    
+    direction.Normalize();
+    direction = direction * distance;
+    
+    // Update camera position
+    m_position.x = m_target.x + direction.x;
+    m_position.y = m_target.y + direction.y;
+    m_position.z = m_target.z + direction.z;
+    
+    m_viewNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
 } 

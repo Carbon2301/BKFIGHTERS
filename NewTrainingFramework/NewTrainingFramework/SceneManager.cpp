@@ -301,6 +301,38 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
             activeCamera->SetZoom(45.0f);
             std::cout << "Camera zoom reset (FOV: 45 degrees)" << std::endl;
             break;
+            
+        //ORBIT CAMERA CONTROLS
+        case 'F':
+        case 'f':
+            activeCamera->OrbitHorizontal(0.1f);
+            std::cout << "Orbit camera left around target" << std::endl;
+            break;
+        case 'H':
+        case 'h':
+            activeCamera->OrbitHorizontal(-0.1f);
+            std::cout << "Orbit camera right around target" << std::endl;
+            break;
+        case 'G':
+        case 'g':
+            activeCamera->OrbitVertical(0.1f);
+            std::cout << "Orbit camera up around target" << std::endl;
+            break;
+        case 'B':
+        case 'b':
+            activeCamera->OrbitVertical(-0.1f);
+            std::cout << "Orbit camera down around target" << std::endl;
+            break;
+        case 'N':
+        case 'n':
+            activeCamera->OrbitDistance(-0.3f);
+            std::cout << "Orbit zoom in (closer to target)" << std::endl;
+            break;
+        case 'M':
+        case 'm':
+            activeCamera->OrbitDistance(0.3f);
+            std::cout << "Orbit zoom out (farther from target)" << std::endl;
+            break;
              
         // Scene controls
         case 'R':
@@ -315,8 +347,13 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
             std::cout << "UO - Roll left/right" << std::endl;
             std::cout << "ZX - Zoom in/out" << std::endl;
             std::cout << "C - Reset zoom" << std::endl;
+            std::cout << "\n=== ORBIT CAMERA ===" << std::endl;
+            std::cout << "FH - Orbit left/right around target" << std::endl;
+            std::cout << "GB - Orbit up/down around target" << std::endl;
+            std::cout << "NM - Orbit zoom in/out" << std::endl;
+            std::cout << "\n=== Other ===" << std::endl;
             std::cout << "R - Show scene info" << std::endl;
-            std::cout << "T - Toggle auto-rotation" << std::endl;
+            std::cout << "T - Toggle auto-rotation (default: OFF)" << std::endl;
             break;
             
         case 'T':
@@ -325,7 +362,7 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
             for (auto& obj : m_objects) {
                 obj->ToggleAutoRotation();
             }
-            std::cout << "Toggled auto-rotation for all objects" << std::endl;
+            std::cout << "🔄 Toggled auto-rotation for all objects (default: OFF)" << std::endl;
             break;
     }
 }

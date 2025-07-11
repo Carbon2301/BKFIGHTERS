@@ -47,6 +47,12 @@ public:
     void RotateY(float angleRadians);
     void RotateZ(float angleRadians);
     
+    // Move camera around target
+    void OrbitHorizontal(float angleRadians);
+    void OrbitVertical(float angleRadians);
+    void OrbitDistance(float deltaDistance);
+    void SetOrbitDistance(float distance);
+    
     void ZoomIn(float factor = 0.9f);
     void ZoomOut(float factor = 1.1f);
     void SetZoom(float fovDegrees);

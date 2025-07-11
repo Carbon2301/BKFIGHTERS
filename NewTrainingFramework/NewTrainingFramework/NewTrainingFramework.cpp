@@ -23,7 +23,7 @@ SceneManager* g_sceneManager = nullptr;
 
 // Auto-rotation for demonstration
 float g_autoRotationSpeed = 0.5f;
-bool g_enableAutoRotation = true;
+bool g_enableAutoRotation = false;
 
 int Init(ESContext* esContext)
 {
@@ -50,17 +50,15 @@ int Init(ESContext* esContext)
 	}
 	
 	std::cout << "Engine initialized successfully!" << std::endl;
-	std::cout << "\n=== Controls ===" << std::endl;
+	std::cout << "\n=== Basic Controls ===" << std::endl;
 	std::cout << "WASD - Move camera" << std::endl;
 	std::cout << "QE - Camera up/down" << std::endl;
-	std::cout << "IJKL - Look up/left/down/right" << std::endl;
-	std::cout << "UO - Roll left/right" << std::endl;
-	std::cout << "ZX - Zoom in/out" << std::endl;
-	std::cout << "C - Reset zoom" << std::endl;
-	std::cout << "R - Show scene info" << std::endl;
-	std::cout << "T - Toggle auto-rotation" << std::endl;
-	std::cout << "1-3 - Rendering modes (edit fragment shader)" << std::endl;
-	std::cout << "===============\n" << std::endl;
+	std::cout << "FH - Orbit left/right around target" << std::endl;
+	std::cout << "GB - Orbit up/down around target" << std::endl;
+	std::cout << "NM - Orbit zoom in/out" << std::endl;
+	std::cout << "R - Show full controls" << std::endl;
+	std::cout << "T - Toggle auto-rotation (OFF by default)" << std::endl;
+	std::cout << "===================\n" << std::endl;
 	
 	return 0;
 }
@@ -74,7 +72,7 @@ void Draw(ESContext* esContext)
 		g_sceneManager->Draw();
 	}
 
-	eglSwapBuffers(esContext->eglDisplay, esContext->eglSurface);
+	eglSwapBuffers(esContext->eglDisplay, esContext->eglSurface);	
 }
 
 void Update(ESContext *esContext, float deltaTime)
@@ -86,16 +84,17 @@ void Update(ESContext *esContext, float deltaTime)
 	
 	// Auto-rotation demonstration
 	if (g_enableAutoRotation && g_sceneManager) {
-		// Rotate all objects
+		// Get first object and rotate it
 		const auto& objects = g_sceneManager->GetObjects();
-		for (auto& obj : objects) {
-			const Vector3& currentRot = obj->GetRotation();
+		if (!objects.empty()) {
+			Object* firstObj = objects[0].get();
+			const Vector3& currentRot = firstObj->GetRotation();
 			Vector3 newRotation(currentRot.x, currentRot.y, currentRot.z);
 			newRotation.y += deltaTime * g_autoRotationSpeed;
 			if (newRotation.y > 2.0f * (float)M_PI) {
 				newRotation.y -= 2.0f * (float)M_PI;
 			}
-			obj->SetRotation(newRotation);
+			firstObj->SetRotation(newRotation);
 		}
 	}
 }
@@ -113,18 +112,18 @@ void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 			case 'T':
 			case 't':
 				g_enableAutoRotation = !g_enableAutoRotation;
-				std::cout << "Auto-rotation: " << (g_enableAutoRotation ? "ON" : "OFF") << std::endl;
+				std::cout << "🔄 Auto-rotation: " << (g_enableAutoRotation ? "ON (character will rotate)" : "OFF (character stays still)") << std::endl;
 				break;
 				
 			// === Rendering Modes Info ===
 			case '1': 
-				std::cout << "To switch to pure texture mode, edit fragment shader option 1" << std::endl;
+				std::cout << "💡 To switch to pure texture mode, edit fragment shader option 1" << std::endl;
 				break;
 			case '2':
-				std::cout << "Current: rainbow normal mode (default)" << std::endl; 
+				std::cout << "💡 Current: rainbow normal mode (default)" << std::endl; 
 				break;
 			case '3':
-				std::cout << "To switch to pure vertex color mode, edit fragment shader option 3" << std::endl;
+				std::cout << "💡 To switch to pure vertex color mode, edit fragment shader option 3" << std::endl;
 				break;
 		}
 	}
@@ -143,7 +142,7 @@ void CleanUp()
 		g_resourceManager = nullptr;
 	}
 	
-	std::cout << "Engine cleanup completed" << std::endl;
+	std::cout << "🧹 Engine cleanup completed" << std::endl;
 }
 
 int _tmain(int argc, _TCHAR* argv[])
