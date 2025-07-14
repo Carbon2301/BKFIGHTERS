@@ -351,6 +351,10 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
             std::cout << "FH - Orbit left/right around target" << std::endl;
             std::cout << "GB - Orbit up/down around target" << std::endl;
             std::cout << "NM - Orbit zoom in/out" << std::endl;
+            std::cout << "\n=== PROJECTION MODES ===" << std::endl;
+            std::cout << "1 - Orthographic projection (Song song)" << std::endl;
+            std::cout << "2 - Perspective projection (Phoi canh)" << std::endl;
+            std::cout << "P - Toggle projection type" << std::endl;
             std::cout << "\n=== Other ===" << std::endl;
             std::cout << "R - Show scene info" << std::endl;
             std::cout << "T - Toggle auto-rotation (default: OFF)" << std::endl;
@@ -362,7 +366,26 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
             for (auto& obj : m_objects) {
                 obj->ToggleAutoRotation();
             }
-            std::cout << "🔄 Toggled auto-rotation for all objects (default: OFF)" << std::endl;
+            std::cout << "Toggled auto-rotation for all objects (default: OFF)" << std::endl;
+            break;
+            
+        //Projection Type Controls
+        case '1':
+            activeCamera->SetProjectionType(ProjectionType::ORTHOGRAPHIC);
+            std::cout << "Switched to ORTHOGRAPHIC projection (Parallel/Song song)" << std::endl;
+            break;
+        case '2':
+            activeCamera->SetProjectionType(ProjectionType::PERSPECTIVE);
+            std::cout << "Switched to PERSPECTIVE projection (Phoi canh)" << std::endl;
+            break;
+        case 'P':
+        case 'p':
+            activeCamera->ToggleProjectionType();
+            if (activeCamera->GetProjectionType() == ProjectionType::ORTHOGRAPHIC) {
+                std::cout << "Toggled to ORTHOGRAPHIC projection (Parallel/Song song)" << std::endl;
+            } else {
+                std::cout << "Toggled to PERSPECTIVE projection (Phoi canh)" << std::endl;
+            }
             break;
     }
 }

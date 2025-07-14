@@ -56,6 +56,11 @@ int Init(ESContext* esContext)
 	std::cout << "FH - Orbit left/right around target" << std::endl;
 	std::cout << "GB - Orbit up/down around target" << std::endl;
 	std::cout << "NM - Orbit zoom in/out" << std::endl;
+	std::cout << "\n=== Projection Menu ===" << std::endl;
+	std::cout << "1 - Orthographic projection (Song song)" << std::endl;
+	std::cout << "2 - Perspective projection (Phoi canh)" << std::endl;
+	std::cout << "P - Toggle projection type" << std::endl;
+	std::cout << "\n=== Other ===" << std::endl;
 	std::cout << "R - Show full controls" << std::endl;
 	std::cout << "T - Toggle auto-rotation (OFF by default)" << std::endl;
 	std::cout << "===================\n" << std::endl;
@@ -112,18 +117,18 @@ void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 			case 'T':
 			case 't':
 				g_enableAutoRotation = !g_enableAutoRotation;
-				std::cout << "🔄 Auto-rotation: " << (g_enableAutoRotation ? "ON (character will rotate)" : "OFF (character stays still)") << std::endl;
+				std::cout << "Auto-rotation: " << (g_enableAutoRotation ? "ON (character will rotate)" : "OFF (character stays still)") << std::endl;
 				break;
 				
 			// === Rendering Modes Info ===
 			case '1': 
-				std::cout << "💡 To switch to pure texture mode, edit fragment shader option 1" << std::endl;
+				std::cout << "To switch to pure texture mode, edit fragment shader option 1" << std::endl;
 				break;
 			case '2':
-				std::cout << "💡 Current: rainbow normal mode (default)" << std::endl; 
+				std::cout << "Current: rainbow normal mode (default)" << std::endl; 
 				break;
 			case '3':
-				std::cout << "💡 To switch to pure vertex color mode, edit fragment shader option 3" << std::endl;
+				std::cout << "To switch to pure vertex color mode, edit fragment shader option 3" << std::endl;
 				break;
 		}
 	}

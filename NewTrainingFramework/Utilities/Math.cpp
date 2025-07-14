@@ -541,6 +541,35 @@ Matrix & Matrix::SetPerspective(GLfloat fovY, GLfloat aspect, GLfloat nearPlane,
 	return *this;
 }
 
+Matrix & Matrix::SetOrthographic(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearPlane, GLfloat farPlane)
+{
+	GLfloat rl = right - left;
+	GLfloat tb = top - bottom;
+	GLfloat fn = farPlane - nearPlane;
+
+	m[0][0] = 2.0f / rl;
+	m[1][0] = 0.0f;
+	m[2][0] = 0.0f;
+	m[3][0] = -(right + left) / rl;
+
+	m[0][1] = 0.0f;
+	m[1][1] = 2.0f / tb;
+	m[2][1] = 0.0f;
+	m[3][1] = -(top + bottom) / tb;
+
+	m[0][2] = 0.0f;
+	m[1][2] = 0.0f;
+	m[2][2] = -2.0f / fn;
+	m[3][2] = -(farPlane + nearPlane) / fn;
+
+	m[0][3] = 0.0f;
+	m[1][3] = 0.0f;
+	m[2][3] = 0.0f;
+	m[3][3] = 1.0f;
+
+	return *this;
+}
+
 Matrix & Matrix::SetLookAt(Vector3 &eye, Vector3 &target, Vector3 &up)
 {
 	// Tính các vector cho camera coordinate system

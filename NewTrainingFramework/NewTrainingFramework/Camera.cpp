@@ -10,10 +10,12 @@ Camera::Camera()
     : m_position(0.0f, 0.0f, 3.0f)
     , m_target(0.0f, 0.0f, 0.0f)
     , m_up(0.0f, 1.0f, 0.0f)
+    , m_projectionType(ProjectionType::PERSPECTIVE)
     , m_fov(45.0f * (float)M_PI / 180.0f)
     , m_aspect(16.0f / 9.0f)
     , m_nearPlane(0.1f)
     , m_farPlane(100.0f)
+    , m_left(-1.0f), m_right(1.0f), m_bottom(-1.0f), m_top(1.0f)
     , m_viewNeedsUpdate(true)
     , m_projectionNeedsUpdate(true)
     , m_vpMatrixNeedsUpdate(true) {
@@ -23,10 +25,12 @@ Camera::Camera(const Vector3& position, const Vector3& target, const Vector3& up
     : m_position(position.x, position.y, position.z)
     , m_target(target.x, target.y, target.z)
     , m_up(up.x, up.y, up.z)
+    , m_projectionType(ProjectionType::PERSPECTIVE)
     , m_fov(45.0f * (float)M_PI / 180.0f)
     , m_aspect(16.0f / 9.0f)
     , m_nearPlane(0.1f)
     , m_farPlane(100.0f)
+    , m_left(-1.0f), m_right(1.0f), m_bottom(-1.0f), m_top(1.0f)
     , m_viewNeedsUpdate(true)
     , m_projectionNeedsUpdate(true)
     , m_vpMatrixNeedsUpdate(true) {
@@ -162,7 +166,11 @@ void Camera::UpdateViewMatrix() {
 }
 
 void Camera::UpdateProjectionMatrix() {
-    m_projectionMatrix.SetPerspective(m_fov, m_aspect, m_nearPlane, m_farPlane);
+    if (m_projectionType == ProjectionType::PERSPECTIVE) {
+        m_projectionMatrix.SetPerspective(m_fov, m_aspect, m_nearPlane, m_farPlane);
+    } else {
+        m_projectionMatrix.SetOrthographic(m_left, m_right, m_bottom, m_top, m_nearPlane, m_farPlane);
+    }
     m_projectionNeedsUpdate = false;
 }
 
@@ -386,4 +394,41 @@ void Camera::SetOrbitDistance(float distance) {
     
     m_viewNeedsUpdate = true;
     m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::SetOrthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane) {
+    m_left = left;
+    m_right = right;
+    m_bottom = bottom;
+    m_top = top;
+    m_nearPlane = nearPlane;
+    m_farPlane = farPlane;
+    m_projectionNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::SetProjectionType(ProjectionType type) {
+    if (m_projectionType != type) {
+        m_projectionType = type;
+        
+        if (type == ProjectionType::ORTHOGRAPHIC) {
+            float height = 5.0f;
+            float width = height * m_aspect;
+            m_left = -width / 2.0f;
+            m_right = width / 2.0f;
+            m_bottom = -height / 2.0f;
+            m_top = height / 2.0f;
+        }
+        
+        m_projectionNeedsUpdate = true;
+        m_vpMatrixNeedsUpdate = true;
+    }
+}
+
+void Camera::ToggleProjectionType() {
+    if (m_projectionType == ProjectionType::PERSPECTIVE) {
+        SetProjectionType(ProjectionType::ORTHOGRAPHIC);
+    } else {
+        SetProjectionType(ProjectionType::PERSPECTIVE);
+    }
 } 

@@ -1,6 +1,11 @@
 #pragma once
 #include "../Utilities/Math.h"
 
+enum class ProjectionType {
+    PERSPECTIVE,
+    ORTHOGRAPHIC
+};
+
 class Camera {
 private:
     // Camera parameters
@@ -9,10 +14,14 @@ private:
     Vector3 m_up;
     
     // Projection parameters
+    ProjectionType m_projectionType;
     float m_fov;       
     float m_aspect;     
     float m_nearPlane;  
     float m_farPlane; 
+    
+    // Orthographic projection parameters
+    float m_left, m_right, m_bottom, m_top;
     
     // Cached matrices
     Matrix m_viewMatrix;
@@ -59,6 +68,11 @@ public:
     
     void SetPerspective(float fov, float aspect, float nearPlane, float farPlane);
     void SetOrthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane);
+    
+    // Projection type switching
+    void SetProjectionType(ProjectionType type);
+    void ToggleProjectionType();
+    ProjectionType GetProjectionType() const { return m_projectionType; }
     
     const Matrix& GetViewMatrix();
     const Matrix& GetProjectionMatrix();
