@@ -1,6 +1,6 @@
 #pragma once
 #include "Vertex.h"
-#include "../Utilities/Math.h"
+#include "../../Utilities/Math.h"
 #include <vector>
 
 // Forward declare LoadTGA function

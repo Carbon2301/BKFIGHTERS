@@ -1,6 +1,6 @@
 #pragma once
-#include "Object.h"
-#include "Camera.h"
+#include "../GameObject/Object.h"
+#include "../GameObject/Camera.h"
 #include <vector>
 #include <memory>
 #include <string>

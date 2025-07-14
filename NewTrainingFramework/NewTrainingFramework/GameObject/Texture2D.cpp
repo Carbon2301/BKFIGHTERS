@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Texture2D.h"
-#include "../Utilities/TGA.h"
+#include "../../Utilities/TGA.h"
 #include <iostream>
 
 Texture2D::Texture2D() 

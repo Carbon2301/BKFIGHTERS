@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "ResourceManager.h"
-#include "Texture2D.h"
+#include "../GameObject/Texture2D.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>

@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Object.h"
-#include "ResourceManager.h"
+#include "../GameManager/ResourceManager.h"
 #include "Model.h"
 #include "Texture2D.h"
 #include "Shaders.h"

@@ -1,7 +1,7 @@
 #pragma once
-#include "Model.h"
-#include "Shaders.h"
-#include "../Utilities/utilities.h"
+#include "../GameObject/Model.h"
+#include "../GameObject/Shaders.h"
+#include "../../Utilities/utilities.h"
 #include <vector>
 #include <string>
 #include <memory>

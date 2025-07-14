@@ -174,15 +174,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\NewTrainingFramework.cpp"
+				RelativePath=".\Core\NewTrainingFramework.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Shaders.cpp"
+				RelativePath=".\GameObject\Shaders.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\stdafx.cpp"
+				RelativePath=".\Core\stdafx.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -208,23 +208,23 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\Globals.h"
+				RelativePath=".\Core\Globals.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Shaders.h"
+				RelativePath=".\GameObject\Shaders.h"
 				>
 			</File>
 			<File
-				RelativePath=".\stdafx.h"
+				RelativePath=".\Core\stdafx.h"
 				>
 			</File>
 			<File
-				RelativePath=".\targetver.h"
+				RelativePath=".\Core\targetver.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Vertex.h"
+				RelativePath=".\GameObject\Vertex.h"
 				>
 			</File>
 		</Filter>

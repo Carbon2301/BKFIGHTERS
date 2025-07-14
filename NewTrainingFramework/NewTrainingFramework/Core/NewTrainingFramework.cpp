@@ -2,16 +2,16 @@
 //
 
 #include "stdafx.h"
-#include "Vertex.h"
-#include "Shaders.h"
+#include "../GameObject/Vertex.h"
+#include "../GameObject/Shaders.h"
 #include "Globals.h"
-#include "Model.h"
-#include "ResourceManager.h"
-#include "SceneManager.h"
-#include "Object.h"
-#include "Camera.h"
+#include "../GameObject/Model.h"
+#include "../GameManager/ResourceManager.h"
+#include "../GameManager/SceneManager.h"
+#include "../GameObject/Object.h"
+#include "../GameObject/Camera.h"
 #include <conio.h>
-#include "../Utilities/utilities.h"
+#include "../../Utilities/utilities.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

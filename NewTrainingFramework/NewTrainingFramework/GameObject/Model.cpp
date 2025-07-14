@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Model.h"
-#include "../Utilities/TGA.h"
+#include "../../Utilities/TGA.h"
 #include <fstream>
 #include <sstream>
 

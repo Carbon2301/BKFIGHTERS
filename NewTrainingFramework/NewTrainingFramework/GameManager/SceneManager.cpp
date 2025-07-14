@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "SceneManager.h"
-#include "Globals.h"
+#include "../Core/Globals.h"
 #include <fstream>
 #include <iostream>
 
