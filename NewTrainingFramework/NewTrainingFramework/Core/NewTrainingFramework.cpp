@@ -8,6 +8,7 @@
 #include "../GameObject/Model.h"
 #include "../GameManager/ResourceManager.h"
 #include "../GameManager/SceneManager.h"
+#include "../GameManager/GameStateMachine.h"
 #include "../GameObject/Object.h"
 #include "../GameObject/Camera.h"
 #include <conio.h>
@@ -20,20 +21,21 @@
 // Engine systems
 ResourceManager* g_resourceManager = nullptr;
 SceneManager* g_sceneManager = nullptr;
+GameStateMachine* g_gameStateMachine = nullptr;
 
-// Auto-rotation for demonstration
-float g_autoRotationSpeed = 0.5f;
-bool g_enableAutoRotation = false;
+// Game state flag
+bool g_useGameStateMachine = true;
 
 int Init(ESContext* esContext)
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
-	// Enable depth testing for 3D models
+	// Enable depth testing (still needed for proper rendering)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	std::cout << "\nInitializing New Training Framework Engine..." << std::endl;
+	std::cout << "\n=== 2D Game Engine with State Machine ===" << std::endl;
+	std::cout << "Initializing New Training Framework Engine..." << std::endl;
 	
 	// Initialize Resource Manager
 	g_resourceManager = ResourceManager::GetInstance();
@@ -42,28 +44,25 @@ int Init(ESContext* esContext)
 		return -1;
 	}
 	
-	// Initialize Scene Manager  
+	// Initialize Scene Manager (for compatibility)
 	g_sceneManager = SceneManager::GetInstance();
 	if (!g_sceneManager->LoadFromFile("SM.txt")) {
 		std::cout << "Failed to load scene!" << std::endl;
 		return -1;
 	}
 	
+	// Initialize Game State Machine
+	g_gameStateMachine = GameStateMachine::GetInstance();
+	
 	std::cout << "Engine initialized successfully!" << std::endl;
-	std::cout << "\n=== Basic Controls ===" << std::endl;
-	std::cout << "WASD - Move camera" << std::endl;
-	std::cout << "QE - Camera up/down" << std::endl;
-	std::cout << "FH - Orbit left/right around target" << std::endl;
-	std::cout << "GB - Orbit up/down around target" << std::endl;
-	std::cout << "NM - Orbit zoom in/out" << std::endl;
-	std::cout << "\n=== Projection Menu ===" << std::endl;
-	std::cout << "1 - Orthographic projection (Song song)" << std::endl;
-	std::cout << "2 - Perspective projection (Phoi canh)" << std::endl;
-	std::cout << "P - Toggle projection type" << std::endl;
-	std::cout << "\n=== Other ===" << std::endl;
-	std::cout << "R - Show full controls" << std::endl;
-	std::cout << "T - Toggle auto-rotation (OFF by default)" << std::endl;
-	std::cout << "===================\n" << std::endl;
+	std::cout << "\n=== 2D Game State Machine ===" << std::endl;
+	std::cout << "Starting with Loading Screen..." << std::endl;
+	std::cout << "State Flow: Loading -> Menu -> Play" << std::endl;
+	std::cout << "\nGame Controls will be shown in each state." << std::endl;
+	std::cout << "==========================================\n" << std::endl;
+	
+	// Start with intro/loading state
+	g_gameStateMachine->ChangeState(StateType::INTRO);
 	
 	return 0;
 }
@@ -72,8 +71,12 @@ void Draw(ESContext* esContext)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Draw scene using SceneManager
-	if (g_sceneManager) {
+	// Use Game State Machine for rendering
+	if (g_useGameStateMachine && g_gameStateMachine) {
+		g_gameStateMachine->Draw();
+	}
+	// Fallback to SceneManager (for debugging/compatibility)
+	else if (g_sceneManager) {
 		g_sceneManager->Draw();
 	}
 
@@ -82,53 +85,33 @@ void Draw(ESContext* esContext)
 
 void Update(ESContext *esContext, float deltaTime)
 {
-	// Update scene
-	if (g_sceneManager) {
-		g_sceneManager->Update(deltaTime);
+	// Use Game State Machine for updates
+	if (g_useGameStateMachine && g_gameStateMachine) {
+		g_gameStateMachine->Update(deltaTime);
 	}
-	
-	// Auto-rotation demonstration
-	if (g_enableAutoRotation && g_sceneManager) {
-		// Get first object and rotate it
-		const auto& objects = g_sceneManager->GetObjects();
-		if (!objects.empty()) {
-			Object* firstObj = objects[0].get();
-			const Vector3& currentRot = firstObj->GetRotation();
-			Vector3 newRotation(currentRot.x, currentRot.y, currentRot.z);
-			newRotation.y += deltaTime * g_autoRotationSpeed;
-			if (newRotation.y > 2.0f * (float)M_PI) {
-				newRotation.y -= 2.0f * (float)M_PI;
-			}
-			firstObj->SetRotation(newRotation);
-		}
+	// Fallback to SceneManager (for debugging/compatibility)
+	else if (g_sceneManager) {
+		g_sceneManager->Update(deltaTime);
 	}
 }
 
 void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 {
+	// Use Game State Machine for input handling
+	if (g_useGameStateMachine && g_gameStateMachine) {
+		g_gameStateMachine->HandleKeyEvent(key, bIsPressed);
+	}
+	// Fallback to SceneManager (for debugging/compatibility)
+	else if (bIsPressed && g_sceneManager) {
+		g_sceneManager->HandleInput(key, bIsPressed);
+	}
+	
+	// Global engine controls (work in any mode)
 	if (bIsPressed) {
-		// Handle scene manager input (camera controls)
-		if (g_sceneManager) {
-			g_sceneManager->HandleInput(key, bIsPressed);
-		}
-		
-		// Additional engine controls
 		switch(key) {
-			case 'T':
-			case 't':
-				g_enableAutoRotation = !g_enableAutoRotation;
-				std::cout << "Auto-rotation: " << (g_enableAutoRotation ? "ON (character will rotate)" : "OFF (character stays still)") << std::endl;
-				break;
-				
-			// === Rendering Modes Info ===
-			case '1': 
-				std::cout << "To switch to pure texture mode, edit fragment shader option 1" << std::endl;
-				break;
-			case '2':
-				std::cout << "Current: rainbow normal mode (default)" << std::endl; 
-				break;
-			case '3':
-				std::cout << "To switch to pure vertex color mode, edit fragment shader option 3" << std::endl;
+			case '`': // Backtick - toggle between Game State Machine and SceneManager
+				g_useGameStateMachine = !g_useGameStateMachine;
+				std::cout << "Switched to: " << (g_useGameStateMachine ? "Game State Machine" : "Scene Manager (3D Mode)") << std::endl;
 				break;
 		}
 	}
@@ -137,6 +120,11 @@ void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 void CleanUp()
 {
 	// Cleanup engine systems
+	if (g_gameStateMachine) {
+		GameStateMachine::DestroyInstance();
+		g_gameStateMachine = nullptr;
+	}
+	
 	if (g_sceneManager) {
 		SceneManager::DestroyInstance();
 		g_sceneManager = nullptr;
@@ -147,7 +135,7 @@ void CleanUp()
 		g_resourceManager = nullptr;
 	}
 	
-	std::cout << "🧹 Engine cleanup completed" << std::endl;
+	std::cout << "🧹 2D Game Engine cleanup completed" << std::endl;
 }
 
 int _tmain(int argc, _TCHAR* argv[])

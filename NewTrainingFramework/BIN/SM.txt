@@ -1,18 +1,6 @@
-#ObjectCount 2
-2
+# Scene Manager Configuration for 2D Game State Machine
+# Objects will be managed by individual game states
+# This file is kept for compatibility but not actively used
 
-ID 0
-MODEL_ID 0
-TEXTURE_ID 0
-SHADER_ID 0
-POS 0.0 0.0 0.0
-ROTATION 0 0 0
-SCALE 0.5 0.5 0.5
-
-ID 1
-MODEL_ID 1
-TEXTURE_ID 0
-SHADER_ID 0
-POS 2.0 0.0 0.0
-ROTATION 0 0 0
-SCALE 0.5 0.5 0.5 
+#ObjectCount 0
+0 

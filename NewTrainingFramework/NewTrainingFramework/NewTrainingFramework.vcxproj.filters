@@ -33,6 +33,21 @@
     <ClCompile Include="GameManager\SceneManager.cpp">
       <Filter>GameManager</Filter>
     </ClCompile>
+    <ClCompile Include="GameManager\GameStateBase.cpp">
+      <Filter>GameManager</Filter>
+    </ClCompile>
+    <ClCompile Include="GameManager\GameStateMachine.cpp">
+      <Filter>GameManager</Filter>
+    </ClCompile>
+    <ClCompile Include="GameManager\GSIntro.cpp">
+      <Filter>GameManager</Filter>
+    </ClCompile>
+    <ClCompile Include="GameManager\GSMenu.cpp">
+      <Filter>GameManager</Filter>
+    </ClCompile>
+    <ClCompile Include="GameManager\GSPlay.cpp">
+      <Filter>GameManager</Filter>
+    </ClCompile>
     
     <!-- GameObject Files -->
     <ClCompile Include="GameObject\Object.cpp">
@@ -68,6 +83,24 @@
       <Filter>GameManager</Filter>
     </ClInclude>
     <ClInclude Include="GameManager\SceneManager.h">
+      <Filter>GameManager</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager\StateType.h">
+      <Filter>GameManager</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager\GameStateBase.h">
+      <Filter>GameManager</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager\GameStateMachine.h">
+      <Filter>GameManager</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager\GSIntro.h">
+      <Filter>GameManager</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager\GSMenu.h">
+      <Filter>GameManager</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager\GSPlay.h">
       <Filter>GameManager</Filter>
     </ClInclude>
     
