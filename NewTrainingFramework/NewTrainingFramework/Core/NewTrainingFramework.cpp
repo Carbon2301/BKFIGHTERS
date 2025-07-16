@@ -23,9 +23,6 @@ ResourceManager* g_resourceManager = nullptr;
 SceneManager* g_sceneManager = nullptr;
 GameStateMachine* g_gameStateMachine = nullptr;
 
-// Game state flag
-bool g_useGameStateMachine = true;
-
 int Init(ESContext* esContext)
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -44,12 +41,9 @@ int Init(ESContext* esContext)
 		return -1;
 	}
 	
-	// Initialize Scene Manager (for compatibility)
+	// Initialize Scene Manager (scenes will be loaded per-state)
 	g_sceneManager = SceneManager::GetInstance();
-	if (!g_sceneManager->LoadFromFile("SM.txt")) {
-		std::cout << "Failed to load scene!" << std::endl;
-		return -1;
-	}
+	std::cout << "SceneManager initialized (scenes loaded per-state)" << std::endl;
 	
 	// Initialize Game State Machine
 	g_gameStateMachine = GameStateMachine::GetInstance();
@@ -71,13 +65,9 @@ void Draw(ESContext* esContext)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Use Game State Machine for rendering
-	if (g_useGameStateMachine && g_gameStateMachine) {
+	// Use Game State Machine for rendering (2D-only)
+	if (g_gameStateMachine) {
 		g_gameStateMachine->Draw();
-	}
-	// Fallback to SceneManager (for debugging/compatibility)
-	else if (g_sceneManager) {
-		g_sceneManager->Draw();
 	}
 
 	eglSwapBuffers(esContext->eglDisplay, esContext->eglSurface);	
@@ -85,35 +75,17 @@ void Draw(ESContext* esContext)
 
 void Update(ESContext *esContext, float deltaTime)
 {
-	// Use Game State Machine for updates
-	if (g_useGameStateMachine && g_gameStateMachine) {
+	// Use Game State Machine for updates (2D-only)
+	if (g_gameStateMachine) {
 		g_gameStateMachine->Update(deltaTime);
-	}
-	// Fallback to SceneManager (for debugging/compatibility)
-	else if (g_sceneManager) {
-		g_sceneManager->Update(deltaTime);
 	}
 }
 
 void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 {
-	// Use Game State Machine for input handling
-	if (g_useGameStateMachine && g_gameStateMachine) {
+	// Use Game State Machine for input handling (2D-only)
+	if (g_gameStateMachine) {
 		g_gameStateMachine->HandleKeyEvent(key, bIsPressed);
-	}
-	// Fallback to SceneManager (for debugging/compatibility)
-	else if (bIsPressed && g_sceneManager) {
-		g_sceneManager->HandleInput(key, bIsPressed);
-	}
-	
-	// Global engine controls (work in any mode)
-	if (bIsPressed) {
-		switch(key) {
-			case '`': // Backtick - toggle between Game State Machine and SceneManager
-				g_useGameStateMachine = !g_useGameStateMachine;
-				std::cout << "Switched to: " << (g_useGameStateMachine ? "Game State Machine" : "Scene Manager (3D Mode)") << std::endl;
-				break;
-		}
 	}
 }
 

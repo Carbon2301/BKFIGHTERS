@@ -1,16 +1,9 @@
 #pragma once
 #include "GameStateBase.h"
-#include "../GameObject/Object.h"
-#include "../GameObject/Camera.h"
-#include <memory>
-#include <vector>
+#include "SceneManager.h"
 
 class GSMenu : public GameStateBase {
 private:
-    std::unique_ptr<Object> m_backgroundObject;
-    std::vector<std::unique_ptr<Object>> m_buttonObjects;
-    std::unique_ptr<Camera> m_camera2D;
-    
     int m_selectedButton;
     float m_buttonTimer;
     
@@ -20,6 +13,11 @@ private:
         BUTTON_CLOSE = 2,
         BUTTON_COUNT = 3
     };
+    
+    // Button object IDs in scene (must match scene config)
+    static const int BUTTON_ID_PLAY = 201;
+    static const int BUTTON_ID_HELP = 202;
+    static const int BUTTON_ID_CLOSE = 203;
     
 public:
     GSMenu();
@@ -35,6 +33,6 @@ public:
     void Cleanup() override;
 
 private:
-    void CreateButtons();
     void HandleButtonSelection();
+    Object* GetButtonObject(int buttonIndex);
 }; 

@@ -15,97 +15,103 @@ void GSMenu::Init() {
     std::cout << "=== MAIN MENU ===" << std::endl;
     std::cout << "Welcome to the Game!" << std::endl;
     
-    // Enable blending for transparent textures (để bỏ góc đen)
+    // Enable blending for transparent textures
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    // Setup 2D camera for menu
-    m_camera2D = std::make_unique<Camera>();
-    float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
-    
-    // Use orthographic projection for 2D UI
-    m_camera2D->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
-    m_camera2D->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
-    
-    // Create background
-    m_backgroundObject = std::make_unique<Object>(100);
-    m_backgroundObject->SetModel(0);    // Sprite2D model
-    m_backgroundObject->SetTexture(1, 0); // Background texture (bg_play1.tga)
-    m_backgroundObject->SetShader(0);   // Basic shader
-    m_backgroundObject->SetPosition(Vector3(0.0f, 0.0f, -0.1f)); // Behind UI elements
-    m_backgroundObject->SetScale(Vector3(2.5f, 2.5f, 1.0f)); // Scale to cover screen
-    
-    CreateButtons();
+    // Load scene using SceneManager
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    if (!sceneManager->LoadSceneForState(StateType::MENU)) {
+        std::cout << "Failed to load menu scene!" << std::endl;
+        // Fallback: create default scene manually if config file fails
+        sceneManager->Clear();
+        
+        // Create default 2D camera
+        Camera* camera = sceneManager->CreateCamera();
+        if (camera) {
+            float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+            camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+            camera->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+            sceneManager->SetActiveCamera(0);
+        }
+        
+        // Create default objects manually as fallback
+        Object* backgroundObj = sceneManager->CreateObject(200);
+        if (backgroundObj) {
+            backgroundObj->SetModel(0);
+            backgroundObj->SetTexture(0, 0);
+            backgroundObj->SetShader(0);
+            backgroundObj->SetPosition(Vector3(0.0f, 0.0f, -0.1f));
+            backgroundObj->SetScale(Vector3(2.5f, 2.5f, 1.0f));
+        }
+        
+        // Create button objects
+        Vector3 buttonPositions[BUTTON_COUNT] = {
+            Vector3(0.0f, 0.2f, 0.0f),    // PLAY
+            Vector3(0.0f, -0.1f, 0.0f),   // HELP  
+            Vector3(0.0f, -0.4f, 0.0f)    // CLOSE
+        };
+        
+        int buttonIds[BUTTON_COUNT] = { BUTTON_ID_PLAY, BUTTON_ID_HELP, BUTTON_ID_CLOSE };
+        
+        for (int i = 0; i < BUTTON_COUNT; i++) {
+            Object* button = sceneManager->CreateObject(buttonIds[i]);
+            if (button) {
+                button->SetModel(0);
+                button->SetTexture(2 + i, 0); // btn_play, btn_help, btn_close
+                button->SetShader(0);
+                button->SetPosition(buttonPositions[i]);
+                button->SetScale(Vector3(0.3f, 0.15f, 1.0f));
+            }
+        }
+    }
     
     std::cout << "Use W/S keys to navigate, ENTER to select" << std::endl;
     std::cout << "ESC to exit game" << std::endl;
 }
 
-void GSMenu::CreateButtons() {
-    m_buttonObjects.clear();
+Object* GSMenu::GetButtonObject(int buttonIndex) {
+    SceneManager* sceneManager = SceneManager::GetInstance();
     
-    // Button positions (arranged vertically with compact spacing for small buttons)
-    Vector3 buttonPositions[BUTTON_COUNT] = {
-        Vector3(0.0f, 0.25f, 0.0f),    // PLAY (above center)
-        Vector3(0.0f, 0.0f, 0.0f),     // HELP (center)
-        Vector3(0.0f, -0.25f, 0.0f)    // CLOSE (below center)
-    };
-    
-    // Create buttons with larger size
-    for (int i = 0; i < BUTTON_COUNT; i++) {
-        auto button = std::make_unique<Object>(200 + i);
-        button->SetModel(0);    // Sprite2D model
-        button->SetTexture(2 + i, 0); // btn_play.tga, btn_help.tga, btn_close.tga
-        button->SetShader(0);
-        button->SetPosition(buttonPositions[i]);
-        button->SetScale(Vector3(0.2f, 0.1f, 1.0f)); // Even smaller buttons
-        
-        m_buttonObjects.push_back(std::move(button));
+    switch (buttonIndex) {
+        case BUTTON_PLAY:  return sceneManager->GetObject(BUTTON_ID_PLAY);
+        case BUTTON_HELP:  return sceneManager->GetObject(BUTTON_ID_HELP);
+        case BUTTON_CLOSE: return sceneManager->GetObject(BUTTON_ID_CLOSE);
+        default: return nullptr;
     }
-    
-    std::cout << "Created " << BUTTON_COUNT << " tiny menu buttons with blending enabled" << std::endl;
 }
 
 void GSMenu::Update(float deltaTime) {
     m_buttonTimer += deltaTime;
     
+    // Update scene
+    SceneManager::GetInstance()->Update(deltaTime);
+    
     // Simple button highlighting effect (scale animation)
     for (int i = 0; i < BUTTON_COUNT; i++) {
-        if (i == m_selectedButton) {
-            // Selected button pulses (even smaller size)
-            float pulse = 1.0f + 0.2f * sin(m_buttonTimer * 4.0f);
-            m_buttonObjects[i]->SetScale(Vector3(0.2f * pulse, 0.1f * pulse, 1.0f));
-        } else {
-            // Non-selected buttons stay normal even smaller size
-            m_buttonObjects[i]->SetScale(Vector3(0.2f, 0.1f, 1.0f));
+        Object* button = GetButtonObject(i);
+        if (button) {
+            if (i == m_selectedButton) {
+                // Selected button pulses
+                float pulse = 1.0f + 0.2f * sin(m_buttonTimer * 4.0f);
+                button->SetScale(Vector3(0.3f * pulse, 0.15f * pulse, 1.0f));
+            } else {
+                // Non-selected buttons stay normal size
+                button->SetScale(Vector3(0.3f, 0.15f, 1.0f));
+            }
         }
     }
 }
 
 void GSMenu::Draw() {
-    // Draw background first
-    if (m_backgroundObject && m_camera2D) {
-        const Matrix& viewMatrix = m_camera2D->GetViewMatrix();
-        const Matrix& projMatrix = m_camera2D->GetProjectionMatrix();
-        m_backgroundObject->Draw(const_cast<Matrix&>(viewMatrix), const_cast<Matrix&>(projMatrix));
-    }
-    
-    // Draw buttons
-    if (m_camera2D) {
-        const Matrix& viewMatrix = m_camera2D->GetViewMatrix();
-        const Matrix& projMatrix = m_camera2D->GetProjectionMatrix();
-        
-        for (auto& button : m_buttonObjects) {
-            button->Draw(const_cast<Matrix&>(viewMatrix), const_cast<Matrix&>(projMatrix));
-        }
-    }
+    // Use SceneManager to draw all objects
+    SceneManager::GetInstance()->Draw();
 }
 
 void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (!bIsPressed) return;
     
     switch (key) {
-        // Note: Could add case 72 (Up arrow) but keeping it simple with W/S keys only
         case 'W':
         case 'w':
             m_selectedButton--;
@@ -113,7 +119,6 @@ void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             std::cout << "Selected button: " << m_selectedButton << std::endl;
             break;
             
-        // Note: Removed case 80 (Down arrow) because it conflicts with 'P' (ASCII 80)
         case 'S':
         case 's':
             m_selectedButton++;
@@ -179,7 +184,5 @@ void GSMenu::Exit() {
 
 void GSMenu::Cleanup() {
     std::cout << "GSMenu: Cleanup" << std::endl;
-    m_backgroundObject.reset();
-    m_buttonObjects.clear();
-    m_camera2D.reset();
+    // SceneManager will be cleaned up by the next state or when destroyed
 } 

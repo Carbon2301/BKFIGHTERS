@@ -26,12 +26,125 @@ void SceneManager::DestroyInstance() {
 
 SceneManager::SceneManager() 
     : m_activeCameraIndex(-1) {
+    // Set default camera config
+    m_cameraConfig.aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
     CreateCamera();
     m_activeCameraIndex = 0;
 }
 
 SceneManager::~SceneManager() {
     Clear();
+}
+
+std::string SceneManager::GetSceneFileForState(StateType stateType) {
+    switch (stateType) {
+        case StateType::INTRO:
+            return "../Resources/Scenes/GSIntro.txt";
+        case StateType::MENU:
+            return "../Resources/Scenes/GSMenu.txt";
+        case StateType::PLAY:
+            return "../Resources/Scenes/GSPlay.txt";
+        default:
+            std::cout << "Unknown state type for scene loading: " << (int)stateType << std::endl;
+            return "";
+    }
+}
+
+bool SceneManager::LoadSceneForState(StateType stateType) {
+    std::string filepath = GetSceneFileForState(stateType);
+    if (filepath.empty()) {
+        return false;
+    }
+    
+    std::cout << "Loading scene for state: " << (int)stateType << std::endl;
+    return LoadFromFile(filepath);
+}
+
+bool SceneManager::ParseCameraConfig(std::ifstream& file, const std::string& line) {
+    std::string configLine;
+    
+    // Parse camera configuration
+    while (std::getline(file, configLine)) {
+        if (configLine.empty() || configLine[0] == '#') {
+            // If we hit another section or end, put the line back by seeking
+            std::streampos pos = file.tellg();
+            file.seekg(pos - (std::streamoff)(configLine.length() + 1));
+            break;
+        }
+        
+        if (configLine.find("TYPE") == 0) {
+            if (configLine.find("ORTHOGRAPHIC") != std::string::npos) {
+                m_cameraConfig.isOrthographic = true;
+            } else if (configLine.find("PERSPECTIVE") != std::string::npos) {
+                m_cameraConfig.isOrthographic = false;
+            }
+        }
+        else if (configLine.find("POSITION") == 0) {
+            sscanf(configLine.c_str(), "POSITION %f %f %f", 
+                &m_cameraConfig.position.x, &m_cameraConfig.position.y, &m_cameraConfig.position.z);
+        }
+        else if (configLine.find("TARGET") == 0) {
+            sscanf(configLine.c_str(), "TARGET %f %f %f", 
+                &m_cameraConfig.target.x, &m_cameraConfig.target.y, &m_cameraConfig.target.z);
+        }
+        else if (configLine.find("UP") == 0) {
+            sscanf(configLine.c_str(), "UP %f %f %f", 
+                &m_cameraConfig.up.x, &m_cameraConfig.up.y, &m_cameraConfig.up.z);
+        }
+        else if (configLine.find("FOV") == 0) {
+            sscanf(configLine.c_str(), "FOV %f", &m_cameraConfig.fov);
+        }
+        else if (configLine.find("NEAR") == 0) {
+            sscanf(configLine.c_str(), "NEAR %f", &m_cameraConfig.nearPlane);
+        }
+        else if (configLine.find("FAR") == 0) {
+            sscanf(configLine.c_str(), "FAR %f", &m_cameraConfig.farPlane);
+        }
+        else if (configLine.find("LEFT") == 0) {
+            sscanf(configLine.c_str(), "LEFT %f", &m_cameraConfig.left);
+        }
+        else if (configLine.find("RIGHT") == 0) {
+            sscanf(configLine.c_str(), "RIGHT %f", &m_cameraConfig.right);
+        }
+        else if (configLine.find("BOTTOM") == 0) {
+            sscanf(configLine.c_str(), "BOTTOM %f", &m_cameraConfig.bottom);
+        }
+        else if (configLine.find("TOP") == 0) {
+            sscanf(configLine.c_str(), "TOP %f", &m_cameraConfig.top);
+        }
+    }
+    
+    return true;
+}
+
+void SceneManager::SetupCameraFromConfig() {
+    Camera* activeCamera = GetActiveCamera();
+    if (!activeCamera) {
+        CreateCamera();
+        activeCamera = GetActiveCamera();
+    }
+    
+    if (activeCamera) {
+        // Set camera position and look direction
+        activeCamera->SetLookAt(m_cameraConfig.position, m_cameraConfig.target, m_cameraConfig.up);
+        
+        // Set projection based on config
+        if (m_cameraConfig.isOrthographic) {
+            activeCamera->SetOrthographic(
+                m_cameraConfig.left, m_cameraConfig.right,
+                m_cameraConfig.bottom, m_cameraConfig.top,
+                m_cameraConfig.nearPlane, m_cameraConfig.farPlane
+            );
+        } else {
+            activeCamera->SetPerspective(
+                m_cameraConfig.fov * (float)M_PI / 180.0f,
+                m_cameraConfig.aspect,
+                m_cameraConfig.nearPlane, m_cameraConfig.farPlane
+            );
+        }
+        
+        std::cout << "Camera configured: " << (m_cameraConfig.isOrthographic ? "Orthographic" : "Perspective") << std::endl;
+    }
 }
 
 bool SceneManager::LoadFromFile(const std::string& filepath) {
@@ -47,15 +160,26 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
     
     std::string line;
     int objectCount = 0;
+    bool hasCameraConfig = false;
 
+    // First pass - look for camera config and object count
     while (std::getline(file, line)) {
-        if (line.find("#ObjectCount") != std::string::npos) {
+        if (line.find("#Camera") != std::string::npos) {
+            ParseCameraConfig(file, line);
+            hasCameraConfig = true;
+        }
+        else if (line.find("#ObjectCount") != std::string::npos) {
             if (std::getline(file, line)) {
                 objectCount = std::stoi(line);
                 std::cout << "Loading " << objectCount << " objects..." << std::endl;
             }
             break;
         }
+    }
+    
+    // Setup camera if config was found
+    if (hasCameraConfig) {
+        SetupCameraFromConfig();
     }
     
     // Load objects  
@@ -219,145 +343,16 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
     Camera* activeCamera = GetActiveCamera();
     if (!activeCamera) return;
     
-    float moveSpeed = 0.1f;
-    
+    // Simplified 2D controls only
     switch(key) {
-        // Camera movement
-        case 'W':
-        case 'w':
-            activeCamera->MoveForward(-moveSpeed);
-            std::cout << "Camera moved forward" << std::endl;
-            break;
-        case 'S':
-        case 's':
-            activeCamera->MoveForward(moveSpeed);
-            std::cout << "Camera moved backward" << std::endl;
-            break;
-        case 'A':
-        case 'a':
-            activeCamera->MoveRight(-moveSpeed);
-            std::cout << "Camera moved left" << std::endl;
-            break;
-        case 'D':
-        case 'd':
-            activeCamera->MoveRight(moveSpeed);
-            std::cout << "Camera moved right" << std::endl;
-            break;
-        case 'Q':
-        case 'q':
-            activeCamera->MoveUp(moveSpeed);
-            std::cout << "Camera moved up" << std::endl;
-            break;
-        case 'E':
-        case 'e':
-            activeCamera->MoveUp(-moveSpeed);
-            std::cout << "Camera moved down" << std::endl;
-            break;
-             
-        case 'I':  // Look up
-        case 'i':
-            activeCamera->RotateX(-0.175f);
-            std::cout << "Camera look up" << std::endl;
-            break;
-        case 'K':  // Look down  
-        case 'k':
-            activeCamera->RotateX(0.175f);
-            std::cout << "Camera look down" << std::endl;
-            break;
-        case 'J':  // Look left
-        case 'j':
-            activeCamera->RotateY(-0.175f);
-            std::cout << "Camera look left" << std::endl;
-            break;
-        case 'L':  // Look right
-        case 'l':
-            activeCamera->RotateY(0.175f);
-            std::cout << "Camera look right" << std::endl;
-            break;
-        case 'U':  // Roll left
-        case 'u':
-            activeCamera->RotateZ(-0.175f);
-            std::cout << "Camera roll left" << std::endl;
-            break;
-        case 'O':  // Roll right
-        case 'o':
-            activeCamera->RotateZ(0.175f);
-            std::cout << "Camera roll right" << std::endl;
-            break;
-             
-        // Camera Zoom (using easier keys)
-        case 'Z':  // Zoom in
-        case 'z':
-            activeCamera->ZoomIn(0.9f);
-            std::cout << "Camera zoom in (FOV: " << activeCamera->GetFOV() * 180.0f / 3.14159f << " degrees)" << std::endl;
-            break;
-        case 'X':  // Zoom out
-        case 'x':
-            activeCamera->ZoomOut(1.1f);
-            std::cout << "Camera zoom out (FOV: " << activeCamera->GetFOV() * 180.0f / 3.14159f << " degrees)" << std::endl;
-            break;
-        case 'C':  // Reset zoom to 45 degrees
-        case 'c':
-            activeCamera->SetZoom(45.0f);
-            std::cout << "Camera zoom reset (FOV: 45 degrees)" << std::endl;
-            break;
-            
-        //ORBIT CAMERA CONTROLS
-        case 'F':
-        case 'f':
-            activeCamera->OrbitHorizontal(0.1f);
-            std::cout << "Orbit camera left around target" << std::endl;
-            break;
-        case 'H':
-        case 'h':
-            activeCamera->OrbitHorizontal(-0.1f);
-            std::cout << "Orbit camera right around target" << std::endl;
-            break;
-        case 'G':
-        case 'g':
-            activeCamera->OrbitVertical(0.1f);
-            std::cout << "Orbit camera up around target" << std::endl;
-            break;
-        case 'B':
-        case 'b':
-            activeCamera->OrbitVertical(-0.1f);
-            std::cout << "Orbit camera down around target" << std::endl;
-            break;
-        case 'N':
-        case 'n':
-            activeCamera->OrbitDistance(-0.3f);
-            std::cout << "Orbit zoom in (closer to target)" << std::endl;
-            break;
-        case 'M':
-        case 'm':
-            activeCamera->OrbitDistance(0.3f);
-            std::cout << "Orbit zoom out (farther from target)" << std::endl;
-            break;
-             
-        // Scene controls
         case 'R':
         case 'r':
             std::cout << "=== Scene Info ===" << std::endl;
             std::cout << "Camera Position: (" << activeCamera->GetPosition().x << ", " << activeCamera->GetPosition().y << ", " << activeCamera->GetPosition().z << ")" << std::endl;
             std::cout << "Objects: " << m_objects.size() << std::endl;
-            std::cout << "\n=== Controls ===" << std::endl;
-            std::cout << "WASD - Move camera" << std::endl;
-            std::cout << "QE - Camera up/down" << std::endl;
-            std::cout << "IJKL - Look up/left/down/right" << std::endl;
-            std::cout << "UO - Roll left/right" << std::endl;
-            std::cout << "ZX - Zoom in/out" << std::endl;
-            std::cout << "C - Reset zoom" << std::endl;
-            std::cout << "\n=== ORBIT CAMERA ===" << std::endl;
-            std::cout << "FH - Orbit left/right around target" << std::endl;
-            std::cout << "GB - Orbit up/down around target" << std::endl;
-            std::cout << "NM - Orbit zoom in/out" << std::endl;
-            std::cout << "\n=== PROJECTION MODES ===" << std::endl;
-            std::cout << "1 - Orthographic projection (Song song)" << std::endl;
-            std::cout << "2 - Perspective projection (Phoi canh)" << std::endl;
-            std::cout << "P - Toggle projection type" << std::endl;
-            std::cout << "\n=== Other ===" << std::endl;
+            std::cout << "\n=== 2D Controls ===" << std::endl;
             std::cout << "R - Show scene info" << std::endl;
-            std::cout << "T - Toggle auto-rotation (default: OFF)" << std::endl;
+            std::cout << "T - Toggle auto-rotation" << std::endl;
             break;
             
         case 'T':
@@ -366,26 +361,7 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
             for (auto& obj : m_objects) {
                 obj->ToggleAutoRotation();
             }
-            std::cout << "Toggled auto-rotation for all objects (default: OFF)" << std::endl;
-            break;
-            
-        //Projection Type Controls
-        case '1':
-            activeCamera->SetProjectionType(ProjectionType::ORTHOGRAPHIC);
-            std::cout << "Switched to ORTHOGRAPHIC projection (Parallel/Song song)" << std::endl;
-            break;
-        case '2':
-            activeCamera->SetProjectionType(ProjectionType::PERSPECTIVE);
-            std::cout << "Switched to PERSPECTIVE projection (Phoi canh)" << std::endl;
-            break;
-        case 'P':
-        case 'p':
-            activeCamera->ToggleProjectionType();
-            if (activeCamera->GetProjectionType() == ProjectionType::ORTHOGRAPHIC) {
-                std::cout << "Toggled to ORTHOGRAPHIC projection (Parallel/Song song)" << std::endl;
-            } else {
-                std::cout << "Toggled to PERSPECTIVE projection (Phoi canh)" << std::endl;
-            }
+            std::cout << "Toggled auto-rotation for all objects" << std::endl;
             break;
     }
 }

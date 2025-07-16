@@ -1,6 +1,0 @@
-# Scene Manager Configuration for 2D Game State Machine
-# Objects will be managed by individual game states
-# This file is kept for compatibility but not actively used
-
-#ObjectCount 0
-0 

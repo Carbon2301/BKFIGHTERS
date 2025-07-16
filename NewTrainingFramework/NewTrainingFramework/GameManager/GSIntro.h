@@ -1,13 +1,9 @@
 #pragma once
 #include "GameStateBase.h"
-#include "../GameObject/Object.h"
-#include "../GameObject/Camera.h"
-#include <memory>
+#include "SceneManager.h"
 
 class GSIntro : public GameStateBase {
 private:
-    std::unique_ptr<Object> m_backgroundObject;
-    std::unique_ptr<Camera> m_camera2D;
     float m_loadingTimer;
     float m_loadingDuration;
     

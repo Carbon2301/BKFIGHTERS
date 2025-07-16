@@ -1,17 +1,13 @@
 #pragma once
 #include "GameStateBase.h"
-#include "../GameObject/Object.h"
-#include "../GameObject/Camera.h"
-#include <memory>
-#include <vector>
+#include "SceneManager.h"
 
 class GSPlay : public GameStateBase {
 private:
-    std::unique_ptr<Object> m_backgroundObject;
-    std::unique_ptr<Object> m_menuButton;
-    std::unique_ptr<Camera> m_camera2D;
-    
     float m_gameTime;
+    
+    // Menu button object ID in scene (must match scene config)
+    static const int MENU_BUTTON_ID = 301;
     
 public:
     GSPlay();
