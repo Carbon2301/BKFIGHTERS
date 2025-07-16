@@ -1,5 +1,4 @@
 # GSIntro Scene Configuration
-# Loading screen scene with 2D orthographic camera
 
 #Camera
 TYPE ORTHOGRAPHIC
@@ -15,7 +14,7 @@ FAR 100.0
 
 #ObjectCount 1
 
-# Background/Loading screen object (flipped Y to fix upside down)
+# Background/Loading screen object
 ID 0
 MODEL_ID 0
 TEXTURE_ID 0

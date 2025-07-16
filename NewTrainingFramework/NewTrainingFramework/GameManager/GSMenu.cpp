@@ -47,9 +47,9 @@ void GSMenu::Init() {
         
         // Create button objects
         Vector3 buttonPositions[BUTTON_COUNT] = {
-            Vector3(0.0f, 0.2f, 0.0f),    // PLAY
-            Vector3(0.0f, -0.1f, 0.0f),   // HELP  
-            Vector3(0.0f, -0.4f, 0.0f)    // CLOSE
+            Vector3(0.0f, 0.5f, 0.0f),    // PLAY
+            Vector3(0.0f, 0.0f, 0.0f),    // HELP  
+            Vector3(0.0f, -0.5f, 0.0f)    // CLOSE
         };
         
         int buttonIds[BUTTON_COUNT] = { BUTTON_ID_PLAY, BUTTON_ID_HELP, BUTTON_ID_CLOSE };
@@ -61,7 +61,7 @@ void GSMenu::Init() {
                 button->SetTexture(2 + i, 0); // btn_play, btn_help, btn_close
                 button->SetShader(0);
                 button->SetPosition(buttonPositions[i]);
-                button->SetScale(Vector3(0.3f, 0.15f, 1.0f));
+                button->SetScale(Vector3(0.4f, 0.2f, 1.0f));
             }
         }
     }
@@ -94,10 +94,10 @@ void GSMenu::Update(float deltaTime) {
             if (i == m_selectedButton) {
                 // Selected button pulses
                 float pulse = 1.0f + 0.2f * sin(m_buttonTimer * 4.0f);
-                button->SetScale(Vector3(0.3f * pulse, 0.15f * pulse, 1.0f));
+                button->SetScale(Vector3(0.4f * pulse, 0.2f * pulse, 1.0f));
             } else {
                 // Non-selected buttons stay normal size
-                button->SetScale(Vector3(0.3f, 0.15f, 1.0f));
+                button->SetScale(Vector3(0.4f, 0.2f, 1.0f));
             }
         }
     }

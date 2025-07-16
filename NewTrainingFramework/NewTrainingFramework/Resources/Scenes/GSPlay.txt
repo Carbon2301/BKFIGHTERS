@@ -1,5 +1,4 @@
 # GSPlay Scene Configuration
-# Gameplay scene with 2D orthographic camera
 
 #Camera
 TYPE ORTHOGRAPHIC
@@ -15,7 +14,7 @@ FAR 100.0
 
 #ObjectCount 2
 
-# Gameplay background (flipped Y to fix upside down)
+# Gameplay background
 ID 300
 MODEL_ID 0
 TEXTURE_ID 1
@@ -24,7 +23,7 @@ POS 0.0 0.0 -0.1
 ROTATION 0.0 0.0 0.0
 SCALE 2.5 -2.5 1.0
 
-# Menu button (top-right corner, larger for better visibility)
+# Menu button
 ID 301
 MODEL_ID 0
 TEXTURE_ID 4

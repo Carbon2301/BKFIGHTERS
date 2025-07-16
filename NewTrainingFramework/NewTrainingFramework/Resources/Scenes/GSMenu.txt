@@ -1,5 +1,4 @@
 # GSMenu Scene Configuration  
-# Main menu scene with 2D orthographic camera
 
 #Camera
 TYPE ORTHOGRAPHIC
@@ -15,7 +14,7 @@ FAR 100.0
 
 #ObjectCount 4
 
-# Background object (flipped Y to fix upside down)
+# Background object
 ID 200
 MODEL_ID 0
 TEXTURE_ID 0
@@ -24,29 +23,29 @@ POS 0.0 0.0 -0.1
 ROTATION 0.0 0.0 0.0
 SCALE 2.5 -2.5 1.0
 
-# Play Button (moved higher)
+# Play Button
 ID 201
 MODEL_ID 0
 TEXTURE_ID 2
 SHADER_ID 0
-POS 0.0 0.5 0.0
+POS 0.0 1.0 0.0
 ROTATION 0.0 0.0 0.0
-SCALE 0.4 0.2 1.0
+SCALE 0.15 0.08 0.09 
 
-# Help Button (centered)
+# Help Button
 ID 202
 MODEL_ID 0
 TEXTURE_ID 3
 SHADER_ID 0
 POS 0.0 0.0 0.0
 ROTATION 0.0 0.0 0.0
-SCALE 0.4 0.2 1.0
+SCALE 0.15 0.08 0.09 
 
-# Close Button (moved lower)
+# Close Button
 ID 203
 MODEL_ID 0
 TEXTURE_ID 4
 SHADER_ID 0
-POS 0.0 -0.5 0.0
+POS 0.0 -1.0 0.0
 ROTATION 0.0 0.0 0.0
-SCALE 0.4 0.2 1.0 
+SCALE 0.15 0.08 0.09 
