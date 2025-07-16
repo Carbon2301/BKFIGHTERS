@@ -94,6 +94,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GameObject\Camera.cpp" />
+    <ClCompile Include="GameObject\GameButton.cpp" />
     <ClCompile Include="GameObject\Model.cpp" />
     <ClCompile Include="Core\NewTrainingFramework.cpp" />
     <ClCompile Include="GameObject\Object.cpp" />
@@ -113,6 +114,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameObject\Camera.h" />
+    <ClInclude Include="GameObject\GameButton.h" />
+    <ClInclude Include="GameObject\ButtonExample.h" />
     <ClInclude Include="Core\Globals.h" />
     <ClInclude Include="GameObject\Model.h" />
     <ClInclude Include="GameObject\Object.h" />

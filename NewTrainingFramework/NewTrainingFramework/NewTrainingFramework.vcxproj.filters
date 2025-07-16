@@ -53,6 +53,9 @@
     <ClCompile Include="GameObject\Object.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
+    <ClCompile Include="GameObject\GameButton.cpp">
+      <Filter>GameObject</Filter>
+    </ClCompile>
     <ClCompile Include="GameObject\Model.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
@@ -106,6 +109,12 @@
     
     <!-- GameObject Headers -->
     <ClInclude Include="GameObject\Object.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject\GameButton.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject\ButtonExample.h">
       <Filter>GameObject</Filter>
     </ClInclude>
     <ClInclude Include="GameObject\Model.h">

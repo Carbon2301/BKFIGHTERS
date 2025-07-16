@@ -26,8 +26,7 @@ void SceneManager::DestroyInstance() {
 
 SceneManager::SceneManager() 
     : m_activeCameraIndex(-1) {
-    // Set default camera config
-    m_cameraConfig.aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+    // Create default 2D camera
     CreateCamera();
     m_activeCameraIndex = 0;
 }
@@ -39,11 +38,11 @@ SceneManager::~SceneManager() {
 std::string SceneManager::GetSceneFileForState(StateType stateType) {
     switch (stateType) {
         case StateType::INTRO:
-            return "../Resources/Scenes/GSIntro.txt";
+            return "Resources/Scenes/GSIntro.txt";
         case StateType::MENU:
-            return "../Resources/Scenes/GSMenu.txt";
+            return "Resources/Scenes/GSMenu.txt";
         case StateType::PLAY:
-            return "../Resources/Scenes/GSPlay.txt";
+            return "Resources/Scenes/GSPlay.txt";
         default:
             std::cout << "Unknown state type for scene loading: " << (int)stateType << std::endl;
             return "";
@@ -72,14 +71,7 @@ bool SceneManager::ParseCameraConfig(std::ifstream& file, const std::string& lin
             break;
         }
         
-        if (configLine.find("TYPE") == 0) {
-            if (configLine.find("ORTHOGRAPHIC") != std::string::npos) {
-                m_cameraConfig.isOrthographic = true;
-            } else if (configLine.find("PERSPECTIVE") != std::string::npos) {
-                m_cameraConfig.isOrthographic = false;
-            }
-        }
-        else if (configLine.find("POSITION") == 0) {
+        if (configLine.find("POSITION") == 0) {
             sscanf(configLine.c_str(), "POSITION %f %f %f", 
                 &m_cameraConfig.position.x, &m_cameraConfig.position.y, &m_cameraConfig.position.z);
         }
@@ -88,11 +80,8 @@ bool SceneManager::ParseCameraConfig(std::ifstream& file, const std::string& lin
                 &m_cameraConfig.target.x, &m_cameraConfig.target.y, &m_cameraConfig.target.z);
         }
         else if (configLine.find("UP") == 0) {
-            sscanf(configLine.c_str(), "UP %f %f %f", 
-                &m_cameraConfig.up.x, &m_cameraConfig.up.y, &m_cameraConfig.up.z);
-        }
-        else if (configLine.find("FOV") == 0) {
-            sscanf(configLine.c_str(), "FOV %f", &m_cameraConfig.fov);
+            // Ignore UP vector input, force 2D up vector (0,1,0)
+            m_cameraConfig.up = Vector3(0.0f, 1.0f, 0.0f);
         }
         else if (configLine.find("NEAR") == 0) {
             sscanf(configLine.c_str(), "NEAR %f", &m_cameraConfig.nearPlane);
@@ -125,25 +114,17 @@ void SceneManager::SetupCameraFromConfig() {
     }
     
     if (activeCamera) {
-        // Set camera position and look direction
+        // Set camera position and look direction (2D)
         activeCamera->SetLookAt(m_cameraConfig.position, m_cameraConfig.target, m_cameraConfig.up);
         
-        // Set projection based on config
-        if (m_cameraConfig.isOrthographic) {
-            activeCamera->SetOrthographic(
-                m_cameraConfig.left, m_cameraConfig.right,
-                m_cameraConfig.bottom, m_cameraConfig.top,
-                m_cameraConfig.nearPlane, m_cameraConfig.farPlane
-            );
-        } else {
-            activeCamera->SetPerspective(
-                m_cameraConfig.fov * (float)M_PI / 180.0f,
-                m_cameraConfig.aspect,
-                m_cameraConfig.nearPlane, m_cameraConfig.farPlane
-            );
-        }
+        // 2D-only: Always use orthographic projection
+        activeCamera->SetOrthographic(
+            m_cameraConfig.left, m_cameraConfig.right,
+            m_cameraConfig.bottom, m_cameraConfig.top,
+            m_cameraConfig.nearPlane, m_cameraConfig.farPlane
+        );
         
-        std::cout << "Camera configured: " << (m_cameraConfig.isOrthographic ? "Orthographic" : "Perspective") << std::endl;
+        std::cout << "Camera configured: 2D Orthographic" << std::endl;
     }
 }
 
@@ -169,9 +150,32 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
             hasCameraConfig = true;
         }
         else if (line.find("#ObjectCount") != std::string::npos) {
-            if (std::getline(file, line)) {
-                objectCount = std::stoi(line);
-                std::cout << "Loading " << objectCount << " objects..." << std::endl;
+            // Extract number from the same line: "#ObjectCount 4"
+            size_t spacePos = line.find(' ');
+            if (spacePos != std::string::npos) {
+                std::string countStr = line.substr(spacePos + 1);
+                // Trim whitespace
+                countStr.erase(0, countStr.find_first_not_of(" \t\r\n"));
+                countStr.erase(countStr.find_last_not_of(" \t\r\n") + 1);
+                
+                try {
+                    if (!countStr.empty()) {
+                        objectCount = std::stoi(countStr);
+                        std::cout << "Loading " << objectCount << " objects..." << std::endl;
+                    } else {
+                        std::cout << "Error: No object count specified after #ObjectCount" << std::endl;
+                        objectCount = 0;
+                    }
+                } catch (const std::invalid_argument& e) {
+                    std::cout << "Error: Invalid object count format: '" << countStr << "'" << std::endl;
+                    objectCount = 0;
+                } catch (const std::out_of_range& e) {
+                    std::cout << "Error: Object count out of range: '" << countStr << "'" << std::endl;
+                    objectCount = 0;
+                }
+            } else {
+                std::cout << "Error: Invalid #ObjectCount format, expected: #ObjectCount <number>" << std::endl;
+                objectCount = 0;
             }
             break;
         }
@@ -281,10 +285,10 @@ void SceneManager::RemoveAllObjects() {
 
 Camera* SceneManager::CreateCamera() {
     auto camera = std::make_unique<Camera>();
-    // Set default camera for our screen resolution
+    // Set default 2D orthographic camera
     float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
-    camera->SetPerspective(45.0f * (float)M_PI / 180.0f, aspect, 0.1f, 100.0f);
-    camera->SetLookAt(Vector3(0.0f, 0.5f, 3.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+    camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+    camera->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
     
     Camera* cameraPtr = camera.get();
     m_cameras.push_back(std::move(camera));

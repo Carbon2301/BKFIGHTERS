@@ -511,35 +511,7 @@ Matrix & Matrix::SetTranslation( Vector3 &vec )
 	return *this;
 }
 
-Matrix & Matrix::SetPerspective(GLfloat fovY, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane)
-{
-	GLfloat height = 2.0f * nearPlane * tanf(fovY * 0.5f);
-	GLfloat width = height * aspect;
-	GLfloat n2 = 2.0f * nearPlane;
-	GLfloat rcpnmf = 1.f / (nearPlane - farPlane);
-
-	m[0][0] = n2 / width;	
-	m[1][0] = 0;
-	m[2][0] = 0;
-	m[3][0] = 0;
-
-	m[0][1] = 0;
-	m[1][1] = n2 / height;
-	m[2][1] = 0;
-	m[3][1] = 0;
-
-	m[0][2] = 0;
-	m[1][2] = 0;
-	m[2][2] = (farPlane + nearPlane) * rcpnmf;	
-	m[3][2] = farPlane * rcpnmf * n2;
-
-	m[0][3] = 0;
-	m[1][3] = 0;
-	m[2][3] = -1.f;
-	m[3][3] = 0;
-
-	return *this;
-}
+// SetPerspective removed - 2D engine uses orthographic projection only
 
 Matrix & Matrix::SetOrthographic(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearPlane, GLfloat farPlane)
 {

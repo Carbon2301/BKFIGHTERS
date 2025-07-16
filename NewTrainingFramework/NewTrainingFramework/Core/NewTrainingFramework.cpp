@@ -27,9 +27,9 @@ int Init(ESContext* esContext)
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
-	// Enable depth testing (still needed for proper rendering)
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
+	// 2D rendering - depth testing not needed
+	// glEnable(GL_DEPTH_TEST);  // Disabled for 2D-only engine
+	// glDepthFunc(GL_LEQUAL);   // Disabled for 2D-only engine
 
 	std::cout << "\n=== 2D Game Engine with State Machine ===" << std::endl;
 	std::cout << "Initializing New Training Framework Engine..." << std::endl;
@@ -63,7 +63,7 @@ int Init(ESContext* esContext)
 
 void Draw(ESContext* esContext)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);  // 2D-only: No depth buffer clearing needed
 
 	// Use Game State Machine for rendering (2D-only)
 	if (g_gameStateMachine) {
@@ -116,7 +116,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	esInitContext ( &esContext );
 
-	esCreateWindow ( &esContext, "New Training Framework - Engine Architecture", Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB | ES_WINDOW_DEPTH);
+	esCreateWindow ( &esContext, "New Training Framework - 2D Engine", Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB);  // 2D-only: No depth buffer needed
 
 	if ( Init ( &esContext ) != 0 )
 		return 0;

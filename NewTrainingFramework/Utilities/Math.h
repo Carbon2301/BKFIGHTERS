@@ -148,7 +148,7 @@ public:
 	Matrix & SetTranslation(GLfloat *pTrans);
 	Matrix & SetTranslation(Vector3 &vec);
 
-	Matrix & SetPerspective(GLfloat fovY, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane);
+	// Removed SetPerspective - 2D engine uses orthographic only
 	Matrix & SetOrthographic(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearPlane, GLfloat farPlane);
 	Matrix & SetLookAt(Vector3 &eye, Vector3 &target, Vector3 &up);
 

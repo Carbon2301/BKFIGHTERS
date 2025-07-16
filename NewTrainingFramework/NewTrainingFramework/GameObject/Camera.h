@@ -1,27 +1,16 @@
 #pragma once
 #include "../../Utilities/Math.h"
 
-enum class ProjectionType {
-    PERSPECTIVE,
-    ORTHOGRAPHIC
-};
-
 class Camera {
 private:
-    // Camera parameters
-    Vector3 m_position;
-    Vector3 m_target;
-    Vector3 m_up;
+    // 2D Camera parameters (simplified)
+    Vector3 m_position;  // Only x,y used for 2D, z for depth ordering
+    Vector3 m_target;    // Only x,y used for 2D
+    Vector3 m_up;        // Fixed to (0,1,0) for 2D
     
-    // Projection parameters
-    ProjectionType m_projectionType;
-    float m_fov;       
-    float m_aspect;     
-    float m_nearPlane;  
-    float m_farPlane; 
-    
-    // Orthographic projection parameters
+    // 2D Orthographic projection parameters only
     float m_left, m_right, m_bottom, m_top;
+    float m_nearPlane, m_farPlane;
     
     // Cached matrices
     Matrix m_viewMatrix;
@@ -42,53 +31,30 @@ public:
     Camera(const Vector3& position, const Vector3& target, const Vector3& up);
     ~Camera();
     
+    // 2D positioning only
     void SetPosition(const Vector3& position);
     void SetTarget(const Vector3& target);
-    void SetUp(const Vector3& up);
     void SetLookAt(const Vector3& position, const Vector3& target, const Vector3& up);
     
-    void MoveForward(float distance);
-    void MoveRight(float distance);
-    void MoveUp(float distance);
-    void Translate(const Vector3& offset);
+    // Simple 2D movement (x,y only)
+    void Move2D(float deltaX, float deltaY);
+    void SetPosition2D(float x, float y);
     
-    void RotateX(float angleRadians);
-    void RotateY(float angleRadians);
-    void RotateZ(float angleRadians);
-    
-    // Move camera around target
-    void OrbitHorizontal(float angleRadians);
-    void OrbitVertical(float angleRadians);
-    void OrbitDistance(float deltaDistance);
-    void SetOrbitDistance(float distance);
-    
-    void ZoomIn(float factor = 0.9f);
-    void ZoomOut(float factor = 1.1f);
-    void SetZoom(float fovDegrees);
-    
-    void SetPerspective(float fov, float aspect, float nearPlane, float farPlane);
+    // 2D Orthographic projection only
     void SetOrthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane);
     
-    // Projection type switching
-    void SetProjectionType(ProjectionType type);
-    void ToggleProjectionType();
-    ProjectionType GetProjectionType() const { return m_projectionType; }
-    
+    // Matrix getters
     const Matrix& GetViewMatrix();
     const Matrix& GetProjectionMatrix();
     const Matrix& GetViewProjectionMatrix();
     
-    // Parameter getters
+    // Parameter getters (simplified)
     const Vector3& GetPosition() const { return m_position; }
     const Vector3& GetTarget() const { return m_target; }
-    const Vector3& GetUp() const { return m_up; }
-    float GetFOV() const { return m_fov; }
-    float GetAspect() const { return m_aspect; }
+    float GetLeft() const { return m_left; }
+    float GetRight() const { return m_right; }
+    float GetBottom() const { return m_bottom; }
+    float GetTop() const { return m_top; }
     float GetNearPlane() const { return m_nearPlane; }
     float GetFarPlane() const { return m_farPlane; }
-    
-    // Utility methods
-    Vector3 GetForwardVector() const;
-    Vector3 GetRightVector() const;
-    Vector3 GetUpVector() const;
 }; 

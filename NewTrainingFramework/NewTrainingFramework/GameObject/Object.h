@@ -51,6 +51,10 @@ public:
     void SetScale(float x, float y, float z);
     void SetScale(float uniform);
     
+    // 2D helper methods (simple wrappers)
+    void SetSize(float width, float height) { SetScale(width, height, 1.0f); }
+    void Set2DPosition(float x, float y) { SetPosition(x, y, m_position.z); }
+    
     const Vector3& GetPosition() const { return m_position; }
     const Vector3& GetRotation() const { return m_rotation; }
     const Vector3& GetScale() const { return m_scale; }

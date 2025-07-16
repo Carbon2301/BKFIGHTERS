@@ -15,20 +15,20 @@ FAR 100.0
 
 #ObjectCount 2
 
-# Gameplay background
+# Gameplay background (flipped Y to fix upside down)
 ID 300
 MODEL_ID 0
 TEXTURE_ID 1
 SHADER_ID 0
 POS 0.0 0.0 -0.1
 ROTATION 0.0 0.0 0.0
-SCALE 2.5 2.5 1.0
+SCALE 2.5 -2.5 1.0
 
-# Menu button (top-right corner)
+# Menu button (top-right corner, larger for better visibility)
 ID 301
 MODEL_ID 0
 TEXTURE_ID 4
 SHADER_ID 0
 POS 1.2 0.8 0.0
 ROTATION 0.0 0.0 0.0
-SCALE 0.2 0.1 1.0 
+SCALE 0.3 0.15 1.0 
