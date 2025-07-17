@@ -15,15 +15,12 @@ void GSPlay::Init() {
     std::cout << "=== GAMEPLAY MODE ===" << std::endl;
     std::cout << "Game started! Press ESC or M to return to menu" << std::endl;
     
-    // Enable blending for transparent textures
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    // Load scene using SceneManager
     SceneManager* sceneManager = SceneManager::GetInstance();
     if (!sceneManager->LoadSceneForState(StateType::PLAY)) {
         std::cout << "Failed to load play scene!" << std::endl;
-        // Fallback: create default scene manually if config file fails
         sceneManager->Clear();
         
         // Create default 2D camera
@@ -72,13 +69,11 @@ void GSPlay::Update(float deltaTime) {
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Đặt scale cố định cho menuButton, không còn hiệu ứng pulse
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
     if (menuButton) {
         menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
     }
     
-    // Show gameplay time every 5 seconds
     static float lastTimeShow = 0.0f;
     if (m_gameTime - lastTimeShow > 5.0f) {
         std::cout << "Game time: " << (int)m_gameTime << " seconds" << std::endl;
@@ -87,7 +82,6 @@ void GSPlay::Update(float deltaTime) {
 }
 
 void GSPlay::Draw() {
-    // Use SceneManager to draw all objects
     SceneManager::GetInstance()->Draw();
 }
 
@@ -107,7 +101,6 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             std::cout << "ChangeState() called successfully!" << std::endl;
             break;
             
-        // Demo movement controls
         case 'W':
         case 'w':
             std::cout << "Move up (demo)" << std::endl;
@@ -131,6 +124,17 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
 }
 
+void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {
+    if (bIsPressed) {
+        std::cout << "GSPlay: Mouse click at (" << x << ", " << y << ")" << std::endl;
+        // Add game-specific mouse click logic here
+    }
+}
+
+void GSPlay::HandleMouseMove(int x, int y) {
+    // std::cout << "GSPlay: Mouse moved to (" << x << ", " << y << ")" << std::endl;
+}
+
 void GSPlay::Resume() {
     std::cout << "GSPlay: Resume (Back to Game)" << std::endl;
     std::cout << "Welcome back to the game!" << std::endl;
@@ -149,5 +153,4 @@ void GSPlay::Exit() {
 void GSPlay::Cleanup() {
     std::cout << "GSPlay: Cleanup" << std::endl;
     std::cout << "Final game time: " << (int)m_gameTime << " seconds" << std::endl;
-    // SceneManager will be cleaned up by the next state or when destroyed
 } 

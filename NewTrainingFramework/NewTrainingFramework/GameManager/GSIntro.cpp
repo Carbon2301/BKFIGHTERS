@@ -15,18 +15,14 @@ void GSIntro::Init() {
     std::cout << "=== LOADING SCREEN ===" << std::endl;
     std::cout << "Initializing resources..." << std::endl;
     
-    // Enable blending for transparent textures
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    // Load scene using SceneManager
     SceneManager* sceneManager = SceneManager::GetInstance();
     if (!sceneManager->LoadSceneForState(StateType::INTRO)) {
         std::cout << "Failed to load intro scene!" << std::endl;
-        // Fallback: create default scene manually if config file fails
         sceneManager->Clear();
         
-        // Create default 2D camera
         Camera* camera = sceneManager->CreateCamera();
         if (camera) {
             float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
@@ -35,7 +31,6 @@ void GSIntro::Init() {
             sceneManager->SetActiveCamera(0);
         }
         
-        // Create default background object
         Object* backgroundObj = sceneManager->CreateObject(0);
         if (backgroundObj) {
             backgroundObj->SetModel(0);    // Sprite2D model
@@ -56,7 +51,6 @@ void GSIntro::Update(float deltaTime) {
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Show loading progress
     static float lastProgressTime = 0.0f;
     if (m_loadingTimer - lastProgressTime > 0.5f) {
         float progress = (m_loadingTimer / m_loadingDuration) * 100.0f;
@@ -65,7 +59,6 @@ void GSIntro::Update(float deltaTime) {
         lastProgressTime = m_loadingTimer;
     }
     
-    // Auto-transition to menu after loading is complete
     if (m_loadingTimer >= m_loadingDuration) {
         std::cout << "Loading complete! Transitioning to main menu..." << std::endl;
         GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
@@ -73,18 +66,27 @@ void GSIntro::Update(float deltaTime) {
 }
 
 void GSIntro::Draw() {
-    // Use SceneManager to draw all objects
     SceneManager::GetInstance()->Draw();
 }
 
 void GSIntro::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (bIsPressed) {
-        // Allow skipping loading screen with any key
         if (key != 0) {
             std::cout << "Loading skipped by user input" << std::endl;
             GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
         }
     }
+}
+
+void GSIntro::HandleMouseEvent(int x, int y, bool bIsPressed) {
+    if (bIsPressed) {
+        std::cout << "Loading skipped by mouse click at (" << x << ", " << y << ")" << std::endl;
+        GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
+    }
+}
+
+void GSIntro::HandleMouseMove(int x, int y) {
+    // std::cout << "Mouse moved to (" << x << ", " << y << ")" << std::endl;
 }
 
 void GSIntro::Resume() {
@@ -101,5 +103,4 @@ void GSIntro::Exit() {
 
 void GSIntro::Cleanup() {
     std::cout << "GSIntro: Cleanup" << std::endl;
-    // SceneManager will be cleaned up by the next state or when destroyed
 } 

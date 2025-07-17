@@ -172,6 +172,21 @@ void ESUTIL_API esRegisterKeyFunc ( ESContext *esContext,
    esContext->keyFunc = keyFunc;
 }
 
+//  esRegisterMouseFunc()
+
+void ESUTIL_API esRegisterMouseFunc ( ESContext *esContext,
+                                      void (ESCALLBACK *mouseFunc) (ESContext*, int, int, bool ) )
+{
+   esContext->mouseFunc = mouseFunc;
+}
+
+//  esRegisterMouseMoveFunc()
+
+void ESUTIL_API esRegisterMouseMoveFunc ( ESContext *esContext,
+                                          void (ESCALLBACK *mouseMoveFunc) (ESContext*, int, int ) )
+{
+   esContext->mouseMoveFunc = mouseMoveFunc;
+}
 
 
 // esLogMessage()

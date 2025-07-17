@@ -30,6 +30,8 @@ public:
     void Update(float deltaTime);
     void Draw();
     void HandleKeyEvent(unsigned char key, bool bIsPressed);
+    void HandleMouseEvent(int x, int y, bool bIsPressed);
+    void HandleMouseMove(int x, int y);
 
     // Utilities
     GameStateBase* CurrentState();

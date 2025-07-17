@@ -13,7 +13,6 @@ private:
         BUTTON_COUNT = 3
     };
     
-    // Button object IDs in scene (must match scene config)
     static const int BUTTON_ID_PLAY = 201;
     static const int BUTTON_ID_HELP = 202;
     static const int BUTTON_ID_CLOSE = 203;
@@ -26,6 +25,8 @@ public:
     void Update(float deltaTime) override;
     void Draw() override;
     void HandleKeyEvent(unsigned char key, bool bIsPressed) override;
+    void HandleMouseEvent(int x, int y, bool bIsPressed) override;
+    void HandleMouseMove(int x, int y) override;
     void Resume() override;
     void Pause() override;
     void Exit() override;

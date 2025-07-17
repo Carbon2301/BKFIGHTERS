@@ -15,18 +15,14 @@ void GSMenu::Init() {
     std::cout << "=== MAIN MENU ===" << std::endl;
     std::cout << "Welcome to the Game!" << std::endl;
     
-    // Enable blending for transparent textures
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    // Load scene using SceneManager
     SceneManager* sceneManager = SceneManager::GetInstance();
     if (!sceneManager->LoadSceneForState(StateType::MENU)) {
         std::cout << "Failed to load menu scene!" << std::endl;
-        // Fallback: create default scene manually if config file fails
         sceneManager->Clear();
         
-        // Create default 2D camera
         Camera* camera = sceneManager->CreateCamera();
         if (camera) {
             float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
@@ -35,7 +31,6 @@ void GSMenu::Init() {
             sceneManager->SetActiveCamera(0);
         }
         
-        // Create default objects manually as fallback
         Object* backgroundObj = sceneManager->CreateObject(200);
         if (backgroundObj) {
             backgroundObj->SetModel(0);
@@ -58,7 +53,7 @@ void GSMenu::Init() {
             Object* button = sceneManager->CreateObject(buttonIds[i]);
             if (button) {
                 button->SetModel(0);
-                button->SetTexture(2 + i, 0); // btn_play, btn_help, btn_close
+                button->SetTexture(2 + i, 0);
                 button->SetShader(0);
                 button->SetPosition(buttonPositions[i]);
                 button->SetScale(Vector3(0.4f, 0.2f, 1.0f));
@@ -76,11 +71,9 @@ void GSMenu::Update(float deltaTime) {
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Button highlighting removed - using direct key mapping instead of navigation
 }
 
 void GSMenu::Draw() {
-    // Use SceneManager to draw all objects
     SceneManager::GetInstance()->Draw();
 }
 
@@ -120,9 +113,20 @@ void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             
         case 27: // ESC
             std::cout << "Exit game requested" << std::endl;
-            // You can add exit logic here
             break;
     }
+}
+
+void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
+    if (bIsPressed) {
+        std::cout << "Mouse click at (" << x << ", " << y << ")" << std::endl;
+        // Add button click detection logic here
+        // For now, just show coordinates
+    }
+}
+
+void GSMenu::HandleMouseMove(int x, int y) {
+    // std::cout << "Mouse moved to (" << x << ", " << y << ")" << std::endl;
 }
 
 void GSMenu::HandleButtonSelection() {
@@ -149,5 +153,4 @@ void GSMenu::Exit() {
 
 void GSMenu::Cleanup() {
     std::cout << "GSMenu: Cleanup" << std::endl;
-    // SceneManager will be cleaned up by the next state or when destroyed
 } 

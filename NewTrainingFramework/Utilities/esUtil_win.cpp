@@ -8,6 +8,7 @@
 LRESULT WINAPI ESWindowProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam ) 
 {
    LRESULT  lRet = 1; 
+   static POINT WDpoint = {0, 0}; // Window position for relative mouse coordinates
 
    switch (uMsg) 
    { 
@@ -46,6 +47,46 @@ LRESULT WINAPI ESWindowProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				  esContext->keyFunc ( esContext, (unsigned char) wParam, false );
 		  }
 		  break;
+
+      case WM_LBUTTONDOWN:
+         {
+            ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );
+            POINT point;
+            GetCursorPos(&point);
+            
+            if ( esContext && esContext->mouseFunc )
+               esContext->mouseFunc ( esContext, point.x - WDpoint.x, point.y - WDpoint.y, true );
+         }
+         break;
+
+      case WM_LBUTTONUP:
+         {
+            ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );
+            POINT point;
+            GetCursorPos(&point);
+            
+            if ( esContext && esContext->mouseFunc )
+               esContext->mouseFunc ( esContext, point.x - WDpoint.x, point.y - WDpoint.y, false );
+         }
+         break;
+
+      case WM_MOUSEMOVE:
+         {
+            ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );
+            POINT point;
+            GetCursorPos(&point);
+            
+            if ( esContext && esContext->mouseMoveFunc )
+               esContext->mouseMoveFunc ( esContext, point.x - WDpoint.x, point.y - WDpoint.y );
+         }
+         break;
+
+      case WM_MOVE:
+         {
+            WDpoint.x = (int)LOWORD(lParam); // horizontal position
+            WDpoint.y = (int)HIWORD(lParam); // vertical position
+         }
+         break;
          
       default: 
          lRet = DefWindowProc (hWnd, uMsg, wParam, lParam); 

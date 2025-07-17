@@ -126,6 +126,18 @@ void GameStateMachine::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
 }
 
+void GameStateMachine::HandleMouseEvent(int x, int y, bool bIsPressed) {
+    if (m_pActiveState) {
+        m_pActiveState->HandleMouseEvent(x, y, bIsPressed);
+    }
+}
+
+void GameStateMachine::HandleMouseMove(int x, int y) {
+    if (m_pActiveState) {
+        m_pActiveState->HandleMouseMove(x, y);
+    }
+}
+
 GameStateBase* GameStateMachine::CurrentState() {
     return m_pActiveState.get();
 }

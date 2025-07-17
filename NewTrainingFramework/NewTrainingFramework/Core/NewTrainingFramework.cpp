@@ -89,6 +89,22 @@ void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 	}
 }
 
+void MouseClick(ESContext *esContext, int x, int y, bool bIsPressed)
+{
+	// Use Game State Machine for mouse input handling (2D-only)
+	if (g_gameStateMachine) {
+		g_gameStateMachine->HandleMouseEvent(x, y, bIsPressed);
+	}
+}
+
+void OnMouseMove(ESContext *esContext, int x, int y)
+{
+	// Use Game State Machine for mouse movement handling (2D-only)
+	if (g_gameStateMachine) {
+		g_gameStateMachine->HandleMouseMove(x, y);
+	}
+}
+
 void CleanUp()
 {
 	// Cleanup engine systems
@@ -124,6 +140,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	esRegisterDrawFunc ( &esContext, Draw );
 	esRegisterUpdateFunc ( &esContext, Update );
 	esRegisterKeyFunc ( &esContext, Key);
+	esRegisterMouseFunc ( &esContext, MouseClick );
+	esRegisterMouseMoveFunc ( &esContext, OnMouseMove );
 
 	esMainLoop ( &esContext );
 
