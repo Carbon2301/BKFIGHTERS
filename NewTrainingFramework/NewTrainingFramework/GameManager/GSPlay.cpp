@@ -61,7 +61,9 @@ void GSPlay::Init() {
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- ESC or M: Return to menu" << std::endl;
-    std::cout << "- WASD: Move (demo)" << std::endl;
+    std::cout << "- P: Quick play (from menu)" << std::endl;
+    std::cout << "- Q: Help/Question (from menu)" << std::endl;
+    std::cout << "- X: Exit game (from menu)" << std::endl;
 }
 
 void GSPlay::Update(float deltaTime) {
@@ -70,11 +72,10 @@ void GSPlay::Update(float deltaTime) {
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Simple demo: animate menu button
+    // Đặt scale cố định cho menuButton, không còn hiệu ứng pulse
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
     if (menuButton) {
-        float pulse = 1.0f + 0.05f * sin(m_gameTime * 3.0f);
-        menuButton->SetScale(Vector3(0.2f * pulse, 0.1f * pulse, 1.0f));
+        menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
     }
     
     // Show gameplay time every 5 seconds

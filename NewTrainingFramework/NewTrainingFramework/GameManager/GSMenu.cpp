@@ -5,7 +5,7 @@
 #include <iostream>
 
 GSMenu::GSMenu() 
-    : GameStateBase(StateType::MENU), m_selectedButton(0), m_buttonTimer(0.0f) {
+    : GameStateBase(StateType::MENU), m_buttonTimer(0.0f) {
 }
 
 GSMenu::~GSMenu() {
@@ -66,19 +66,8 @@ void GSMenu::Init() {
         }
     }
     
-    std::cout << "Use W/S keys to navigate, ENTER to select" << std::endl;
+    std::cout << "Use P for Play, Q for Question/Help, X for Exit" << std::endl;
     std::cout << "ESC to exit game" << std::endl;
-}
-
-Object* GSMenu::GetButtonObject(int buttonIndex) {
-    SceneManager* sceneManager = SceneManager::GetInstance();
-    
-    switch (buttonIndex) {
-        case BUTTON_PLAY:  return sceneManager->GetObject(BUTTON_ID_PLAY);
-        case BUTTON_HELP:  return sceneManager->GetObject(BUTTON_ID_HELP);
-        case BUTTON_CLOSE: return sceneManager->GetObject(BUTTON_ID_CLOSE);
-        default: return nullptr;
-    }
 }
 
 void GSMenu::Update(float deltaTime) {
@@ -87,20 +76,7 @@ void GSMenu::Update(float deltaTime) {
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Simple button highlighting effect (scale animation)
-    for (int i = 0; i < BUTTON_COUNT; i++) {
-        Object* button = GetButtonObject(i);
-        if (button) {
-            if (i == m_selectedButton) {
-                // Selected button pulses
-                float pulse = 1.0f + 0.2f * sin(m_buttonTimer * 4.0f);
-                button->SetScale(Vector3(0.4f * pulse, 0.2f * pulse, 1.0f));
-            } else {
-                // Non-selected buttons stay normal size
-                button->SetScale(Vector3(0.4f, 0.2f, 1.0f));
-            }
-        }
-    }
+    // Button highlighting removed - using direct key mapping instead of navigation
 }
 
 void GSMenu::Draw() {
@@ -112,18 +88,29 @@ void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (!bIsPressed) return;
     
     switch (key) {
-        case 'W':
-        case 'w':
-            m_selectedButton--;
-            if (m_selectedButton < 0) m_selectedButton = BUTTON_COUNT - 1;
-            std::cout << "Selected button: " << m_selectedButton << std::endl;
+        case 'P':
+        case 'p':
+            // Direct play button
+            std::cout << "=== Starting Game ===" << std::endl;
+            GameStateMachine::GetInstance()->PushState(StateType::PLAY);
             break;
             
-        case 'S':
-        case 's':
-            m_selectedButton++;
-            if (m_selectedButton >= BUTTON_COUNT) m_selectedButton = 0;
-            std::cout << "Selected button: " << m_selectedButton << std::endl;
+        case 'Q':
+        case 'q':
+            // Direct question/help button
+            std::cout << "=== HELP ===" << std::endl;
+            std::cout << "Game Controls:" << std::endl;
+            std::cout << "- P: Play game" << std::endl;
+            std::cout << "- Q: Help/Question" << std::endl;
+            std::cout << "- X: Exit game" << std::endl;
+            std::cout << "- ESC: Exit game" << std::endl;
+            break;
+            
+        case 'X':
+        case 'x':
+            // Direct exit button
+            std::cout << "=== Closing Game ===" << std::endl;
+            std::cout << "Thanks for playing!" << std::endl;
             break;
             
         case 13: // Enter
@@ -135,38 +122,16 @@ void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             std::cout << "Exit game requested" << std::endl;
             // You can add exit logic here
             break;
-            
-        case 'P':
-        case 'p':
-            // Quick access to play
-            std::cout << "Quick Play!" << std::endl;
-            GameStateMachine::GetInstance()->PushState(StateType::PLAY);
-            break;
     }
 }
 
 void GSMenu::HandleButtonSelection() {
-    switch (m_selectedButton) {
-        case BUTTON_PLAY:
-            std::cout << "=== Starting Game ===" << std::endl;
-            GameStateMachine::GetInstance()->PushState(StateType::PLAY);
-            break;
-            
-        case BUTTON_HELP:
-            std::cout << "=== HELP ===" << std::endl;
-            std::cout << "Game Controls:" << std::endl;
-            std::cout << "- Use W/S keys to navigate" << std::endl;
-            std::cout << "- ENTER or SPACE to select" << std::endl;
-            std::cout << "- ESC to go back" << std::endl;
-            std::cout << "- P for quick play" << std::endl;
-            break;
-            
-        case BUTTON_CLOSE:
-            std::cout << "=== Closing Game ===" << std::endl;
-            // In a real game, you would exit here
-            std::cout << "Thanks for playing!" << std::endl;
-            break;
-    }
+    std::cout << "=== Available Actions ===" << std::endl;
+    std::cout << "Game Controls:" << std::endl;
+    std::cout << "- P: Play game" << std::endl;
+    std::cout << "- Q: Help/Question" << std::endl;
+    std::cout << "- X: Exit game" << std::endl;
+    std::cout << "- ESC: Exit game" << std::endl;
 }
 
 void GSMenu::Resume() {

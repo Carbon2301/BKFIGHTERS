@@ -5,7 +5,7 @@
 #include <iostream>
 
 GSIntro::GSIntro() 
-    : GameStateBase(StateType::INTRO), m_loadingTimer(0.0f), m_loadingDuration(3.0f) {
+    : GameStateBase(StateType::INTRO), m_loadingTimer(0.0f), m_loadingDuration(1.0f) {
 }
 
 GSIntro::~GSIntro() {

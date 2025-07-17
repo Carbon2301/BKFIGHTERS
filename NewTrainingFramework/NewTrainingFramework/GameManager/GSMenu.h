@@ -4,7 +4,6 @@
 
 class GSMenu : public GameStateBase {
 private:
-    int m_selectedButton;
     float m_buttonTimer;
     
     enum ButtonType {
@@ -34,5 +33,4 @@ public:
 
 private:
     void HandleButtonSelection();
-    Object* GetButtonObject(int buttonIndex);
 }; 
