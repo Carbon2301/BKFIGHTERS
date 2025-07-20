@@ -124,10 +124,49 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
 }
 
+static float MousePixelToWorldX(int x, Camera* cam) {
+    float left = cam->GetLeft();
+    float right = cam->GetRight();
+    return left + (right - left) * ((float)x / Globals::screenWidth);
+}
+static float MousePixelToWorldY(int y, Camera* cam) {
+    float top = cam->GetTop();
+    float bottom = cam->GetBottom();
+    return top - (top - bottom) * ((float)y / Globals::screenHeight);
+}
+
 void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {
-    if (bIsPressed) {
-        std::cout << "GSPlay: Mouse click at (" << x << ", " << y << ")" << std::endl;
-        // Add game-specific mouse click logic here
+    if (!bIsPressed) return;
+
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    Camera* camera = sceneManager->GetActiveCamera();
+    if (!camera) return;
+
+    float worldX = MousePixelToWorldX(x, camera);
+    float worldY = MousePixelToWorldY(y, camera);
+
+    std::cout << "Mouse pixel: (" << x << ", " << y << "), world: (" << worldX << ", " << worldY << ")\n";
+    std::cout << "Camera: left=" << camera->GetLeft() << ", right=" << camera->GetRight()
+              << ", top=" << camera->GetTop() << ", bottom=" << camera->GetBottom() << std::endl;
+
+    Object* closeBtn = sceneManager->GetObject(MENU_BUTTON_ID);
+    if (closeBtn) {
+        const Vector3& pos = closeBtn->GetPosition();
+        const Vector3& scale = closeBtn->GetScale();
+        float width = scale.x;
+        float height = scale.y;
+        float leftBtn = pos.x - width / 2.0f;
+        float rightBtn = pos.x + width / 2.0f;
+        float bottomBtn = pos.y - height / 2.0f;
+        float topBtn = pos.y + height / 2.0f;
+        std::cout << "Button ID " << MENU_BUTTON_ID << " region: left=" << leftBtn << ", right=" << rightBtn
+                  << ", top=" << topBtn << ", bottom=" << bottomBtn << std::endl;
+        if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+            std::cout << "HIT button ID " << MENU_BUTTON_ID << std::endl;
+            std::cout << "[Mouse] Close button clicked in Play!" << std::endl;
+            GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
+            return;
+        }
     }
 }
 

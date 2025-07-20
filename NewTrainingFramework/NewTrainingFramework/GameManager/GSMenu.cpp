@@ -19,47 +19,7 @@ void GSMenu::Init() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     SceneManager* sceneManager = SceneManager::GetInstance();
-    if (!sceneManager->LoadSceneForState(StateType::MENU)) {
-        std::cout << "Failed to load menu scene!" << std::endl;
-        sceneManager->Clear();
-        
-        Camera* camera = sceneManager->CreateCamera();
-        if (camera) {
-            float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
-            camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
-            camera->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
-            sceneManager->SetActiveCamera(0);
-        }
-        
-        Object* backgroundObj = sceneManager->CreateObject(200);
-        if (backgroundObj) {
-            backgroundObj->SetModel(0);
-            backgroundObj->SetTexture(0, 0);
-            backgroundObj->SetShader(0);
-            backgroundObj->SetPosition(Vector3(0.0f, 0.0f, -0.1f));
-            backgroundObj->SetScale(Vector3(2.5f, 2.5f, 1.0f));
-        }
-        
-        // Create button objects
-        Vector3 buttonPositions[BUTTON_COUNT] = {
-            Vector3(0.0f, 0.5f, 0.0f),    // PLAY
-            Vector3(0.0f, 0.0f, 0.0f),    // HELP  
-            Vector3(0.0f, -0.5f, 0.0f)    // CLOSE
-        };
-        
-        int buttonIds[BUTTON_COUNT] = { BUTTON_ID_PLAY, BUTTON_ID_HELP, BUTTON_ID_CLOSE };
-        
-        for (int i = 0; i < BUTTON_COUNT; i++) {
-            Object* button = sceneManager->CreateObject(buttonIds[i]);
-            if (button) {
-                button->SetModel(0);
-                button->SetTexture(2 + i, 0);
-                button->SetShader(0);
-                button->SetPosition(buttonPositions[i]);
-                button->SetScale(Vector3(0.4f, 0.2f, 1.0f));
-            }
-        }
-    }
+    sceneManager->LoadSceneForState(StateType::MENU);
     
     std::cout << "Use P for Play, Q for Question/Help, X for Exit" << std::endl;
     std::cout << "ESC to exit game" << std::endl;
@@ -117,11 +77,65 @@ void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
 }
 
+static float MousePixelToWorldX(int x, Camera* cam) {
+    float left = cam->GetLeft();
+    float right = cam->GetRight();
+    return left + (right - left) * ((float)x / Globals::screenWidth);
+}
+static float MousePixelToWorldY(int y, Camera* cam) {
+    float top = cam->GetTop();
+    float bottom = cam->GetBottom();
+    return top - (top - bottom) * ((float)y / Globals::screenHeight);
+}
+
 void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
-    if (bIsPressed) {
-        std::cout << "Mouse click at (" << x << ", " << y << ")" << std::endl;
-        // Add button click detection logic here
-        // For now, just show coordinates
+    if (!bIsPressed) return;
+
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    Camera* camera = sceneManager->GetActiveCamera();
+    if (!camera) return;
+
+    float worldX = MousePixelToWorldX(x, camera);
+    float worldY = MousePixelToWorldY(y, camera);
+
+    std::cout << "Mouse pixel: (" << x << ", " << y << "), world: (" << worldX << ", " << worldY << ")\n";
+    std::cout << "Camera: left=" << camera->GetLeft() << ", right=" << camera->GetRight()
+              << ", top=" << camera->GetTop() << ", bottom=" << camera->GetBottom() << std::endl;
+
+    const auto& objects = sceneManager->GetObjects();
+    for (const auto& objPtr : objects) {
+        int id = objPtr->GetId();
+        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_HELP || id == BUTTON_ID_CLOSE) {
+            const Vector3& pos = objPtr->GetPosition();
+            const Vector3& scale = objPtr->GetScale();
+            float width = scale.x;
+            float height = scale.y;
+            float leftBtn = pos.x - width / 2.0f;
+            float rightBtn = pos.x + width / 2.0f;
+            float bottomBtn = pos.y - height / 2.0f;
+            float topBtn = pos.y + height / 2.0f;
+            std::cout << "Button ID " << id << " region: left=" << leftBtn << ", right=" << rightBtn
+                      << ", top=" << topBtn << ", bottom=" << bottomBtn << std::endl;
+            if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+                std::cout << "HIT button ID " << id << std::endl;
+                if (id == BUTTON_ID_PLAY) {
+                    std::cout << "[Mouse] Play button clicked!" << std::endl;
+                    GameStateMachine::GetInstance()->PushState(StateType::PLAY);
+                } else if (id == BUTTON_ID_HELP) {
+                    std::cout << "[Mouse] Help button clicked!" << std::endl;
+                    std::cout << "Game Controls:" << std::endl;
+                    std::cout << "- P: Play game" << std::endl;
+                    std::cout << "- Q: Help/Question" << std::endl;
+                    std::cout << "- X: Exit game" << std::endl;
+                    std::cout << "- ESC: Exit game" << std::endl;
+                } else if (id == BUTTON_ID_CLOSE) {
+                    std::cout << "[Mouse] Close button clicked!" << std::endl;
+                    std::cout << "Thanks for playing!" << std::endl;
+                    exit(0);
+                }
+                break;
+            }
+        }
     }
 }
 
