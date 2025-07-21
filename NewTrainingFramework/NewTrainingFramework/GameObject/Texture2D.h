@@ -27,4 +27,7 @@ public:
     const std::string& GetFilepath() const { return m_filepath; }
 
     void Cleanup();
+
+    // Tạo texture từ SDL_Surface (dùng cho text động)
+    bool LoadFromSDLSurface(void* surface); // void* để tránh include SDL_ttf ở header
 }; 

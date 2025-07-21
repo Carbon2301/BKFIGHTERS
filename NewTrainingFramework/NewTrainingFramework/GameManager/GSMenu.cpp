@@ -3,6 +3,12 @@
 #include "GameStateMachine.h"
 #include "../Core/Globals.h"
 #include <iostream>
+#include <SDL_ttf.h>
+#include "../GameObject/Texture2D.h"
+#include "../GameObject/Object.h"
+#include "../GameManager/ResourceManager.h"
+#include "../GameObject/Model.h"
+#include "../GameObject/Shaders.h"
 
 GSMenu::GSMenu() 
     : GameStateBase(StateType::MENU), m_buttonTimer(0.0f) {
@@ -23,6 +29,37 @@ void GSMenu::Init() {
     
     std::cout << "Use P for Play, Q for Question/Help, X for Exit" << std::endl;
     std::cout << "ESC to exit game" << std::endl;
+
+    // --- Tạo texture text động bằng SDL_ttf ---
+    if (TTF_WasInit() == 0) TTF_Init();
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/Roboto-Regular.ttf", 32);
+    if (!font) {
+        std::cout << "Failed to load font! TTF_Error: " << TTF_GetError() << std::endl;
+        return;
+    }
+    SDL_Color color = {255, 255, 255, 255};
+    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "Hello", color);
+    if (!textSurface) {
+        std::cout << "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
+        TTF_CloseFont(font);
+        return;
+    }
+    m_textTexture = std::make_shared<Texture2D>();
+    m_textTexture->LoadFromSDLSurface(textSurface);
+    SDL_FreeSurface(textSurface);
+    TTF_CloseFont(font);
+
+    // --- Tạo object vẽ text ---
+    m_textObject = std::make_shared<Object>();
+    m_textObject->SetId(-100); // ID đặc biệt cho text động
+    m_textObject->SetModel(0); // MODEL_ID 0 là Sprite2D (xem GSMenu.txt)
+    m_textObject->SetShader(0); // SHADER_ID 0 là shader 2D (xem GSMenu.txt)
+    m_textObject->SetDynamicTexture(m_textTexture);
+    // Đặt vị trí góc trái trên (theo hệ toạ độ -1.78, 1.0 là góc trái trên)
+    float x = -1.7f; // gần sát trái
+    float y = 0.9f;  // gần sát trên
+    m_textObject->Set2DPosition(x, y);
+    m_textObject->SetSize(0.3f, 0.1f); // tuỳ chỉnh cho vừa text
 }
 
 void GSMenu::Update(float deltaTime) {
@@ -35,6 +72,13 @@ void GSMenu::Update(float deltaTime) {
 
 void GSMenu::Draw() {
     SceneManager::GetInstance()->Draw();
+    // --- Vẽ text động ---
+    if (m_textObject) {
+        Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
+        if (cam) {
+            m_textObject->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
+    }
 }
 
 void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {

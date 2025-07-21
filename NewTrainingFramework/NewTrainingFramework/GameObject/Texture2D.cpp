@@ -2,6 +2,11 @@
 #include "Texture2D.h"
 #include "../../Utilities/TGA.h"
 #include <iostream>
+#include <SDL_surface.h>
+
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
 
 Texture2D::Texture2D() 
     : m_textureId(0), m_width(0), m_height(0), m_channels(0) {
@@ -74,4 +79,29 @@ void Texture2D::Cleanup() {
     }
     m_width = m_height = m_channels = 0;
     m_filepath.clear();
+} 
+
+// Tạo texture từ SDL_Surface
+bool Texture2D::LoadFromSDLSurface(void* surfacePtr) {
+    Cleanup();
+    if (!surfacePtr) return false;
+    SDL_Surface* surface = (SDL_Surface*)surfacePtr;
+
+    // Convert surface về RGBA32
+    SDL_Surface* converted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
+    if (!converted) return false;
+
+    m_width = converted->w;
+    m_height = converted->h;
+    m_channels = 4;
+
+    glGenTextures(1, &m_textureId);
+    glBindTexture(GL_TEXTURE_2D, m_textureId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, converted->pixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    SDL_FreeSurface(converted);
+    return true;
 } 

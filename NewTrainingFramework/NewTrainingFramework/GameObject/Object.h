@@ -51,7 +51,7 @@ public:
     void SetScale(float x, float y, float z);
     void SetScale(float uniform);
     
-    // 2D helper methods (simple wrappers)
+    // 2D helper methods
     void SetSize(float width, float height) { SetScale(width, height, 1.0f); }
     void Set2DPosition(float x, float y) { SetPosition(x, y, m_position.z); }
     
@@ -84,5 +84,12 @@ public:
     bool IsAutoRotating() const { return m_autoRotate; }
     
     // Resource management
-    void RefreshResources(); // Re-cache resources from ResourceManager
+    void RefreshResources();
+
+    // Thêm hàm public để gán texture động (dùng cho text)
+    void SetDynamicTexture(std::shared_ptr<Texture2D> tex) {
+        m_textureIds.clear();
+        m_textures.clear();
+        m_textures.push_back(tex);
+    }
 }; 
