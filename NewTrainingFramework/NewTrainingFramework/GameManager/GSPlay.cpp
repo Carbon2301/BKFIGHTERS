@@ -37,37 +37,10 @@ void GSPlay::Init() {
             camera->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
             sceneManager->SetActiveCamera(0);
         }
-        
-        // Create default gameplay background
-        Object* backgroundObj = sceneManager->CreateObject(300);
-        if (backgroundObj) {
-            backgroundObj->SetModel(0);
-            backgroundObj->SetTexture(1, 0); // bg_play1.tga
-            backgroundObj->SetShader(0);
-            backgroundObj->SetPosition(Vector3(0.0f, 0.0f, -0.1f));
-            backgroundObj->SetScale(Vector3(2.5f, 2.5f, 1.0f));
-        }
-        
-        // Create menu button
-        Object* menuButton = sceneManager->CreateObject(MENU_BUTTON_ID);
-        if (menuButton) {
-            menuButton->SetModel(0);
-            menuButton->SetTexture(4, 0); // btn_close.tga
-            menuButton->SetShader(0);
-            menuButton->SetPosition(Vector3(1.2f, 0.8f, 0.0f));
-            menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
-        }
     }
     
     m_gameTime = 0.0f;
 
-    // Tạo object animation nhân vật qua SceneManager
-    Object* animObj = SceneManager::GetInstance()->CreateObject(ANIM_OBJECT_ID);
-    animObj->SetModel(0); // Sprite2D
-    animObj->SetTexture(10); // spritesheet.tga (ID=10 trong RM.txt)
-    animObj->SetShader(0);
-    animObj->Set2DPosition(0.0f, 0.0f);
-    animObj->SetSize(0.3f, 0.45f); // tuỳ chỉnh
 
     m_anim = std::make_shared<Animation2D>(12, 4, 0.1f); // 12 cột, 4 hàng, 0.1s/frame
     m_anim->SetRow(0); // Hàng đầu tiên (tuỳ chỉnh theo nhân vật)

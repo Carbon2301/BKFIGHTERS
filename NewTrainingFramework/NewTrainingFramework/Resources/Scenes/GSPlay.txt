@@ -12,7 +12,7 @@ TOP 1.0
 NEAR 0.1
 FAR 100.0
 
-#ObjectCount 2
+#ObjectCount 3
 
 # Gameplay background
 ID 300
@@ -31,3 +31,12 @@ SHADER_ID 0
 POS 0.0 0.0 0.0
 ROTATION 0.0 0.0 0.0
 SCALE 0.3 0.15 1.0 
+
+# Nhân vật animation
+ID 1000
+MODEL_ID 0
+TEXTURE_ID 10
+SHADER_ID 0
+POS 0.0 0.0 0.0
+ROTATION 0.0 0.0 0.0
+SCALE 0.3 0.45 1.0

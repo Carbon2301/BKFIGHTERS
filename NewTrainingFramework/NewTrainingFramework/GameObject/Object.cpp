@@ -272,10 +272,11 @@ void Object::SetAutoRotation(bool enabled, float speed) {
 void Object::SetCustomUV(float u0, float v0, float u1, float v1) {
     if (!m_model || m_model->vboId == 0) return;
     if (m_model->vertices.size() < 4) return;
-    m_model->vertices[0].uv = Vector2(u0, v1); // bottom-left
-    m_model->vertices[1].uv = Vector2(u0, v0); // top-left
-    m_model->vertices[2].uv = Vector2(u1, v0); // top-right
-    m_model->vertices[3].uv = Vector2(u1, v1); // bottom-right
+    // Đúng thứ tự đỉnh Sprite2D.nfg
+    m_model->vertices[0].uv = Vector2(u0, v0); // bottom-left
+    m_model->vertices[1].uv = Vector2(u0, v1); // top-left
+    m_model->vertices[2].uv = Vector2(u1, v1); // top-right
+    m_model->vertices[3].uv = Vector2(u1, v0); // bottom-right
     glBindBuffer(GL_ARRAY_BUFFER, m_model->vboId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * sizeof(Vertex), m_model->vertices.data());
     glBindBuffer(GL_ARRAY_BUFFER, 0);
