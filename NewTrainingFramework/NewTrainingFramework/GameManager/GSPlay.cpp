@@ -51,6 +51,10 @@ void GSPlay::Init() {
     std::cout << "- P: Quick play (from menu)" << std::endl;
     std::cout << "- Q: Help/Question (from menu)" << std::endl;
     std::cout << "- X: Exit game (from menu)" << std::endl;
+    
+    Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
+    std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
+              << ", bottom=" << cam->GetBottom() << ", top=" << cam->GetTop() << std::endl;
 }
 
 void GSPlay::Update(float deltaTime) {
@@ -84,6 +88,12 @@ void GSPlay::Draw() {
         animObj->SetCustomUV(u0, v0, u1, v1);
         Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
         if (cam) animObj->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+    }
+
+    Object* closeBtn = SceneManager::GetInstance()->GetObject(301);
+    if (closeBtn) {
+        const Vector3& pos = closeBtn->GetPosition();
+        std::cout << "Button close position: x=" << pos.x << ", y=" << pos.y << std::endl;
     }
 }
 
