@@ -1,7 +1,10 @@
 # 2D Game Resources - Updated for Game State Machine
 
-#Model 1
+#Model 2
 ID 0
+FILE "../Resources/Models/Sprite2D.nfg"
+
+ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
 # 2DTexture 6
