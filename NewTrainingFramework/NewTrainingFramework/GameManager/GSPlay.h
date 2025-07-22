@@ -8,6 +8,8 @@ private:
     
     // Menu button object ID in scene (must match scene config)
     static const int MENU_BUTTON_ID = 301;
+    static const int ANIM_OBJECT_ID = 1000; // Thêm ID cho object animation
+    std::shared_ptr<class Animation2D> m_anim;
     
 public:
     GSPlay();

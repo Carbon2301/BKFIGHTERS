@@ -7,6 +7,7 @@
 class Model;
 class Texture2D;
 class Shaders;
+class Animation2D;
 
 class Object {
 private:
@@ -86,10 +87,16 @@ public:
     // Resource management
     void RefreshResources();
 
+    // Getter cho model (tránh truy cập trực tiếp biến private)
+    std::shared_ptr<Model> GetModelPtr() const { return m_model; }
+
     // Thêm hàm public để gán texture động (dùng cho text)
     void SetDynamicTexture(std::shared_ptr<Texture2D> tex) {
         m_textureIds.clear();
         m_textures.clear();
         m_textures.push_back(tex);
     }
+
+    // Thêm hàm cập nhật UV động cho Sprite2D
+    void SetCustomUV(float u0, float v0, float u1, float v1);
 }; 

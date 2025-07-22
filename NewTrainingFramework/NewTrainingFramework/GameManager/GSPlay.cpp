@@ -3,6 +3,12 @@
 #include "GameStateMachine.h"
 #include "../Core/Globals.h"
 #include <iostream>
+#include "../GameObject/Object.h"
+#include "../GameObject/Texture2D.h"
+#include <memory>
+
+// Thêm include cho Animation2D
+#include "../GameObject/Animation2D.h"
 
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f) {
@@ -54,6 +60,17 @@ void GSPlay::Init() {
     }
     
     m_gameTime = 0.0f;
+
+    // Tạo object animation nhân vật qua SceneManager
+    Object* animObj = SceneManager::GetInstance()->CreateObject(ANIM_OBJECT_ID);
+    animObj->SetModel(0); // Sprite2D
+    animObj->SetTexture(10); // spritesheet.tga (ID=10 trong RM.txt)
+    animObj->SetShader(0);
+    animObj->Set2DPosition(0.0f, 0.0f);
+    animObj->SetSize(0.3f, 0.45f); // tuỳ chỉnh
+
+    m_anim = std::make_shared<Animation2D>(12, 4, 0.1f); // 12 cột, 4 hàng, 0.1s/frame
+    m_anim->SetRow(0); // Hàng đầu tiên (tuỳ chỉnh theo nhân vật)
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
@@ -69,6 +86,9 @@ void GSPlay::Update(float deltaTime) {
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
+    // Update animation
+    if (m_anim) m_anim->Update(deltaTime);
+    
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
     if (menuButton) {
         menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
@@ -83,6 +103,15 @@ void GSPlay::Update(float deltaTime) {
 
 void GSPlay::Draw() {
     SceneManager::GetInstance()->Draw();
+    // Vẽ animation object qua SceneManager
+    Object* animObj = SceneManager::GetInstance()->GetObject(ANIM_OBJECT_ID);
+    if (animObj && m_anim && animObj->GetModelId() >= 0 && animObj->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_anim->GetUV(u0, v0, u1, v1);
+        animObj->SetCustomUV(u0, v0, u1, v1);
+        Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
+        if (cam) animObj->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+    }
 }
 
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
@@ -190,6 +219,5 @@ void GSPlay::Exit() {
 }
 
 void GSPlay::Cleanup() {
-    std::cout << "GSPlay: Cleanup" << std::endl;
-    std::cout << "Final game time: " << (int)m_gameTime << " seconds" << std::endl;
+    m_anim = nullptr;
 } 

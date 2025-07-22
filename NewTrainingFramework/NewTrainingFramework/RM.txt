@@ -4,7 +4,7 @@
 ID 0
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 5
+# 2DTexture 6
 ID 0
 FILE "../Resources/Textures/bg_play1.tga"
 TILING GL_REPEAT
