@@ -13,6 +13,8 @@ public:
     void StopMusic();
     void Clear();
     void LoadMusicFromFile(const std::string& rmFilePath);
+    void LoadMusicByID(int id, const std::string& path);
+    void PlayMusicByID(int id, int loop = -1);
 
 private:
     SoundManager();
@@ -21,5 +23,6 @@ private:
     SoundManager& operator=(const SoundManager&) = delete;
 
     std::map<std::string, Mix_Music*> m_musicMap;
+    std::map<int, Mix_Music*> m_musicMapByID;
     Mix_Music* m_currentMusic = nullptr;
 }; 

@@ -49,6 +49,29 @@ void SoundManager::StopMusic() {
     m_currentMusic = nullptr;
 }
 
+void SoundManager::LoadMusicByID(int id, const std::string& path) {
+    if (m_musicMapByID.count(id) == 0) {
+        Mix_Music* music = Mix_LoadMUS(path.c_str());
+        if (music) {
+            m_musicMapByID[id] = music;
+        } else {
+            std::cout << "Failed to load music: " << path << " Error: " << Mix_GetError() << std::endl;
+        }
+    }
+}
+
+void SoundManager::PlayMusicByID(int id, int loop) {
+    auto it = m_musicMapByID.find(id);
+    if (it != m_musicMapByID.end()) {
+        m_currentMusic = it->second;
+        if (Mix_PlayMusic(m_currentMusic, loop) == -1) {
+            std::cout << "Failed to play music: " << Mix_GetError() << std::endl;
+        }
+    } else {
+        std::cout << "Music not found with ID: " << id << std::endl;
+    }
+}
+
 void SoundManager::Clear() {
     for (auto& pair : m_musicMap) {
         if (pair.second) {
@@ -56,6 +79,12 @@ void SoundManager::Clear() {
         }
     }
     m_musicMap.clear();
+    for (auto& pair : m_musicMapByID) {
+        if (pair.second) {
+            Mix_FreeMusic(pair.second);
+        }
+    }
+    m_musicMapByID.clear();
     m_currentMusic = nullptr;
 }
 
@@ -66,15 +95,12 @@ void SoundManager::LoadMusicFromFile(const std::string& rmFilePath) {
         return;
     }
     std::string line;
-    std::string name, path;
+    int id = -1;
+    std::string path;
     while (std::getline(file, line)) {
         if (line.empty() || line[0] == '#') continue;
-        if (line.find("NAME") == 0) {
-            size_t firstQuote = line.find('"');
-            size_t lastQuote = line.find_last_of('"');
-            if (firstQuote != std::string::npos && lastQuote != std::string::npos && lastQuote > firstQuote) {
-                name = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
-            }
+        if (line.find("ID") == 0) {
+            id = std::stoi(line.substr(3));
         }
         if (line.find("FILE") == 0) {
             size_t firstQuote = line.find('"');
@@ -82,9 +108,9 @@ void SoundManager::LoadMusicFromFile(const std::string& rmFilePath) {
             if (firstQuote != std::string::npos && lastQuote != std::string::npos && lastQuote > firstQuote) {
                 path = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
             }
-            if (!name.empty() && !path.empty()) {
-                LoadMusic(name, path);
-                name.clear();
+            if (id != -1 && !path.empty()) {
+                LoadMusicByID(id, path);
+                id = -1;
                 path.clear();
             }
         }

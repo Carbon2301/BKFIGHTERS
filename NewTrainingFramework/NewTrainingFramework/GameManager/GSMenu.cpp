@@ -53,7 +53,7 @@ void GSMenu::Init() {
     TTF_CloseFont(font);
 
     //Phát nhạc nền
-    SoundManager::Instance().PlayMusic("menu", -1);
+    SoundManager::Instance().PlayMusicByID(0, -1);
 
     //Tạo object vẽ text
     m_textObject = std::make_shared<Object>();

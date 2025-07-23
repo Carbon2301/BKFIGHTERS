@@ -13,6 +13,7 @@
 #include "../GameObject/Camera.h"
 #include <conio.h>
 #include "../../Utilities/utilities.h"
+#include "../GameManager/SoundManager.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -35,6 +36,9 @@ int Init(ESContext* esContext)
 		std::cout << "Failed to load resources!" << std::endl;
 		return -1;
 	}
+	
+	// Load music from RM.txt
+	SoundManager::Instance().LoadMusicFromFile("../NewTrainingFramework/RM.txt");
 	
 	g_sceneManager = SceneManager::GetInstance();
 	std::cout << "SceneManager initialized (scenes loaded per-state)" << std::endl;

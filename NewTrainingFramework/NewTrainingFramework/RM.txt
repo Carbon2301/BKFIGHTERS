@@ -36,3 +36,7 @@ TILING GL_CLAMP_TO_EDGE
 ID 0
 VS "../Resources/Shaders/TriangleShaderVS.vs"
 FS "../Resources/Shaders/TriangleShaderFS.fs" 
+
+# Music
+ID 0
+FILE "../Resources/Music/background_music.mp3"
