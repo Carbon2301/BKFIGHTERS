@@ -1,0 +1,92 @@
+#include "stdafx.h"
+#include "SoundManager.h"
+#include <SDL_mixer.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+SoundManager::SoundManager() {
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cout << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
+    }
+}
+
+SoundManager::~SoundManager() {
+    Clear();
+    Mix_CloseAudio();
+}
+
+SoundManager& SoundManager::Instance() {
+    static SoundManager instance;
+    return instance;
+}
+
+void SoundManager::LoadMusic(const std::string& name, const std::string& path) {
+    if (m_musicMap.count(name) == 0) {
+        Mix_Music* music = Mix_LoadMUS(path.c_str());
+        if (music) {
+            m_musicMap[name] = music;
+        } else {
+            std::cout << "Failed to load music: " << path << " Error: " << Mix_GetError() << std::endl;
+        }
+    }
+}
+
+void SoundManager::PlayMusic(const std::string& name, int loop) {
+    auto it = m_musicMap.find(name);
+    if (it != m_musicMap.end()) {
+        m_currentMusic = it->second;
+        if (Mix_PlayMusic(m_currentMusic, loop) == -1) {
+            std::cout << "Failed to play music: " << Mix_GetError() << std::endl;
+        }
+    } else {
+        std::cout << "Music not found: " << name << std::endl;
+    }
+}
+
+void SoundManager::StopMusic() {
+    Mix_HaltMusic();
+    m_currentMusic = nullptr;
+}
+
+void SoundManager::Clear() {
+    for (auto& pair : m_musicMap) {
+        if (pair.second) {
+            Mix_FreeMusic(pair.second);
+        }
+    }
+    m_musicMap.clear();
+    m_currentMusic = nullptr;
+}
+
+void SoundManager::LoadMusicFromFile(const std::string& rmFilePath) {
+    std::ifstream file(rmFilePath);
+    if (!file.is_open()) {
+        std::cout << "Failed to open RM.txt for music loading\n";
+        return;
+    }
+    std::string line;
+    std::string name, path;
+    while (std::getline(file, line)) {
+        if (line.empty() || line[0] == '#') continue;
+        if (line.find("NAME") == 0) {
+            size_t firstQuote = line.find('"');
+            size_t lastQuote = line.find_last_of('"');
+            if (firstQuote != std::string::npos && lastQuote != std::string::npos && lastQuote > firstQuote) {
+                name = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
+            }
+        }
+        if (line.find("FILE") == 0) {
+            size_t firstQuote = line.find('"');
+            size_t lastQuote = line.find_last_of('"');
+            if (firstQuote != std::string::npos && lastQuote != std::string::npos && lastQuote > firstQuote) {
+                path = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
+            }
+            if (!name.empty() && !path.empty()) {
+                LoadMusic(name, path);
+                name.clear();
+                path.clear();
+            }
+        }
+    }
+} 

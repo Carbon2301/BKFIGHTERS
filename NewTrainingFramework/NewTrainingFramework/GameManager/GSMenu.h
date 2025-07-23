@@ -4,9 +4,6 @@
 #include "../GameObject/Object.h"
 #include "../GameObject/Texture2D.h"
 
-struct _Mix_Music;
-typedef struct _Mix_Music Mix_Music;
-
 class GSMenu : public GameStateBase {
 private:
     float m_buttonTimer;
@@ -43,5 +40,4 @@ private:
     // --- Thêm biến quản lý text động ---
     std::shared_ptr<Object> m_textObject;
     std::shared_ptr<Texture2D> m_textTexture;
-    Mix_Music* m_backgroundMusic;
 }; 

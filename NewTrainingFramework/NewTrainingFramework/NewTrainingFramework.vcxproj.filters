@@ -25,7 +25,6 @@
     <ClCompile Include="Core\stdafx.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    
     <!-- GameManager Files -->
     <ClCompile Include="GameManager\ResourceManager.cpp">
       <Filter>GameManager</Filter>
@@ -48,7 +47,6 @@
     <ClCompile Include="GameManager\GSPlay.cpp">
       <Filter>GameManager</Filter>
     </ClCompile>
-    
     <!-- GameObject Files -->
     <ClCompile Include="GameObject\Object.cpp">
       <Filter>GameObject</Filter>
@@ -68,6 +66,7 @@
     <ClCompile Include="GameObject\Camera.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
+    <ClCompile Include="GameManager\SoundManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <!-- Core Headers -->
@@ -80,7 +79,6 @@
     <ClInclude Include="Core\targetver.h">
       <Filter>Core</Filter>
     </ClInclude>
-    
     <!-- GameManager Headers -->
     <ClInclude Include="GameManager\ResourceManager.h">
       <Filter>GameManager</Filter>
@@ -106,15 +104,11 @@
     <ClInclude Include="GameManager\GSPlay.h">
       <Filter>GameManager</Filter>
     </ClInclude>
-    
     <!-- GameObject Headers -->
     <ClInclude Include="GameObject\Object.h">
       <Filter>GameObject</Filter>
     </ClInclude>
     <ClInclude Include="GameObject\GameButton.h">
-      <Filter>GameObject</Filter>
-    </ClInclude>
-    <ClInclude Include="GameObject\ButtonExample.h">
       <Filter>GameObject</Filter>
     </ClInclude>
     <ClInclude Include="GameObject\Model.h">

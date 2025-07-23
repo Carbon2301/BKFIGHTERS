@@ -10,19 +10,14 @@
 #include "../GameObject/Model.h"
 #include "../GameObject/Shaders.h"
 #include <SDL_mixer.h>
+#include "SoundManager.h"
 
 GSMenu::GSMenu() 
-    : GameStateBase(StateType::MENU), m_buttonTimer(0.0f), m_backgroundMusic(nullptr) {
+    : GameStateBase(StateType::MENU), m_buttonTimer(0.0f) {
 }
 
 GSMenu::~GSMenu() {
-    //Giải phóng nhạc nền
-    if (m_backgroundMusic != nullptr) {
-        Mix_HaltMusic();
-        Mix_FreeMusic(m_backgroundMusic);
-        m_backgroundMusic = nullptr;
-        Mix_CloseAudio();
-    }
+    // Không cần giải phóng nhạc nền ở đây nữa
 }
 
 void GSMenu::Init() {
@@ -58,16 +53,7 @@ void GSMenu::Init() {
     TTF_CloseFont(font);
 
     //Phát nhạc nền
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        std::cout << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
-    } else {
-        m_backgroundMusic = Mix_LoadMUS("../Resources/Music/background_music.mp3");
-        if (m_backgroundMusic == nullptr) {
-            std::cout << "Failed to load background music! SDL_mixer Error: " << Mix_GetError() << std::endl;
-        } else {
-            Mix_PlayMusic(m_backgroundMusic, -1); // -1: lặp vô hạn
-        }
-    }
+    SoundManager::Instance().PlayMusic("menu", -1);
 
     //Tạo object vẽ text
     m_textObject = std::make_shared<Object>();
@@ -221,9 +207,7 @@ void GSMenu::Resume() {
 
 void GSMenu::Pause() {
     std::cout << "GSMenu: Pause" << std::endl;
-    if (m_backgroundMusic != nullptr) {
-        Mix_HaltMusic();
-    }
+    SoundManager::Instance().StopMusic();
 }
 
 void GSMenu::Exit() {
