@@ -30,7 +30,7 @@ void GSMenu::Init() {
     std::cout << "Use P for Play, Q for Question/Help, X for Exit" << std::endl;
     std::cout << "ESC to exit game" << std::endl;
 
-    // --- Tạo texture text động bằng SDL_ttf ---
+    //Tạo texture text động bằng SDL_ttf
     if (TTF_WasInit() == 0) TTF_Init();
     TTF_Font* font = TTF_OpenFont("../Resources/Font/Roboto-Regular.ttf", 32);
     if (!font) {
@@ -49,23 +49,21 @@ void GSMenu::Init() {
     SDL_FreeSurface(textSurface);
     TTF_CloseFont(font);
 
-    // --- Tạo object vẽ text ---
+    //Tạo object vẽ text
     m_textObject = std::make_shared<Object>();
     m_textObject->SetId(-100); // ID đặc biệt cho text động
-    m_textObject->SetModel(0); // MODEL_ID 0 là Sprite2D (xem GSMenu.txt)
-    m_textObject->SetShader(0); // SHADER_ID 0 là shader 2D (xem GSMenu.txt)
+    m_textObject->SetModel(0);
+    m_textObject->SetShader(0);
     m_textObject->SetDynamicTexture(m_textTexture);
-    // Đặt vị trí góc trái trên (theo hệ toạ độ -1.78, 1.0 là góc trái trên)
-    float x = -1.7f; // gần sát trái
-    float y = 0.9f;  // gần sát trên
+    float x = -3.7f;
+    float y = 8.5f;
     m_textObject->Set2DPosition(x, y);
-    m_textObject->SetSize(0.3f, 0.1f); // tuỳ chỉnh cho vừa text
+    m_textObject->SetSize(0.3f, 0.1f);
 }
 
 void GSMenu::Update(float deltaTime) {
     m_buttonTimer += deltaTime;
     
-    // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
 }

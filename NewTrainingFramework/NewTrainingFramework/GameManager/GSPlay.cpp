@@ -6,8 +6,6 @@
 #include "../GameObject/Object.h"
 #include "../GameObject/Texture2D.h"
 #include <memory>
-
-// Thêm include cho Animation2D
 #include "../GameObject/Animation2D.h"
 
 GSPlay::GSPlay() 
@@ -90,11 +88,6 @@ void GSPlay::Draw() {
         if (cam) animObj->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
     }
 
-    Object* closeBtn = SceneManager::GetInstance()->GetObject(301);
-    if (closeBtn) {
-        const Vector3& pos = closeBtn->GetPosition();
-        std::cout << "Button close position: x=" << pos.x << ", y=" << pos.y << std::endl;
-    }
 }
 
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {

@@ -9,7 +9,6 @@ public:
     }
     
 private:
-    // Example callback function
     static void OnPlayButtonClicked() {
         GameStateMachine::GetInstance()->ChangeState(StateType::STATE_PLAY);
     }

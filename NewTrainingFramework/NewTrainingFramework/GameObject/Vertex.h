@@ -5,7 +5,7 @@ struct Vertex
 {
 	Vector3 pos;
 	Vector3 color;  
-	Vector2 uv;  // Thêm UV coordinates cho texture mapping
+	Vector2 uv;
 	
 	// Default constructor - khởi tạo từng member riêng biệt
 	Vertex() {

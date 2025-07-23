@@ -18,7 +18,7 @@ Object::Object()
     , m_modelId(-1)
     , m_shaderId(-1)
     , m_id(-1)
-    , m_autoRotate(false)  // Tắt auto-rotation mặc định
+    , m_autoRotate(false)
     , m_rotationSpeed(30.0f) {
     m_worldMatrix.SetIdentity();
 }
@@ -31,13 +31,12 @@ Object::Object(int id)
     , m_modelId(-1)
     , m_shaderId(-1)
     , m_id(id)
-    , m_autoRotate(false)  // Tắt auto-rotation mặc định
+    , m_autoRotate(false)
     , m_rotationSpeed(30.0f) {
     m_worldMatrix.SetIdentity();
 }
 
 Object::~Object() {
-    // Resources are managed by ResourceManager, just clear pointers
 }
 
 void Object::SetPosition(const Vector3& position) {

@@ -5,7 +5,6 @@ class Model;
 class Shaders; 
 class Texture2D;
 
-// Type definition for button click callback using function pointer
 typedef void (*ButtonClickCallback)();
 
 class GameButton : public Object {
@@ -26,6 +25,5 @@ public:
     bool IsHolding() const;
     
 private:
-    // Helper method to check if point is inside button bounds
     bool IsPointInside(float x, float y) const;
 }; 

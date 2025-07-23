@@ -18,7 +18,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Engine systems
 ResourceManager* g_resourceManager = nullptr;
 SceneManager* g_sceneManager = nullptr;
 GameStateMachine* g_gameStateMachine = nullptr;
@@ -26,10 +25,6 @@ GameStateMachine* g_gameStateMachine = nullptr;
 int Init(ESContext* esContext)
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	
-	// 2D rendering - depth testing not needed
-	// glEnable(GL_DEPTH_TEST);  // Disabled for 2D-only engine
-	// glDepthFunc(GL_LEQUAL);   // Disabled for 2D-only engine
 
 	std::cout << "\n=== 2D Game Engine with State Machine ===" << std::endl;
 	std::cout << "Initializing New Training Framework Engine..." << std::endl;
@@ -41,7 +36,6 @@ int Init(ESContext* esContext)
 		return -1;
 	}
 	
-	// Initialize Scene Manager (scenes will be loaded per-state)
 	g_sceneManager = SceneManager::GetInstance();
 	std::cout << "SceneManager initialized (scenes loaded per-state)" << std::endl;
 	
@@ -63,9 +57,8 @@ int Init(ESContext* esContext)
 
 void Draw(ESContext* esContext)
 {
-	glClear(GL_COLOR_BUFFER_BIT);  // 2D-only: No depth buffer clearing needed
+	glClear(GL_COLOR_BUFFER_BIT);
 
-	// Use Game State Machine for rendering (2D-only)
 	if (g_gameStateMachine) {
 		g_gameStateMachine->Draw();
 	}
@@ -75,7 +68,6 @@ void Draw(ESContext* esContext)
 
 void Update(ESContext *esContext, float deltaTime)
 {
-	// Use Game State Machine for updates (2D-only)
 	if (g_gameStateMachine) {
 		g_gameStateMachine->Update(deltaTime);
 	}
@@ -83,7 +75,6 @@ void Update(ESContext *esContext, float deltaTime)
 
 void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 {
-	// Use Game State Machine for input handling (2D-only)
 	if (g_gameStateMachine) {
 		g_gameStateMachine->HandleKeyEvent(key, bIsPressed);
 	}
@@ -91,7 +82,6 @@ void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 
 void MouseClick(ESContext *esContext, int x, int y, bool bIsPressed)
 {
-	// Use Game State Machine for mouse input handling (2D-only)
 	if (g_gameStateMachine) {
 		g_gameStateMachine->HandleMouseEvent(x, y, bIsPressed);
 	}
@@ -99,7 +89,6 @@ void MouseClick(ESContext *esContext, int x, int y, bool bIsPressed)
 
 void OnMouseMove(ESContext *esContext, int x, int y)
 {
-	// Use Game State Machine for mouse movement handling (2D-only)
 	if (g_gameStateMachine) {
 		g_gameStateMachine->HandleMouseMove(x, y);
 	}
@@ -107,7 +96,6 @@ void OnMouseMove(ESContext *esContext, int x, int y)
 
 void CleanUp()
 {
-	// Cleanup engine systems
 	if (g_gameStateMachine) {
 		GameStateMachine::DestroyInstance();
 		g_gameStateMachine = nullptr;
@@ -123,7 +111,7 @@ void CleanUp()
 		g_resourceManager = nullptr;
 	}
 	
-	std::cout << "🧹 2D Game Engine cleanup completed" << std::endl;
+	std::cout << "2D Game Engine cleanup completed" << std::endl;
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -132,7 +120,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	esInitContext ( &esContext );
 
-	esCreateWindow ( &esContext, "New Training Framework - 2D Engine", Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB);  // 2D-only: No depth buffer needed
+	esCreateWindow ( &esContext, "New Training Framework - 2D Engine", Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB);
 
 	if ( Init ( &esContext ) != 0 )
 		return 0;
@@ -145,10 +133,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	esMainLoop ( &esContext );
 
-	//releasing OpenGL resources
 	CleanUp();
 
-	//identifying memory leaks
 	MemoryManager::GetInstance()->SanityCheck();
 
 	printf("Press any key...\n");

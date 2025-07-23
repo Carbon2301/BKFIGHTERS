@@ -54,7 +54,7 @@ bool GameButton::IsPointInside(float x, float y) const {
     const Vector3& position = GetPosition();
     const Vector3& scale = GetScale();
     
-    // Use scale as size (assuming scale represents width and height)
+    // Use scale as size
     float width = scale.x;
     float height = scale.y;
     

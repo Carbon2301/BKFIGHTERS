@@ -7,9 +7,9 @@
 #endif
 
 Camera::Camera() 
-    : m_position(0.0f, 0.0f, 1.0f)  // Default 2D position with z=1 for depth
-    , m_target(0.0f, 0.0f, 0.0f)    // Looking at origin
-    , m_up(0.0f, 1.0f, 0.0f)        // Standard 2D up vector
+    : m_position(0.0f, 0.0f, 1.0f)
+    , m_target(0.0f, 0.0f, 0.0f)
+    , m_up(0.0f, 1.0f, 0.0f)
     , m_left(-1.0f), m_right(1.0f), m_bottom(-1.0f), m_top(1.0f)
     , m_nearPlane(0.1f), m_farPlane(100.0f)
     , m_viewNeedsUpdate(true)
@@ -124,13 +124,11 @@ void Camera::UpdateViewMatrix() {
 }
 
 void Camera::UpdateProjectionMatrix() {
-    // 2D-only: Always use orthographic projection
     m_projectionMatrix.SetOrthographic(m_left, m_right, m_bottom, m_top, m_nearPlane, m_farPlane);
     m_projectionNeedsUpdate = false;
 }
 
 void Camera::UpdateViewProjectionMatrix() {
-    // Make sure individual matrices are up to date
     if (m_viewNeedsUpdate) {
         UpdateViewMatrix();
     }
