@@ -97,7 +97,7 @@ void Object::UpdateWorldMatrix() {
     Matrix temp1 = rotationX * scale;
     Matrix temp2 = rotationY * temp1;
     Matrix temp3 = rotationZ * temp2;
-    m_worldMatrix = translation * temp3;
+    m_worldMatrix = temp3 * translation;
     m_matrixNeedsUpdate = false;
 }
 

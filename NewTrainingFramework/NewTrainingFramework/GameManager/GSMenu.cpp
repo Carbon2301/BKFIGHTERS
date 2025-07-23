@@ -55,8 +55,8 @@ void GSMenu::Init() {
     m_textObject->SetModel(0);
     m_textObject->SetShader(0);
     m_textObject->SetDynamicTexture(m_textTexture);
-    float x = -3.7f;
-    float y = 8.5f;
+    float x = -1.6f;
+    float y = 0.8f;
     m_textObject->Set2DPosition(x, y);
     m_textObject->SetSize(0.3f, 0.1f);
 }
