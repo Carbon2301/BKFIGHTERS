@@ -2,11 +2,15 @@
   "ExpandedNodes": [
     "",
     "\\NewTrainingFramework",
+    "\\NewTrainingFramework\\NewTrainingFramework",
+    "\\NewTrainingFramework\\NewTrainingFramework\\GameManager",
+    "\\NewTrainingFramework\\NewTrainingFramework\\GameObject",
+    "\\NewTrainingFramework\\project",
     "\\NewTrainingFramework\\Resources",
     "\\NewTrainingFramework\\Resources\\Models",
     "\\NewTrainingFramework\\Resources\\Shaders",
     "\\NewTrainingFramework\\Resources\\Textures"
   ],
-  "SelectedNode": "\\NewTrainingFramework\\NewTrainingFramework.sln",
+  "SelectedNode": "\\NewTrainingFramework\\NewTrainingFramework\\GameObject\\Animation2D.h",
   "PreviewInSolutionExplorer": false
 }

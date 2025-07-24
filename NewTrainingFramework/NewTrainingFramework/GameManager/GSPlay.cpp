@@ -8,6 +8,14 @@
 #include <memory>
 #include "../GameObject/Animation2D.h"
 
+// Thêm enum trạng thái nhân vật
+enum class CharState { Idle, MoveLeft, MoveRight, MoveBack, MoveFront };
+static CharState m_charState = CharState::Idle;
+static int m_facingRow = 0; // 0: trước, 1: trái, 2: phải, 3: sau
+
+// Thêm mảng lưu trạng thái phím
+static bool keyStates[256] = { false };
+
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f) {
 }
@@ -39,9 +47,13 @@ void GSPlay::Init() {
     
     m_gameTime = 0.0f;
 
-
-    m_anim = std::make_shared<Animation2D>(12, 4, 0.1f); // 12 cột, 4 hàng, 0.1s/frame
-    m_anim->SetRow(0); // Hàng đầu tiên (tuỳ chỉnh theo nhân vật)
+    // Khởi tạo animation đúng với spritesheet gốc (12 cột, 4 hàng), chỉ lấy nhân vật vàng (col 0-2)
+    m_anim = std::make_shared<Animation2D>(12, 4, 0.1f);
+    m_anim->SetColRange(0, 2); // Chỉ chạy trong 3 cột đầu
+    m_anim->SetRow(0); // Mặc định: action đầu tiên 
+    m_anim->SetCol(1); // Đứng yên ở frame giữa
+    m_charState = CharState::Idle;
+    m_facingRow = 0;
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
@@ -49,6 +61,7 @@ void GSPlay::Init() {
     std::cout << "- P: Quick play (from menu)" << std::endl;
     std::cout << "- Q: Help/Question (from menu)" << std::endl;
     std::cout << "- X: Exit game (from menu)" << std::endl;
+    std::cout << "- W/A/S/D: Doi action nhan vat mau vang" << std::endl;
     
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
     std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
@@ -61,8 +74,53 @@ void GSPlay::Update(float deltaTime) {
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
+    // Xử lý trạng thái nhân vật dựa trên keyStates (ưu tiên W > A > D > S)
+    if (keyStates['W'] || keyStates['w']) {
+        m_facingRow = 0;
+        m_charState = CharState::MoveFront;
+        if (m_anim) {
+            m_anim->SetRow(0);
+            m_anim->SetColRange(0,2);
+        }
+    } else if (keyStates['A'] || keyStates['a']) {
+        m_facingRow = 2; //row 2 là trái
+        m_charState = CharState::MoveLeft;
+        if (m_anim) {
+            m_anim->SetRow(2);
+            m_anim->SetColRange(0,2);
+        }
+    } else if (keyStates['D'] || keyStates['d']) {
+        m_facingRow = 1; //row 1 là phải
+        m_charState = CharState::MoveRight;
+        if (m_anim) {
+            m_anim->SetRow(1);
+            m_anim->SetColRange(0,2);
+        }
+    } else if (keyStates['S'] || keyStates['s']) {
+        m_facingRow = 3;
+        m_charState = CharState::MoveBack;
+        if (m_anim) {
+            m_anim->SetRow(3);
+            m_anim->SetColRange(0,2);
+        }
+    } else {
+        m_charState = CharState::Idle;
+        if (m_anim) {
+            m_anim->SetRow(m_facingRow);
+            m_anim->SetCol(1);
+            m_anim->SetColRange(1,1);
+        }
+    }
     // Update animation
-    if (m_anim) m_anim->Update(deltaTime);
+    if (m_anim) {
+        if (m_charState == CharState::Idle) {
+            m_anim->SetCol(1);
+            m_anim->SetColRange(1,1);
+        } else {
+            m_anim->SetColRange(0,2);
+            m_anim->Update(deltaTime);
+        }
+    }
     
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
     if (menuButton) {
@@ -91,41 +149,15 @@ void GSPlay::Draw() {
 }
 
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
-    std::cout << "GSPlay: Key " << (int)key << " pressed=" << bIsPressed << std::endl;
-    
-    if (!bIsPressed) return;
-    
-    switch (key) {
-        case 27: // ESC
-        case 'M':
-        case 'm':
+    keyStates[key] = bIsPressed;
+    if (!bIsPressed) {
+        if (key == 27 || key == 'M' || key == 'm') {
             std::cout << "=== Returning to Menu ===" << std::endl;
             std::cout << "Game paused. Returning to main menu..." << std::endl;
             std::cout << "Calling ChangeState(MENU)..." << std::endl;
             GameStateMachine::GetInstance()->ChangeState(StateType::MENU); // Direct change to menu
             std::cout << "ChangeState() called successfully!" << std::endl;
-            break;
-            
-        case 'W':
-        case 'w':
-            std::cout << "Move up (demo)" << std::endl;
-            break;
-        case 'S':
-        case 's':
-            std::cout << "Move down (demo)" << std::endl;
-            break;
-        case 'A':
-        case 'a':
-            std::cout << "Move left (demo)" << std::endl;
-            break;
-        case 'D':
-        case 'd':
-            std::cout << "Move right (demo)" << std::endl;
-            break;
-            
-        case ' ': // Space
-            std::cout << "Action button pressed! (demo)" << std::endl;
-            break;
+        }
     }
 }
 
@@ -176,7 +208,6 @@ void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {
 }
 
 void GSPlay::HandleMouseMove(int x, int y) {
-    // std::cout << "GSPlay: Mouse moved to (" << x << ", " << y << ")" << std::endl;
 }
 
 void GSPlay::Resume() {
