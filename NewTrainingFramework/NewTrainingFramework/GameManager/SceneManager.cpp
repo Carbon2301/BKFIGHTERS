@@ -394,3 +394,11 @@ void SceneManager::PrintSceneInfo() {
     
     std::cout << "==============================\n" << std::endl;
 } 
+
+void SceneManager::AdjustCameraToWindow() {
+    Camera* camera = GetActiveCamera();
+    if (camera) {
+        float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+        camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+    }
+} 

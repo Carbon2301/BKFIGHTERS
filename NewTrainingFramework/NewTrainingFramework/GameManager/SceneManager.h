@@ -72,6 +72,8 @@ public:
 
     const std::vector<std::unique_ptr<Object>>& GetObjects() const { return m_objects; }
 
+    void AdjustCameraToWindow();
+
 private:
     std::string GetSceneFileForState(StateType stateType);
     bool ParseCameraConfig(std::ifstream& file, const std::string& line);

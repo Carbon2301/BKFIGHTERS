@@ -16,6 +16,9 @@ static int m_facingRow = 0; // 0: trước, 1: trái, 2: phải, 3: sau
 // Thêm mảng lưu trạng thái phím
 static bool keyStates[256] = { false };
 
+static float m_charPosX = 0.0f;
+static float m_charPosY = 0.0f;
+
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f) {
 }
@@ -43,9 +46,20 @@ void GSPlay::Init() {
             camera->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
             sceneManager->SetActiveCamera(0);
         }
+    } else {
+        // Nếu đã có camera, vẫn chỉnh lại tỉ lệ aspect cho đúng
+        Camera* camera = sceneManager->GetActiveCamera();
+        if (camera) {
+            float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+            camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+        }
     }
+    // Luôn override lại camera aspect sau khi load scene
+    sceneManager->AdjustCameraToWindow();
     
     m_gameTime = 0.0f;
+    m_charPosX = 0.0f; // Vị trí giữa màn hình 
+    m_charPosY = 0.0f;
 
     // Khởi tạo animation đúng với spritesheet gốc (12 cột, 4 hàng), chỉ lấy nhân vật vàng (col 0-2)
     m_anim = std::make_shared<Animation2D>(12, 4, 0.1f);
@@ -70,6 +84,7 @@ void GSPlay::Init() {
 
 void GSPlay::Update(float deltaTime) {
     m_gameTime += deltaTime;
+    float moveSpeed = 0.5f; // pixel/giây
     
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
@@ -89,6 +104,7 @@ void GSPlay::Update(float deltaTime) {
             m_anim->SetRow(2);
             m_anim->SetColRange(0,2);
         }
+        m_charPosX -= moveSpeed * deltaTime; // Di chuyển sang trái
     } else if (keyStates['D'] || keyStates['d']) {
         m_facingRow = 1; //row 1 là phải
         m_charState = CharState::MoveRight;
@@ -96,6 +112,7 @@ void GSPlay::Update(float deltaTime) {
             m_anim->SetRow(1);
             m_anim->SetColRange(0,2);
         }
+        m_charPosX += moveSpeed * deltaTime; // Di chuyển sang phải
     } else if (keyStates['S'] || keyStates['s']) {
         m_facingRow = 3;
         m_charState = CharState::MoveBack;
@@ -129,7 +146,7 @@ void GSPlay::Update(float deltaTime) {
     
     static float lastTimeShow = 0.0f;
     if (m_gameTime - lastTimeShow > 5.0f) {
-        std::cout << "Game time: " << (int)m_gameTime << " seconds" << std::endl;
+        // std::cout << "Game time: " << (int)m_gameTime << " seconds" << std::endl;
         lastTimeShow = m_gameTime;
     }
 }
@@ -142,6 +159,8 @@ void GSPlay::Draw() {
         float u0, v0, u1, v1;
         m_anim->GetUV(u0, v0, u1, v1);
         animObj->SetCustomUV(u0, v0, u1, v1);
+        // Truyền vị trí mới cho object nhân vật
+        animObj->SetPosition(Vector3(m_charPosX, m_charPosY, 0.0f));
         Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
         if (cam) animObj->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
     }

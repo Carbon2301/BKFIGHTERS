@@ -17,7 +17,6 @@ GSMenu::GSMenu()
 }
 
 GSMenu::~GSMenu() {
-    // Không cần giải phóng nhạc nền ở đây nữa
 }
 
 void GSMenu::Init() {
@@ -41,7 +40,7 @@ void GSMenu::Init() {
         return;
     }
     SDL_Color color = {255, 255, 255, 255};
-    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "Hello", color);
+    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "Welcome to My game", color);
     if (!textSurface) {
         std::cout << "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
         TTF_CloseFont(font);
@@ -61,10 +60,10 @@ void GSMenu::Init() {
     m_textObject->SetModel(0);
     m_textObject->SetShader(0);
     m_textObject->SetDynamicTexture(m_textTexture);
-    float x = -1.6f;
+    float x = -0.6f;
     float y = 0.8f;
     m_textObject->Set2DPosition(x, y);
-    m_textObject->SetSize(0.3f, 0.1f);
+    m_textObject->SetSize(0.8f, 0.1f); 
 }
 
 void GSMenu::Update(float deltaTime) {
