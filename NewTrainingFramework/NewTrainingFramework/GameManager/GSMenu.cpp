@@ -60,10 +60,10 @@ void GSMenu::Init() {
     m_textObject->SetModel(0);
     m_textObject->SetShader(0);
     m_textObject->SetDynamicTexture(m_textTexture);
-    float x = -0.6f;
-    float y = 0.8f;
+    float x = 0.07f;
+    float y = 0.81f;
     m_textObject->Set2DPosition(x, y);
-    m_textObject->SetSize(0.8f, 0.1f); 
+    m_textObject->SetSize(0.8f, 0.2f);
 }
 
 void GSMenu::Update(float deltaTime) {
@@ -132,7 +132,7 @@ static float MousePixelToWorldX(int x, Camera* cam) {
 static float MousePixelToWorldY(int y, Camera* cam) {
     float top = cam->GetTop();
     float bottom = cam->GetBottom();
-    return top - (top - bottom) * ((float)y / Globals::screenHeight);
+    return bottom + (top - bottom) * (1.0f - (float)y / Globals::screenHeight);
 }
 
 void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {

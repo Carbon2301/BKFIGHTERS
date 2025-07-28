@@ -53,10 +53,7 @@ void GSPlay::Init() {
             float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
             camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
         }
-    }
-    // Luôn override lại camera aspect sau khi load scene
-    sceneManager->AdjustCameraToWindow();
-    
+    }    
     m_gameTime = 0.0f;
     m_charPosX = 0.0f; // Vị trí giữa màn hình 
     m_charPosY = 0.0f;
@@ -188,7 +185,7 @@ static float MousePixelToWorldX(int x, Camera* cam) {
 static float MousePixelToWorldY(int y, Camera* cam) {
     float top = cam->GetTop();
     float bottom = cam->GetBottom();
-    return top - (top - bottom) * ((float)y / Globals::screenHeight);
+    return bottom + (top - bottom) * (1.0f - (float)y / Globals::screenHeight);
 }
 
 void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {

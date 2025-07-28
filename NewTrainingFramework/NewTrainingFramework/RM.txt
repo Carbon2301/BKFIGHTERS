@@ -9,11 +9,11 @@ FILE "../Resources/Models/Sprite2D.nfg"
 
 # 2DTexture 6
 ID 0
-FILE "../Resources/Textures/bg_play1.tga"
+FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
 
 ID 1  
-FILE "../Resources/Textures/bg_play1.tga"
+FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
 
 ID 2
