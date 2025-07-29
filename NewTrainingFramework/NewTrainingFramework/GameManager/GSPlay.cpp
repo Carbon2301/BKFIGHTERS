@@ -19,6 +19,7 @@ static bool keyStates[256] = { false };
 
 static float m_charPosX = 0.0f;
 static float m_charPosY = 0.0f;
+static bool m_facingLeft = false; // Nhớ hướng cuối cùng
 
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f) {
@@ -121,13 +122,23 @@ void GSPlay::Update(float deltaTime) {
     if (keyStates['D'] || keyStates['d']) {
         // Walk animation (animation 1) - di chuyển sang phải
         m_charState = CharState::MoveRight;
+        m_facingLeft = false; // Nhớ hướng phải
         m_charPosX += moveSpeed * deltaTime;
         if (m_animManager && lastAnimation != 1) {
             m_animManager->Play(1, true); // Walk animation
             lastAnimation = 1;
         }
+    } else if (keyStates['A'] || keyStates['a']) {
+        // Walk animation (animation 1) - di chuyển sang trái
+        m_charState = CharState::MoveLeft;
+        m_facingLeft = true; // Nhớ hướng trái
+        m_charPosX -= moveSpeed * deltaTime;
+        if (m_animManager && lastAnimation != 1) {
+            m_animManager->Play(1, true); // Walk animation (sẽ đảo ngược UV)
+            lastAnimation = 1;
+        }
     } else {
-        // Idle animation (animation 0)
+        // Idle animation (animation 0) - giữ hướng cuối cùng
         m_charState = CharState::Idle;
         if (m_animManager && lastAnimation != 0) {
             m_animManager->Play(0, true); // Idle animation
@@ -159,6 +170,15 @@ void GSPlay::Draw() {
     if (animObj && m_animManager && animObj->GetModelId() >= 0 && animObj->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_animManager->GetUV(u0, v0, u1, v1);
+        
+        // Đảo ngược UV coordinates khi nhìn sang trái
+        if (m_facingLeft) {
+            // Đảo ngược U coordinates để flip sprite
+            float temp = u0;
+            u0 = u1;
+            u1 = temp;
+        }
+        
         animObj->SetCustomUV(u0, v0, u1, v1);
         // Truyền vị trí mới cho object nhân vật
         animObj->SetPosition(Vector3(m_charPosX, m_charPosY, 0.0f));
