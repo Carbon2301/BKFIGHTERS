@@ -91,6 +91,10 @@ void GSPlay::Init() {
     std::cout << "- D: Walk right (Animation 1)" << std::endl;
     std::cout << "- Shift + A: Run left (Animation 2)" << std::endl;
     std::cout << "- Shift + D: Run right (Animation 2)" << std::endl;
+    std::cout << "- S: Sit down (Animation 3)" << std::endl;
+    std::cout << "- A + Space: Roll left (Animation 4)" << std::endl;
+    std::cout << "- D + Space: Roll right (Animation 4)" << std::endl;
+    std::cout << "- Space: Roll in current direction (Animation 4)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0)" << std::endl;
     std::cout << "=== ANIMATION TEST MODE ===" << std::endl;
     std::cout << "- 0: Animation 0 (Idle)" << std::endl;
@@ -125,7 +129,37 @@ void GSPlay::Update(float deltaTime) {
     // Kiểm tra Shift key (VK_SHIFT = 16)
     bool isShiftPressed = keyStates[16];
     
-    if (keyStates['D'] || keyStates['d']) {
+    // Kiểm tra Roll trước (priority cao nhất)
+    if ((keyStates['A'] || keyStates['a']) && (keyStates[' '])) {
+        // Roll Left (animation 4) - lăn sang trái
+        m_charState = CharState::MoveLeft;
+        m_facingLeft = true; // Nhớ hướng trái
+        m_charPosX -= moveSpeed * 1.5f * deltaTime; // Roll nhanh hơn walk
+        if (m_animManager && lastAnimation != 4) {
+            m_animManager->Play(4, true); // Roll animation (sẽ đảo ngược UV)
+            lastAnimation = 4;
+        }
+    } else if ((keyStates['D'] || keyStates['d']) && (keyStates[' '])) {
+        // Roll Right (animation 4) - lăn sang phải
+        m_charState = CharState::MoveRight;
+        m_facingLeft = false; // Nhớ hướng phải
+        m_charPosX += moveSpeed * 1.5f * deltaTime; // Roll nhanh hơn walk
+        if (m_animManager && lastAnimation != 4) {
+            m_animManager->Play(4, true); // Roll animation
+            lastAnimation = 4;
+        }
+    } else if (keyStates[' ']) {
+        // Roll theo hướng cuối cùng (animation 4)
+        if (m_facingLeft) {
+            m_charPosX -= moveSpeed * 1.5f * deltaTime; // Roll trái
+        } else {
+            m_charPosX += moveSpeed * 1.5f * deltaTime; // Roll phải
+        }
+        if (m_animManager && lastAnimation != 4) {
+            m_animManager->Play(4, true); // Roll animation
+            lastAnimation = 4;
+        }
+    } else if (keyStates['D'] || keyStates['d']) {
         if (isShiftPressed) {
             // Run animation (animation 2) - chạy sang phải
             m_charState = CharState::MoveRight;
@@ -164,6 +198,13 @@ void GSPlay::Update(float deltaTime) {
                 m_animManager->Play(1, true); // Walk animation (sẽ đảo ngược UV)
                 lastAnimation = 1;
             }
+        }
+    } else if (keyStates['S'] || keyStates['s']) {
+        // Sit animation (animation 3) - ngồi xuống
+        m_charState = CharState::Idle;
+        if (m_animManager && lastAnimation != 3) {
+            m_animManager->Play(3, true); // Sit animation
+            lastAnimation = 3;
         }
     } else {
         // Idle animation (animation 0) - giữ hướng cuối cùng
