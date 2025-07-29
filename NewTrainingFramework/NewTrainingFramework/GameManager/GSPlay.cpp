@@ -6,7 +6,8 @@
 #include "../GameObject/Object.h"
 #include "../GameObject/Texture2D.h"
 #include <memory>
-#include "../GameObject/Animation2D.h"
+#include "../GameObject/AnimationManager.h"
+#include "ResourceManager.h"
 
 // Thêm enum trạng thái nhân vật
 enum class CharState { Idle, MoveLeft, MoveRight, MoveBack, MoveFront };
@@ -18,6 +19,14 @@ static bool keyStates[256] = { false };
 
 static float m_charPosX = 0.0f;
 static float m_charPosY = 0.0f;
+static bool m_facingLeft = false; // Nhớ hướng cuối cùng
+
+// Combo system variables
+static int m_comboCount = 0; // 0, 1, 2, 3
+static float m_comboTimer = 0.0f; // Thời gian để combo tiếp tục
+static const float COMBO_WINDOW = 0.5f; // 0.5 giây để nhấn J tiếp
+static bool m_isInCombo = false; // Đang trong combo hay không
+static bool m_comboCompleted = false; // Combo đã hoàn thành chưa
 
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f) {
@@ -58,11 +67,23 @@ void GSPlay::Init() {
     m_charPosX = 0.0f; // Vị trí giữa màn hình 
     m_charPosY = 0.0f;
 
-    // Khởi tạo animation đúng với spritesheet gốc (12 cột, 4 hàng), chỉ lấy nhân vật vàng (col 0-2)
-    m_anim = std::make_shared<Animation2D>(12, 4, 0.1f);
-    m_anim->SetColRange(0, 2); // Chỉ chạy trong 3 cột đầu
-    m_anim->SetRow(0); // Mặc định: action đầu tiên 
-    m_anim->SetCol(1); // Đứng yên ở frame giữa
+    // Khởi tạo AnimationManager với dữ liệu từ ResourceManager
+    m_animManager = std::make_shared<AnimationManager>();
+    
+    // Lấy animation data từ texture ID 10 (spritesheet)
+    const TextureData* textureData = ResourceManager::GetInstance()->GetTextureData(10);
+    if (textureData && textureData->spriteWidth > 0 && textureData->spriteHeight > 0) {
+        std::vector<AnimationData> animations;
+        for (const auto& anim : textureData->animations) {
+            animations.push_back({anim.startFrame, anim.numFrames, anim.duration, 0.0f});
+        }
+        m_animManager->Initialize(textureData->spriteWidth, textureData->spriteHeight, animations);
+        m_animManager->Play(0, true); // Play idle animation (0)
+        std::cout << "Animation system initialized with " << animations.size() << " animations" << std::endl;
+    } else {
+        std::cout << "Warning: No animation data found for texture ID 10" << std::endl;
+    }
+    
     m_charState = CharState::Idle;
     m_facingRow = 0;
     
@@ -72,7 +93,36 @@ void GSPlay::Init() {
     std::cout << "- P: Quick play (from menu)" << std::endl;
     std::cout << "- Q: Help/Question (from menu)" << std::endl;
     std::cout << "- X: Exit game (from menu)" << std::endl;
-    std::cout << "- W/A/S/D: Doi action nhan vat mau vang" << std::endl;
+    std::cout << "=== MOVEMENT CONTROLS ===" << std::endl;
+    std::cout << "- A: Walk left (Animation 1)" << std::endl;
+    std::cout << "- D: Walk right (Animation 1)" << std::endl;
+    std::cout << "- Shift + A: Run left (Animation 2)" << std::endl;
+    std::cout << "- Shift + D: Run right (Animation 2)" << std::endl;
+    std::cout << "- S: Sit down (Animation 3)" << std::endl;
+    std::cout << "- A + Space: Roll left (Animation 4)" << std::endl;
+    std::cout << "- D + Space: Roll right (Animation 4)" << std::endl;
+    std::cout << "- Space: Roll in current direction (Animation 4)" << std::endl;
+    std::cout << "- Release keys: Idle (Animation 0)" << std::endl;
+    std::cout << "=== COMBO SYSTEM ===" << std::endl;
+    std::cout << "- J: Start/Continue Punch Combo" << std::endl;
+    std::cout << "  * Press J once: Punch1 (Animation 9)" << std::endl;
+    std::cout << "  * Press J twice: Punch2 (Animation 10)" << std::endl;
+    std::cout << "  * Press J three times: Punch3 (Animation 11)" << std::endl;
+    std::cout << "  * Combo window: " << COMBO_WINDOW << " seconds" << std::endl;
+    std::cout << "=== ANIMATION TEST MODE ===" << std::endl;
+    std::cout << "- 0: Animation 0 (Idle)" << std::endl;
+    std::cout << "- 1: Animation 1 (Walk)" << std::endl;
+    std::cout << "- 2: Animation 2" << std::endl;
+    std::cout << "- 3: Animation 3" << std::endl;
+    std::cout << "- 4: Animation 4" << std::endl;
+    std::cout << "- 5: Animation 5" << std::endl;
+    std::cout << "- 6: Animation 6" << std::endl;
+    std::cout << "- 7: Animation 7" << std::endl;
+    std::cout << "- 8: Animation 8" << std::endl;
+    std::cout << "- 9: Animation 9 (Punch1)" << std::endl;
+    std::cout << "- Q: Animation 10 (Punch2)" << std::endl;
+    std::cout << "- E: Animation 11 (Punch3)" << std::endl;
+    std::cout << "- R: Animation 12" << std::endl;
     
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
     std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
@@ -81,58 +131,169 @@ void GSPlay::Init() {
 
 void GSPlay::Update(float deltaTime) {
     m_gameTime += deltaTime;
-    float moveSpeed = 0.5f; // pixel/giây
+    float moveSpeed = 0.5f; // units/giây - di chuyển chậm hơn
     
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Xử lý trạng thái nhân vật dựa trên keyStates (ưu tiên W > A > D > S)
-    if (keyStates['W'] || keyStates['w']) {
-        m_facingRow = 0;
-        m_charState = CharState::MoveFront;
-        if (m_anim) {
-            m_anim->SetRow(0);
-            m_anim->SetColRange(0,2);
-        }
-    } else if (keyStates['A'] || keyStates['a']) {
-        m_facingRow = 2; //row 2 là trái
-        m_charState = CharState::MoveLeft;
-        if (m_anim) {
-            m_anim->SetRow(2);
-            m_anim->SetColRange(0,2);
-        }
-        m_charPosX -= moveSpeed * deltaTime; // Di chuyển sang trái
-    } else if (keyStates['D'] || keyStates['d']) {
-        m_facingRow = 1; //row 1 là phải
-        m_charState = CharState::MoveRight;
-        if (m_anim) {
-            m_anim->SetRow(1);
-            m_anim->SetColRange(0,2);
-        }
-        m_charPosX += moveSpeed * deltaTime; // Di chuyển sang phải
-    } else if (keyStates['S'] || keyStates['s']) {
-        m_facingRow = 3;
-        m_charState = CharState::MoveBack;
-        if (m_anim) {
-            m_anim->SetRow(3);
-            m_anim->SetColRange(0,2);
-        }
-    } else {
-        m_charState = CharState::Idle;
-        if (m_anim) {
-            m_anim->SetRow(m_facingRow);
-            m_anim->SetCol(1);
-            m_anim->SetColRange(1,1);
+    // Update combo timer
+    if (m_isInCombo) {
+        m_comboTimer -= deltaTime;
+        if (m_comboTimer <= 0.0f) {
+            // Combo timeout - reset về idle
+            m_isInCombo = false;
+            m_comboCount = 0;
+            m_comboCompleted = false;
+            if (m_animManager) {
+                m_animManager->Play(0, true); // Return to idle
+            }
+            std::cout << "Combo timeout - returning to idle" << std::endl;
         }
     }
-    // Update animation
-    if (m_anim) {
-        if (m_charState == CharState::Idle) {
-            m_anim->SetCol(1);
-            m_anim->SetColRange(1,1);
+    
+    // Xử lý di chuyển dựa trên trạng thái phím
+    static int lastAnimation = -1; // Để tránh gọi Play() liên tục
+    
+    // Kiểm tra Shift key (VK_SHIFT = 16)
+    bool isShiftPressed = keyStates[16];
+    
+    // Reset combo chỉ khi thực hiện hành động khác (không phải di chuyển)
+    bool isMoving = (keyStates['A'] || keyStates['a'] || keyStates['D'] || keyStates['d']);
+    bool isOtherAction = (keyStates['S'] || keyStates['s'] || keyStates[' ']);
+    
+    if (isOtherAction && m_isInCombo) {
+        m_isInCombo = false;
+        m_comboCount = 0;
+        m_comboTimer = 0.0f;
+        m_comboCompleted = false;
+        std::cout << "Combo cancelled due to other action (Sit/Roll)" << std::endl;
+    }
+    
+    // Kiểm tra Roll trước (priority cao nhất)
+    if ((keyStates['A'] || keyStates['a']) && (keyStates[' '])) {
+        // Roll Left (animation 4) - lăn sang trái
+        m_charState = CharState::MoveLeft;
+        m_facingLeft = true;
+        m_charPosX -= moveSpeed * 1.5f * deltaTime; // Roll nhanh hơn walk
+        if (m_animManager && lastAnimation != 4) {
+            m_animManager->Play(4, true); // Roll animation (sẽ đảo ngược UV)
+            lastAnimation = 4;
+        }
+    } else if ((keyStates['D'] || keyStates['d']) && (keyStates[' '])) {
+        // Roll Right (animation 4) - lăn sang phải
+        m_charState = CharState::MoveRight;
+        m_facingLeft = false; // Nhớ hướng phải
+        m_charPosX += moveSpeed * 1.5f * deltaTime; // Roll nhanh hơn walk
+        if (m_animManager && lastAnimation != 4) {
+            m_animManager->Play(4, true); // Roll animation
+            lastAnimation = 4;
+        }
+    } else if (keyStates[' ']) {
+        // Roll theo hướng cuối cùng (animation 4)
+        if (m_facingLeft) {
+            m_charPosX -= moveSpeed * 1.5f * deltaTime; // Roll trái
         } else {
-            m_anim->SetColRange(0,2);
-            m_anim->Update(deltaTime);
+            m_charPosX += moveSpeed * 1.5f * deltaTime; // Roll phải
+        }
+        if (m_animManager && lastAnimation != 4) {
+            m_animManager->Play(4, true); // Roll animation
+            lastAnimation = 4;
+        }
+    } else if (keyStates['D'] || keyStates['d']) {
+        // Di chuyển sang phải
+        m_charState = CharState::MoveRight;
+        m_facingLeft = false; // Nhớ hướng phải
+        
+        if (isShiftPressed) {
+            // Chạy sang phải
+            m_charPosX += moveSpeed * 2.0f * deltaTime; // Chạy nhanh gấp đôi
+        } else {
+            // Đi bộ sang phải
+            m_charPosX += moveSpeed * deltaTime;
+        }
+        
+        // Chỉ thay đổi animation nếu không đang trong combo
+        if (!m_isInCombo) {
+            if (isShiftPressed) {
+                if (m_animManager && lastAnimation != 2) {
+                    m_animManager->Play(2, true); // Run animation
+                    lastAnimation = 2;
+                }
+            } else {
+                if (m_animManager && lastAnimation != 1) {
+                    m_animManager->Play(1, true); // Walk animation
+                    lastAnimation = 1;
+                }
+            }
+        }
+    } else if (keyStates['A'] || keyStates['a']) {
+        // Di chuyển sang trái
+        m_charState = CharState::MoveLeft;
+        m_facingLeft = true; // Nhớ hướng trái
+        
+        if (isShiftPressed) {
+            // Chạy sang trái
+            m_charPosX -= moveSpeed * 2.0f * deltaTime; // Chạy nhanh gấp đôi
+        } else {
+            // Đi bộ sang trái
+            m_charPosX -= moveSpeed * deltaTime;
+        }
+        
+        // Chỉ thay đổi animation nếu không đang trong combo
+        if (!m_isInCombo) {
+            if (isShiftPressed) {
+                if (m_animManager && lastAnimation != 2) {
+                    m_animManager->Play(2, true); // Run animation (sẽ đảo ngược UV)
+                    lastAnimation = 2;
+                }
+            } else {
+                if (m_animManager && lastAnimation != 1) {
+                    m_animManager->Play(1, true); // Walk animation (sẽ đảo ngược UV)
+                    lastAnimation = 1;
+                }
+            }
+        }
+    } else if (keyStates['S'] || keyStates['s']) {
+        // Sit animation (animation 3) - ngồi xuống
+        m_charState = CharState::Idle;
+        if (m_animManager && lastAnimation != 3) {
+            m_animManager->Play(3, true); // Sit animation
+            lastAnimation = 3;
+        }
+    } else {
+        // Idle animation (animation 0) - giữ hướng cuối cùng
+        // Chỉ chuyển về idle nếu không đang trong combo
+        if (!m_isInCombo) {
+            m_charState = CharState::Idle;
+            if (m_animManager && lastAnimation != 0) {
+                m_animManager->Play(0, true); // Idle animation
+                lastAnimation = 0;
+            }
+        }
+    }
+    
+    // Update animation
+    if (m_animManager) {
+        m_animManager->Update(deltaTime);
+        
+        // Check if combo animation finished
+        if (m_isInCombo && !m_animManager->IsPlaying()) {
+            // Animation finished, check if we need to continue combo or return to idle
+            if (m_comboCompleted) {
+                // Combo completed, return to idle
+                m_isInCombo = false;
+                m_comboCount = 0;
+                m_comboCompleted = false;
+                m_animManager->Play(0, true); // Return to idle
+                std::cout << "Combo completed - returning to idle" << std::endl;
+            } else if (m_comboTimer <= 0.0f) {
+                // Combo timeout, return to idle
+                m_isInCombo = false;
+                m_comboCount = 0;
+                m_comboCompleted = false;
+                m_animManager->Play(0, true); // Return to idle
+                std::cout << "Combo timeout - returning to idle" << std::endl;
+            }
         }
     }
     
@@ -152,20 +313,129 @@ void GSPlay::Draw() {
     SceneManager::GetInstance()->Draw();
     // Vẽ animation object qua SceneManager
     Object* animObj = SceneManager::GetInstance()->GetObject(ANIM_OBJECT_ID);
-    if (animObj && m_anim && animObj->GetModelId() >= 0 && animObj->GetModelPtr()) {
+    if (animObj && m_animManager && animObj->GetModelId() >= 0 && animObj->GetModelPtr()) {
         float u0, v0, u1, v1;
-        m_anim->GetUV(u0, v0, u1, v1);
+        m_animManager->GetUV(u0, v0, u1, v1);
+        
+        // Đảo ngược UV coordinates khi nhìn sang trái
+        if (m_facingLeft) {
+            // Đảo ngược U coordinates để flip sprite
+            float temp = u0;
+            u0 = u1;
+            u1 = temp;
+        }
+        
         animObj->SetCustomUV(u0, v0, u1, v1);
         // Truyền vị trí mới cho object nhân vật
         animObj->SetPosition(Vector3(m_charPosX, m_charPosY, 0.0f));
         Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
         if (cam) animObj->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        
+        // Debug info - hiển thị vị trí hiện tại và sau khi nhấn phím
+        static float lastPosX = m_charPosX;
+        static int lastAnim = m_animManager->GetCurrentAnimation();
+        static bool wasMoving = false;
+        
+        bool isMoving = (keyStates['A'] || keyStates['a'] || keyStates['D'] || keyStates['d']);
+        bool isOtherAction = (keyStates['S'] || keyStates['s'] || keyStates[' ']);
+        
+        if (abs(m_charPosX - lastPosX) > 0.01f || 
+            lastAnim != m_animManager->GetCurrentAnimation() ||
+            (isMoving && !wasMoving)) {
+            
+            std::cout << "=== CHARACTER STATUS ===" << std::endl;
+            std::cout << "Position: (" << m_charPosX << ", " << m_charPosY << ")" << std::endl;
+            std::cout << "State: " << (int)m_charState << std::endl;
+            std::cout << "Animation: " << m_animManager->GetCurrentAnimation() << std::endl;
+            std::cout << "Facing: " << (m_facingLeft ? "LEFT" : "RIGHT") << std::endl;
+            std::cout << "Movement: " << (isMoving ? "ACTIVE" : "IDLE") << std::endl;
+            if (m_isInCombo) {
+                std::cout << "Combo: " << m_comboCount << "/3 (Timer: " << m_comboTimer << "s)";
+                if (m_comboCompleted) {
+                    std::cout << " [COMPLETED]";
+                }
+                if (isMoving) {
+                    std::cout << " [MOVING DURING COMBO]";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << "=========================" << std::endl;
+            
+            lastPosX = m_charPosX;
+            lastAnim = m_animManager->GetCurrentAnimation();
+            wasMoving = isMoving;
+        }
     }
-
 }
 
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     keyStates[key] = bIsPressed;
+    
+    if (bIsPressed) {
+        // Combo system - J key
+        if (key == 'J' || key == 'j') {
+            if (!m_isInCombo) {
+                // Bắt đầu combo mới
+                m_comboCount = 1;
+                m_isInCombo = true;
+                m_comboTimer = COMBO_WINDOW;
+                if (m_animManager) {
+                    m_animManager->Play(9, false); // Punch1 - không loop
+                }
+                std::cout << "=== COMBO START ===" << std::endl;
+                std::cout << "Combo " << m_comboCount << ": Punch1!" << std::endl;
+                std::cout << "Press J again within " << COMBO_WINDOW << " seconds for next punch!" << std::endl;
+            } else if (m_comboTimer > 0.0f) {
+                // Tiếp tục combo
+                m_comboCount++;
+                m_comboTimer = COMBO_WINDOW; // Reset timer
+                
+                if (m_comboCount == 2) {
+                    if (m_animManager) {
+                        m_animManager->Play(10, false); // Punch2 - không loop
+                    }
+                    std::cout << "=== COMBO CONTINUE ===" << std::endl;
+                    std::cout << "Combo " << m_comboCount << ": Punch2!" << std::endl;
+                    std::cout << "Press J again within " << COMBO_WINDOW << " seconds for final punch!" << std::endl;
+                } else if (m_comboCount == 3) {
+                    if (m_animManager) {
+                        m_animManager->Play(11, false); // Punch3 - không loop
+                    }
+                    std::cout << "=== COMBO FINISH ===" << std::endl;
+                    std::cout << "Combo " << m_comboCount << ": Punch3! COMBO COMPLETE!" << std::endl;
+                    // Combo hoàn thành, set flag để logic Update xử lý
+                    m_comboCompleted = true;
+                }
+            }
+        }
+        
+        // Test animation keys
+        if (key >= '0' && key <= '9') {
+            int animIndex = key - '0';
+            if (m_animManager && animIndex < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(animIndex, true);
+                std::cout << "Playing animation " << animIndex << std::endl;
+            } else {
+                std::cout << "Animation " << animIndex << " not available" << std::endl;
+            }
+        } else if (key == 'Q' || key == 'q') {
+            if (m_animManager && 10 < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(10, true);
+                std::cout << "Playing animation 10" << std::endl;
+            }
+        } else if (key == 'E' || key == 'e') {
+            if (m_animManager && 11 < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(11, true);
+                std::cout << "Playing animation 11" << std::endl;
+            }
+        } else if (key == 'R' || key == 'r') {
+            if (m_animManager && 12 < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(12, true);
+                std::cout << "Playing animation 12" << std::endl;
+            }
+        }
+    }
+    
     if (!bIsPressed) {
         if (key == 27 || key == 'M' || key == 'm') {
             std::cout << "=== Returning to Menu ===" << std::endl;
@@ -242,5 +512,5 @@ void GSPlay::Exit() {
 }
 
 void GSPlay::Cleanup() {
-    m_anim = nullptr;
+    m_animManager = nullptr;
 } 
