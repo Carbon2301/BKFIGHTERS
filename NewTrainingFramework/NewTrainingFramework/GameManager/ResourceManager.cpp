@@ -274,8 +274,13 @@ bool ResourceManager::LoadTexture(int id, const std::string& filepath, const std
     m_textures.push_back(textureData);
     
     std::cout << "Loaded texture ID " << id << ": " << filepath;
+    std::cout << " (Texture: " << texture->GetWidth() << "x" << texture->GetHeight() << " pixels)";
     if (spriteWidth > 0 && spriteHeight > 0) {
         std::cout << " (Sprite: " << spriteWidth << "x" << spriteHeight << ")";
+        // Calculate frame size
+        int frameWidth = texture->GetWidth() / spriteWidth;
+        int frameHeight = texture->GetHeight() / spriteHeight;
+        std::cout << " (Frame: " << frameWidth << "x" << frameHeight << " pixels)";
     }
     if (!animations.empty()) {
         std::cout << " (" << animations.size() << " animations)";
