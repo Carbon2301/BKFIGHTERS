@@ -149,10 +149,18 @@ bool ResourceManager::LoadFromFile(const std::string& filepath) {
                         // Read animation frames
                         for (int i = 0; i < numAnimations; i++) {
                             if (std::getline(file, line)) {
-                                int startFrame, numFrames, duration;
-                                std::istringstream animSS(line);
-                                animSS >> startFrame >> numFrames >> duration;
-                                animations.push_back({startFrame, numFrames, duration});
+                                // Skip comment lines starting with *
+                                while (line.find("*") == 0 && std::getline(file, line)) {
+                                    // Continue reading until we find a non-comment line
+                                }
+                                
+                                // Check if we have a valid animation line (should contain numbers)
+                                if (!line.empty() && line.find_first_of("0123456789") != std::string::npos) {
+                                    int startFrame, numFrames, duration;
+                                    std::istringstream animSS(line);
+                                    animSS >> startFrame >> numFrames >> duration;
+                                    animations.push_back({startFrame, numFrames, duration});
+                                }
                             }
                         }
                     } else {
@@ -274,8 +282,13 @@ bool ResourceManager::LoadTexture(int id, const std::string& filepath, const std
     m_textures.push_back(textureData);
     
     std::cout << "Loaded texture ID " << id << ": " << filepath;
+    std::cout << " (Texture: " << texture->GetWidth() << "x" << texture->GetHeight() << " pixels)";
     if (spriteWidth > 0 && spriteHeight > 0) {
         std::cout << " (Sprite: " << spriteWidth << "x" << spriteHeight << ")";
+        // Calculate frame size
+        int frameWidth = texture->GetWidth() / spriteWidth;
+        int frameHeight = texture->GetHeight() / spriteHeight;
+        std::cout << " (Frame: " << frameWidth << "x" << frameHeight << " pixels)";
     }
     if (!animations.empty()) {
         std::cout << " (" << animations.size() << " animations)";
