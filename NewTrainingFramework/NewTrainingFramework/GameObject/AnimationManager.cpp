@@ -108,12 +108,12 @@ void AnimationManager::GetUV(float& u0, float& v0, float& u1, float& v1) const {
     u1 = u0 + du;
     v1 = v0 + dv;
     
-    // Debug output
-    static int lastFrame = -1;
-    if (frameIndex != lastFrame) {
-        std::cout << "Frame " << frameIndex << " -> UV: (" << u0 << "," << v0 << ") to (" << u1 << "," << v1 << ")" << std::endl;
-        lastFrame = frameIndex;
-    }
+                    // Debug output (tắt để giảm spam)
+                // static int lastFrame = -1;
+                // if (frameIndex != lastFrame) {
+                //     std::cout << "Frame " << frameIndex << " -> UV: (" << u0 << "," << v0 << ") to (" << u1 << "," << v1 << ")" << std::endl;
+                //     lastFrame = frameIndex;
+                // }
 }
 
 const AnimationData* AnimationManager::GetAnimation(int index) const {

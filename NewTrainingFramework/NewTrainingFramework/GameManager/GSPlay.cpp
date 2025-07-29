@@ -70,7 +70,8 @@ void GSPlay::Init() {
             animations.push_back({anim.startFrame, anim.numFrames, anim.duration, 0.0f});
         }
         m_animManager->Initialize(textureData->spriteWidth, textureData->spriteHeight, animations);
-        m_animManager->Play(0, true); // Play first animation (idle)
+        m_animManager->Play(0, true); // Play idle animation (0)
+        std::cout << "Animation system initialized with " << animations.size() << " animations" << std::endl;
     } else {
         std::cout << "Warning: No animation data found for texture ID 10" << std::endl;
     }
@@ -84,9 +85,12 @@ void GSPlay::Init() {
     std::cout << "- P: Quick play (from menu)" << std::endl;
     std::cout << "- Q: Help/Question (from menu)" << std::endl;
     std::cout << "- X: Exit game (from menu)" << std::endl;
+    std::cout << "=== MOVEMENT CONTROLS ===" << std::endl;
+    std::cout << "- D: Walk right (Animation 1)" << std::endl;
+    std::cout << "- Release D: Idle (Animation 0)" << std::endl;
     std::cout << "=== ANIMATION TEST MODE ===" << std::endl;
     std::cout << "- 0: Animation 0 (Idle)" << std::endl;
-    std::cout << "- 1: Animation 1" << std::endl;
+    std::cout << "- 1: Animation 1 (Walk)" << std::endl;
     std::cout << "- 2: Animation 2" << std::endl;
     std::cout << "- 3: Animation 3" << std::endl;
     std::cout << "- 4: Animation 4" << std::endl;
@@ -106,14 +110,30 @@ void GSPlay::Init() {
 
 void GSPlay::Update(float deltaTime) {
     m_gameTime += deltaTime;
-    float moveSpeed = 0.5f; // pixel/giây
+    float moveSpeed = 0.5f; // units/giây - di chuyển chậm hơn
     
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Tạm thời bỏ qua di chuyển, chỉ test animation
-    // Animation sẽ được control bằng phím 1-9, 0
-    m_charState = CharState::Idle;
+    // Xử lý di chuyển dựa trên trạng thái phím
+    static int lastAnimation = -1; // Để tránh gọi Play() liên tục
+    
+    if (keyStates['D'] || keyStates['d']) {
+        // Walk animation (animation 1) - di chuyển sang phải
+        m_charState = CharState::MoveRight;
+        m_charPosX += moveSpeed * deltaTime;
+        if (m_animManager && lastAnimation != 1) {
+            m_animManager->Play(1, true); // Walk animation
+            lastAnimation = 1;
+        }
+    } else {
+        // Idle animation (animation 0)
+        m_charState = CharState::Idle;
+        if (m_animManager && lastAnimation != 0) {
+            m_animManager->Play(0, true); // Idle animation
+            lastAnimation = 0;
+        }
+    }
     
     // Update animation
     if (m_animManager) {
@@ -144,8 +164,20 @@ void GSPlay::Draw() {
         animObj->SetPosition(Vector3(m_charPosX, m_charPosY, 0.0f));
         Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
         if (cam) animObj->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        
+        // Debug info (chỉ hiển thị khi có thay đổi thực sự)
+        static float lastPosX = m_charPosX;
+        static int lastAnim = m_animManager->GetCurrentAnimation();
+        
+        if (abs(m_charPosX - lastPosX) > 0.01f || 
+            lastAnim != m_animManager->GetCurrentAnimation()) {
+            std::cout << "Character: Pos(" << m_charPosX << ", " << m_charPosY 
+                      << ") State: " << (int)m_charState 
+                      << " Animation: " << m_animManager->GetCurrentAnimation() << std::endl;
+            lastPosX = m_charPosX;
+            lastAnim = m_animManager->GetCurrentAnimation();
+        }
     }
-
 }
 
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
