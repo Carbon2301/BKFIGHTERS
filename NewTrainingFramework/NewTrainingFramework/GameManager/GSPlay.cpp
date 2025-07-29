@@ -28,6 +28,14 @@ static const float COMBO_WINDOW = 0.5f; // 0.5 giây để nhấn J tiếp
 static bool m_isInCombo = false; // Đang trong combo hay không
 static bool m_comboCompleted = false; // Combo đã hoàn thành chưa
 
+// Jump system variables
+static bool m_isJumping = false; // Đang nhảy hay không
+static float m_jumpVelocity = 0.0f; // Vận tốc nhảy
+static float m_jumpStartY = 0.0f; // Vị trí Y bắt đầu nhảy
+static const float JUMP_FORCE = 3.0f; // Lực nhảy
+static const float GRAVITY = 8.0f; // Trọng lực
+static const float GROUND_Y = 0.0f; // Vị trí mặt đất
+
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f) {
 }
@@ -99,6 +107,7 @@ void GSPlay::Init() {
     std::cout << "- Shift + A: Run left (Animation 2)" << std::endl;
     std::cout << "- Shift + D: Run right (Animation 2)" << std::endl;
     std::cout << "- S: Sit down (Animation 3)" << std::endl;
+    std::cout << "- W: Jump (Animation 15)" << std::endl;
     std::cout << "- A + Space: Roll left (Animation 4)" << std::endl;
     std::cout << "- D + Space: Roll right (Animation 4)" << std::endl;
     std::cout << "- Space: Roll in current direction (Animation 4)" << std::endl;
@@ -123,6 +132,7 @@ void GSPlay::Init() {
     std::cout << "- Q: Animation 10 (Punch2)" << std::endl;
     std::cout << "- E: Animation 11 (Punch3)" << std::endl;
     std::cout << "- R: Animation 12" << std::endl;
+    std::cout << "- T: Animation 15 (Jump)" << std::endl;
     
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
     std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
@@ -159,14 +169,45 @@ void GSPlay::Update(float deltaTime) {
     
     // Reset combo chỉ khi thực hiện hành động khác (không phải di chuyển)
     bool isMoving = (keyStates['A'] || keyStates['a'] || keyStates['D'] || keyStates['d']);
-    bool isOtherAction = (keyStates['S'] || keyStates['s'] || keyStates[' ']);
+    bool isOtherAction = (keyStates['S'] || keyStates['s'] || keyStates[' '] || keyStates['W'] || keyStates['w']);
     
     if (isOtherAction && m_isInCombo) {
         m_isInCombo = false;
         m_comboCount = 0;
         m_comboTimer = 0.0f;
         m_comboCompleted = false;
-        std::cout << "Combo cancelled due to other action (Sit/Roll)" << std::endl;
+        std::cout << "Combo cancelled due to other action (Sit/Roll/Jump)" << std::endl;
+    }
+    
+    // Xử lý Jump
+    if (keyStates['W'] || keyStates['w']) {
+        if (!m_isJumping) {
+            // Bắt đầu nhảy
+            m_isJumping = true;
+            m_jumpVelocity = JUMP_FORCE;
+            m_jumpStartY = m_charPosY;
+            if (m_animManager) {
+                m_animManager->Play(15, false); // Jump animation (không loop)
+            }
+            std::cout << "=== JUMP START ===" << std::endl;
+        }
+    }
+    
+    // Cập nhật vị trí nhảy
+    if (m_isJumping) {
+        m_jumpVelocity -= GRAVITY * deltaTime;
+        m_charPosY += m_jumpVelocity * deltaTime;
+        
+        // Kiểm tra chạm đất
+        if (m_charPosY <= GROUND_Y) {
+            m_charPosY = GROUND_Y;
+            m_isJumping = false;
+            m_jumpVelocity = 0.0f;
+            if (m_animManager) {
+                m_animManager->Play(0, true); // Return to idle
+            }
+            std::cout << "=== JUMP END ===" << std::endl;
+        }
     }
     
     // Kiểm tra Roll trước (priority cao nhất)
@@ -432,6 +473,11 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             if (m_animManager && 12 < m_animManager->GetAnimationCount()) {
                 m_animManager->Play(12, true);
                 std::cout << "Playing animation 12" << std::endl;
+            }
+        } else if (key == 'T' || key == 't') {
+            if (m_animManager && 15 < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(15, true);
+                std::cout << "Playing animation 15 (Jump)" << std::endl;
             }
         }
     }
