@@ -6,7 +6,8 @@
 #include "../GameObject/Object.h"
 #include "../GameObject/Texture2D.h"
 #include <memory>
-#include "../GameObject/Animation2D.h"
+#include "../GameObject/AnimationManager.h"
+#include "ResourceManager.h"
 
 // Thêm enum trạng thái nhân vật
 enum class CharState { Idle, MoveLeft, MoveRight, MoveBack, MoveFront };
@@ -58,11 +59,22 @@ void GSPlay::Init() {
     m_charPosX = 0.0f; // Vị trí giữa màn hình 
     m_charPosY = 0.0f;
 
-    // Khởi tạo animation đúng với spritesheet gốc (12 cột, 4 hàng), chỉ lấy nhân vật vàng (col 0-2)
-    m_anim = std::make_shared<Animation2D>(12, 4, 0.1f);
-    m_anim->SetColRange(0, 2); // Chỉ chạy trong 3 cột đầu
-    m_anim->SetRow(0); // Mặc định: action đầu tiên 
-    m_anim->SetCol(1); // Đứng yên ở frame giữa
+    // Khởi tạo AnimationManager với dữ liệu từ ResourceManager
+    m_animManager = std::make_shared<AnimationManager>();
+    
+    // Lấy animation data từ texture ID 10 (spritesheet)
+    const TextureData* textureData = ResourceManager::GetInstance()->GetTextureData(10);
+    if (textureData && textureData->spriteWidth > 0 && textureData->spriteHeight > 0) {
+        std::vector<AnimationData> animations;
+        for (const auto& anim : textureData->animations) {
+            animations.push_back({anim.startFrame, anim.numFrames, anim.duration, 0.0f});
+        }
+        m_animManager->Initialize(textureData->spriteWidth, textureData->spriteHeight, animations);
+        m_animManager->Play(0, true); // Play first animation (idle)
+    } else {
+        std::cout << "Warning: No animation data found for texture ID 10" << std::endl;
+    }
+    
     m_charState = CharState::Idle;
     m_facingRow = 0;
     
@@ -72,7 +84,20 @@ void GSPlay::Init() {
     std::cout << "- P: Quick play (from menu)" << std::endl;
     std::cout << "- Q: Help/Question (from menu)" << std::endl;
     std::cout << "- X: Exit game (from menu)" << std::endl;
-    std::cout << "- W/A/S/D: Doi action nhan vat mau vang" << std::endl;
+    std::cout << "=== ANIMATION TEST MODE ===" << std::endl;
+    std::cout << "- 0: Animation 0 (Idle)" << std::endl;
+    std::cout << "- 1: Animation 1" << std::endl;
+    std::cout << "- 2: Animation 2" << std::endl;
+    std::cout << "- 3: Animation 3" << std::endl;
+    std::cout << "- 4: Animation 4" << std::endl;
+    std::cout << "- 5: Animation 5" << std::endl;
+    std::cout << "- 6: Animation 6" << std::endl;
+    std::cout << "- 7: Animation 7" << std::endl;
+    std::cout << "- 8: Animation 8" << std::endl;
+    std::cout << "- 9: Animation 9" << std::endl;
+    std::cout << "- Q: Animation 10" << std::endl;
+    std::cout << "- E: Animation 11" << std::endl;
+    std::cout << "- R: Animation 12" << std::endl;
     
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
     std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
@@ -86,54 +111,13 @@ void GSPlay::Update(float deltaTime) {
     // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Xử lý trạng thái nhân vật dựa trên keyStates (ưu tiên W > A > D > S)
-    if (keyStates['W'] || keyStates['w']) {
-        m_facingRow = 0;
-        m_charState = CharState::MoveFront;
-        if (m_anim) {
-            m_anim->SetRow(0);
-            m_anim->SetColRange(0,2);
-        }
-    } else if (keyStates['A'] || keyStates['a']) {
-        m_facingRow = 2; //row 2 là trái
-        m_charState = CharState::MoveLeft;
-        if (m_anim) {
-            m_anim->SetRow(2);
-            m_anim->SetColRange(0,2);
-        }
-        m_charPosX -= moveSpeed * deltaTime; // Di chuyển sang trái
-    } else if (keyStates['D'] || keyStates['d']) {
-        m_facingRow = 1; //row 1 là phải
-        m_charState = CharState::MoveRight;
-        if (m_anim) {
-            m_anim->SetRow(1);
-            m_anim->SetColRange(0,2);
-        }
-        m_charPosX += moveSpeed * deltaTime; // Di chuyển sang phải
-    } else if (keyStates['S'] || keyStates['s']) {
-        m_facingRow = 3;
-        m_charState = CharState::MoveBack;
-        if (m_anim) {
-            m_anim->SetRow(3);
-            m_anim->SetColRange(0,2);
-        }
-    } else {
-        m_charState = CharState::Idle;
-        if (m_anim) {
-            m_anim->SetRow(m_facingRow);
-            m_anim->SetCol(1);
-            m_anim->SetColRange(1,1);
-        }
-    }
+    // Tạm thời bỏ qua di chuyển, chỉ test animation
+    // Animation sẽ được control bằng phím 1-9, 0
+    m_charState = CharState::Idle;
+    
     // Update animation
-    if (m_anim) {
-        if (m_charState == CharState::Idle) {
-            m_anim->SetCol(1);
-            m_anim->SetColRange(1,1);
-        } else {
-            m_anim->SetColRange(0,2);
-            m_anim->Update(deltaTime);
-        }
+    if (m_animManager) {
+        m_animManager->Update(deltaTime);
     }
     
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
@@ -152,9 +136,9 @@ void GSPlay::Draw() {
     SceneManager::GetInstance()->Draw();
     // Vẽ animation object qua SceneManager
     Object* animObj = SceneManager::GetInstance()->GetObject(ANIM_OBJECT_ID);
-    if (animObj && m_anim && animObj->GetModelId() >= 0 && animObj->GetModelPtr()) {
+    if (animObj && m_animManager && animObj->GetModelId() >= 0 && animObj->GetModelPtr()) {
         float u0, v0, u1, v1;
-        m_anim->GetUV(u0, v0, u1, v1);
+        m_animManager->GetUV(u0, v0, u1, v1);
         animObj->SetCustomUV(u0, v0, u1, v1);
         // Truyền vị trí mới cho object nhân vật
         animObj->SetPosition(Vector3(m_charPosX, m_charPosY, 0.0f));
@@ -166,6 +150,35 @@ void GSPlay::Draw() {
 
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     keyStates[key] = bIsPressed;
+    
+    if (bIsPressed) {
+        // Test animation keys
+        if (key >= '0' && key <= '9') {
+            int animIndex = key - '0';
+            if (m_animManager && animIndex < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(animIndex, true);
+                std::cout << "Playing animation " << animIndex << std::endl;
+            } else {
+                std::cout << "Animation " << animIndex << " not available" << std::endl;
+            }
+        } else if (key == 'Q' || key == 'q') {
+            if (m_animManager && 10 < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(10, true);
+                std::cout << "Playing animation 10" << std::endl;
+            }
+        } else if (key == 'E' || key == 'e') {
+            if (m_animManager && 11 < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(11, true);
+                std::cout << "Playing animation 11" << std::endl;
+            }
+        } else if (key == 'R' || key == 'r') {
+            if (m_animManager && 12 < m_animManager->GetAnimationCount()) {
+                m_animManager->Play(12, true);
+                std::cout << "Playing animation 12" << std::endl;
+            }
+        }
+    }
+    
     if (!bIsPressed) {
         if (key == 27 || key == 'M' || key == 'm') {
             std::cout << "=== Returning to Menu ===" << std::endl;
@@ -242,5 +255,5 @@ void GSPlay::Exit() {
 }
 
 void GSPlay::Cleanup() {
-    m_anim = nullptr;
+    m_animManager = nullptr;
 } 

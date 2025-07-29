@@ -79,7 +79,7 @@ bool ResourceManager::LoadFromFile(const std::string& filepath) {
         if (currentSection == "Model") {
             if (line.find("ID") == 0) {
                 int id;
-                sscanf(line.c_str(), "ID %d", &id);
+                sscanf_s(line.c_str(), "ID %d", &id);
                 if (std::getline(file, line) && line.find("FILE") == 0) {
                     std::string filepath;
                     size_t start = line.find('"');
@@ -94,7 +94,7 @@ bool ResourceManager::LoadFromFile(const std::string& filepath) {
         else if (currentSection == "Texture") {
             if (line.find("ID") == 0) {
                 int id;
-                sscanf(line.c_str(), "ID %d", &id);
+                sscanf_s(line.c_str(), "ID %d", &id);
                 
                 std::string filepath, tiling = "GL_REPEAT";
                 
@@ -123,9 +123,46 @@ bool ResourceManager::LoadFromFile(const std::string& filepath) {
                     }
                 }
                 
+                // Read SIZE line (optional)
+                int spriteWidth = 0, spriteHeight = 0;
+                currentPos = file.tellg();
+                if (std::getline(file, line)) {
+                    if (line.find("SIZE") == 0) {
+                        std::istringstream ss(line);
+                        std::string keyword;
+                        ss >> keyword >> spriteWidth >> spriteHeight;
+                    } else {
+                        file.seekg(currentPos); // Reset file position
+                    }
+                }
+                
+                // Read ANINUM line and animation data (optional)
+                std::vector<AnimationFrame> animations;
+                currentPos = file.tellg();
+                if (std::getline(file, line)) {
+                    if (line.find("ANINUM") == 0) {
+                        std::istringstream ss(line);
+                        std::string keyword;
+                        int numAnimations;
+                        ss >> keyword >> numAnimations;
+                        
+                        // Read animation frames
+                        for (int i = 0; i < numAnimations; i++) {
+                            if (std::getline(file, line)) {
+                                int startFrame, numFrames, duration;
+                                std::istringstream animSS(line);
+                                animSS >> startFrame >> numFrames >> duration;
+                                animations.push_back({startFrame, numFrames, duration});
+                            }
+                        }
+                    } else {
+                        file.seekg(currentPos); // Reset file position
+                    }
+                }
+                
                 // Load the texture
                 if (!filepath.empty()) {
-                    LoadTexture(id, filepath, tiling);
+                    LoadTexture(id, filepath, tiling, spriteWidth, spriteHeight, animations);
                 }
                 
                 // Continue to next iteration to check for more textures
@@ -135,7 +172,7 @@ bool ResourceManager::LoadFromFile(const std::string& filepath) {
         else if (currentSection == "Shader") {
             if (line.find("ID") == 0) {
                 int id;
-                sscanf(line.c_str(), "ID %d", &id);
+                sscanf_s(line.c_str(), "ID %d", &id);
                 
                 std::string vsPath, fsPath;
                 
@@ -208,7 +245,8 @@ std::shared_ptr<Model> ResourceManager::GetModel(int id) {
     return nullptr;
 }
 
-bool ResourceManager::LoadTexture(int id, const std::string& filepath, const std::string& tiling) {
+bool ResourceManager::LoadTexture(int id, const std::string& filepath, const std::string& tiling, 
+                                int spriteWidth, int spriteHeight, const std::vector<AnimationFrame>& animations) {
     // Check if texture with this ID already exists
     for (const auto& textureData : m_textures) {
         if (textureData.id == id) {
@@ -230,9 +268,19 @@ bool ResourceManager::LoadTexture(int id, const std::string& filepath, const std
     textureData.filepath = filepath;
     textureData.tiling = tiling;
     textureData.texture = texture;
+    textureData.spriteWidth = spriteWidth;
+    textureData.spriteHeight = spriteHeight;
+    textureData.animations = animations;
     m_textures.push_back(textureData);
     
-    std::cout << "Loaded texture ID " << id << ": " << filepath << std::endl;
+    std::cout << "Loaded texture ID " << id << ": " << filepath;
+    if (spriteWidth > 0 && spriteHeight > 0) {
+        std::cout << " (Sprite: " << spriteWidth << "x" << spriteHeight << ")";
+    }
+    if (!animations.empty()) {
+        std::cout << " (" << animations.size() << " animations)";
+    }
+    std::cout << std::endl;
     return true;
 }
 
@@ -243,6 +291,16 @@ std::shared_ptr<Texture2D> ResourceManager::GetTexture(int id) {
         }
     }
     std::cout << "Texture with ID " << id << " not found!" << std::endl;
+    return nullptr;
+}
+
+const TextureData* ResourceManager::GetTextureData(int id) {
+    for (const auto& textureData : m_textures) {
+        if (textureData.id == id) {
+            return &textureData;
+        }
+    }
+    std::cout << "Texture data with ID " << id << " not found!" << std::endl;
     return nullptr;
 }
 

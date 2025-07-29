@@ -14,11 +14,22 @@ struct ModelData {
     std::shared_ptr<Model> model;
 };
 
+struct AnimationFrame {
+    int startFrame;
+    int numFrames;
+    int duration; // milliseconds
+};
+
 struct TextureData {
     int id;
     std::string filepath;
     std::string tiling;
     std::shared_ptr<Texture2D> texture;
+    
+    // Animation data
+    int spriteWidth;
+    int spriteHeight;
+    std::vector<AnimationFrame> animations;
 };
 
 struct ShaderData {
@@ -52,8 +63,10 @@ public:
     std::shared_ptr<Model> GetModel(int id);
     void ClearModels();
 
-    bool LoadTexture(int id, const std::string& filepath, const std::string& tiling = "GL_REPEAT");
+    bool LoadTexture(int id, const std::string& filepath, const std::string& tiling = "GL_REPEAT", 
+                    int spriteWidth = 0, int spriteHeight = 0, const std::vector<AnimationFrame>& animations = {});
     std::shared_ptr<Texture2D> GetTexture(int id);
+    const TextureData* GetTextureData(int id);
     void ClearTextures();
 
     bool LoadShader(int id, const std::string& vsPath, const std::string& fsPath);
