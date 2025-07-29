@@ -87,8 +87,11 @@ void GSPlay::Init() {
     std::cout << "- Q: Help/Question (from menu)" << std::endl;
     std::cout << "- X: Exit game (from menu)" << std::endl;
     std::cout << "=== MOVEMENT CONTROLS ===" << std::endl;
+    std::cout << "- A: Walk left (Animation 1)" << std::endl;
     std::cout << "- D: Walk right (Animation 1)" << std::endl;
-    std::cout << "- Release D: Idle (Animation 0)" << std::endl;
+    std::cout << "- Shift + A: Run left (Animation 2)" << std::endl;
+    std::cout << "- Shift + D: Run right (Animation 2)" << std::endl;
+    std::cout << "- Release keys: Idle (Animation 0)" << std::endl;
     std::cout << "=== ANIMATION TEST MODE ===" << std::endl;
     std::cout << "- 0: Animation 0 (Idle)" << std::endl;
     std::cout << "- 1: Animation 1 (Walk)" << std::endl;
@@ -119,23 +122,48 @@ void GSPlay::Update(float deltaTime) {
     // Xử lý di chuyển dựa trên trạng thái phím
     static int lastAnimation = -1; // Để tránh gọi Play() liên tục
     
+    // Kiểm tra Shift key (VK_SHIFT = 16)
+    bool isShiftPressed = keyStates[16];
+    
     if (keyStates['D'] || keyStates['d']) {
-        // Walk animation (animation 1) - di chuyển sang phải
-        m_charState = CharState::MoveRight;
-        m_facingLeft = false; // Nhớ hướng phải
-        m_charPosX += moveSpeed * deltaTime;
-        if (m_animManager && lastAnimation != 1) {
-            m_animManager->Play(1, true); // Walk animation
-            lastAnimation = 1;
+        if (isShiftPressed) {
+            // Run animation (animation 2) - chạy sang phải
+            m_charState = CharState::MoveRight;
+            m_facingLeft = false; // Nhớ hướng phải
+            m_charPosX += moveSpeed * 2.0f * deltaTime; // Chạy nhanh gấp đôi
+            if (m_animManager && lastAnimation != 2) {
+                m_animManager->Play(2, true); // Run animation
+                lastAnimation = 2;
+            }
+        } else {
+            // Walk animation (animation 1) - đi bộ sang phải
+            m_charState = CharState::MoveRight;
+            m_facingLeft = false; // Nhớ hướng phải
+            m_charPosX += moveSpeed * deltaTime;
+            if (m_animManager && lastAnimation != 1) {
+                m_animManager->Play(1, true); // Walk animation
+                lastAnimation = 1;
+            }
         }
     } else if (keyStates['A'] || keyStates['a']) {
-        // Walk animation (animation 1) - di chuyển sang trái
-        m_charState = CharState::MoveLeft;
-        m_facingLeft = true; // Nhớ hướng trái
-        m_charPosX -= moveSpeed * deltaTime;
-        if (m_animManager && lastAnimation != 1) {
-            m_animManager->Play(1, true); // Walk animation (sẽ đảo ngược UV)
-            lastAnimation = 1;
+        if (isShiftPressed) {
+            // Run animation (animation 2) - chạy sang trái
+            m_charState = CharState::MoveLeft;
+            m_facingLeft = true; // Nhớ hướng trái
+            m_charPosX -= moveSpeed * 2.0f * deltaTime; // Chạy nhanh gấp đôi
+            if (m_animManager && lastAnimation != 2) {
+                m_animManager->Play(2, true); // Run animation (sẽ đảo ngược UV)
+                lastAnimation = 2;
+            }
+        } else {
+            // Walk animation (animation 1) - đi bộ sang trái
+            m_charState = CharState::MoveLeft;
+            m_facingLeft = true; // Nhớ hướng trái
+            m_charPosX -= moveSpeed * deltaTime;
+            if (m_animManager && lastAnimation != 1) {
+                m_animManager->Play(1, true); // Walk animation (sẽ đảo ngược UV)
+                lastAnimation = 1;
+            }
         }
     } else {
         // Idle animation (animation 0) - giữ hướng cuối cùng
@@ -185,17 +213,28 @@ void GSPlay::Draw() {
         Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
         if (cam) animObj->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
         
-        // Debug info (chỉ hiển thị khi có thay đổi thực sự)
+        // Debug info - hiển thị vị trí hiện tại và sau khi nhấn phím
         static float lastPosX = m_charPosX;
         static int lastAnim = m_animManager->GetCurrentAnimation();
+        static bool wasMoving = false;
+        
+        bool isMoving = (keyStates['A'] || keyStates['a'] || keyStates['D'] || keyStates['d']);
         
         if (abs(m_charPosX - lastPosX) > 0.01f || 
-            lastAnim != m_animManager->GetCurrentAnimation()) {
-            std::cout << "Character: Pos(" << m_charPosX << ", " << m_charPosY 
-                      << ") State: " << (int)m_charState 
-                      << " Animation: " << m_animManager->GetCurrentAnimation() << std::endl;
+            lastAnim != m_animManager->GetCurrentAnimation() ||
+            (isMoving && !wasMoving)) {
+            
+            std::cout << "=== CHARACTER STATUS ===" << std::endl;
+            std::cout << "Position: (" << m_charPosX << ", " << m_charPosY << ")" << std::endl;
+            std::cout << "State: " << (int)m_charState << std::endl;
+            std::cout << "Animation: " << m_animManager->GetCurrentAnimation() << std::endl;
+            std::cout << "Facing: " << (m_facingLeft ? "LEFT" : "RIGHT") << std::endl;
+            std::cout << "Movement: " << (isMoving ? "ACTIVE" : "IDLE") << std::endl;
+            std::cout << "=========================" << std::endl;
+            
             lastPosX = m_charPosX;
             lastAnim = m_animManager->GetCurrentAnimation();
+            wasMoving = isMoving;
         }
     }
 }
