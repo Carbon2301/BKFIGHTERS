@@ -20,7 +20,8 @@ Character::Character()
       m_lastAnimation(-1), m_comboCount(0), m_comboTimer(0.0f),
       m_isInCombo(false), m_comboCompleted(false),
       m_axeComboCount(0), m_axeComboTimer(0.0f),
-      m_isInAxeCombo(false), m_axeComboCompleted(false) {
+      m_isInAxeCombo(false), m_axeComboCompleted(false),
+      m_isKicking(false) {
 }
 
 Character::~Character() {
@@ -78,7 +79,8 @@ void Character::Update(float deltaTime) {
         }
         
         // Check if kick animation finished
-        if (!m_isInCombo && !m_isInAxeCombo && m_animManager->GetCurrentAnimation() == 18 && !m_animManager->IsPlaying()) {
+        if (m_isKicking && m_animManager->GetCurrentAnimation() == 18 && !m_animManager->IsPlaying()) {
+            m_isKicking = false;
             m_animManager->Play(0, true);
             std::cout << "Animation đá kết thúc - trở về trạng thái idle" << std::endl;
         }
@@ -184,8 +186,8 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
             m_posX += MOVE_SPEED * deltaTime;
         }
         
-        // Chỉ thay đổi animation nếu không đang nhảy và không đang trong combo
-        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping) {
+        // Chỉ thay đổi animation nếu không đang nhảy, không đang trong combo, và không đang kick
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
             if (isShiftPressed) {
                 PlayAnimation(2, true);
             } else {
@@ -202,8 +204,8 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
             m_posX -= MOVE_SPEED * deltaTime;
         }
         
-        // Chỉ thay đổi animation nếu không đang nhảy và không đang trong combo
-        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping) {
+        // Chỉ thay đổi animation nếu không đang nhảy, không đang trong combo, và không đang kick
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
             if (isShiftPressed) {
                 PlayAnimation(2, true);
             } else {
@@ -214,8 +216,8 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
         m_state = CharState::Idle;
         PlayAnimation(3, true);
     } else {
-        // Chỉ thay đổi animation nếu không đang nhảy và không đang trong combo
-        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping) {
+        // Chỉ thay đổi animation nếu không đang nhảy, không đang trong combo, và không đang kick
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
             m_state = CharState::Idle;
             PlayAnimation(0, true);
         }
@@ -269,8 +271,8 @@ void Character::HandleJump(float deltaTime, const bool* keyStates) {
              bool isMovingRight = (keyStates['D'] || keyStates['d']);
              bool isShiftPressed = keyStates[16];
              
-             // Chỉ thay đổi animation nếu không đang trong combo
-             if (!m_isInCombo && !m_isInAxeCombo) {
+             // Chỉ thay đổi animation nếu không đang trong combo và không đang kick
+             if (!m_isInCombo && !m_isInAxeCombo && !m_isKicking) {
                  if (isMovingLeft || isMovingRight) {
                      if (isMovingLeft) {
                          m_facingLeft = true;
@@ -371,6 +373,7 @@ void Character::HandleKick() {
         std::cout << "Axe combo cancelled due to kick" << std::endl;
     }
     
+    m_isKicking = true;
     PlayAnimation(18, false);
     std::cout << "=== KICK EXECUTED ===" << std::endl;
     std::cout << "Playing Kick animation (Animation 18)" << std::endl;
@@ -386,12 +389,21 @@ void Character::CancelAllCombos() {
     m_axeComboCount = 0;
     m_axeComboTimer = 0.0f;
     m_axeComboCompleted = false;
+    
+    m_isKicking = false;
 }
 
 void Character::PlayAnimation(int animIndex, bool loop) {
-    if (m_animManager && m_lastAnimation != animIndex) {
-        m_animManager->Play(animIndex, loop);
-        m_lastAnimation = animIndex;
+    if (m_animManager) {
+        // Cho phép kick animation (18) và combo animations được phát lại ngay cả khi đang chạy
+        bool allowReplay = (animIndex == 18) || // Kick
+                          (animIndex >= 9 && animIndex <= 11) || // Punch combo
+                          (animIndex >= 19 && animIndex <= 21);  // Axe combo
+        
+        if (m_lastAnimation != animIndex || allowReplay) {
+            m_animManager->Play(animIndex, loop);
+            m_lastAnimation = animIndex;
+        }
     }
 }
 

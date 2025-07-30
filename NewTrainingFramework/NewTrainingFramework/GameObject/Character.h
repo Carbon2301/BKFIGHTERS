@@ -42,6 +42,9 @@ private:
     float m_axeComboTimer;
     bool m_isInAxeCombo;
     bool m_axeComboCompleted;
+    
+    // Kick system variables
+    bool m_isKicking;
 
 public:
     Character();
@@ -69,6 +72,7 @@ public:
     void HandleKick();
     void CancelAllCombos();
     bool IsInCombo() const { return m_isInCombo || m_isInAxeCombo; }
+    bool IsKicking() const { return m_isKicking; }
     
     // Animation
     void PlayAnimation(int animIndex, bool loop = true);
