@@ -28,6 +28,12 @@ static const float COMBO_WINDOW = 0.5f; // 0.5 giây để nhấn J tiếp
 static bool m_isInCombo = false; // Đang trong combo hay không
 static bool m_comboCompleted = false; // Combo đã hoàn thành chưa
 
+// Axe combo system variables
+static int m_axeComboCount = 0; // 0, 1, 2, 3
+static float m_axeComboTimer = 0.0f; // Thời gian để axe combo tiếp tục
+static bool m_isInAxeCombo = false; // Đang trong axe combo hay không
+static bool m_axeComboCompleted = false; // Axe combo đã hoàn thành chưa
+
 // Jump system variables
 static bool m_isJumping = false; // Đang nhảy hay không
 static float m_jumpVelocity = 0.0f; // Vận tốc nhảy
@@ -118,6 +124,11 @@ void GSPlay::Init() {
     std::cout << "  * Press J twice: Punch2 (Animation 10: Punch2)" << std::endl;
     std::cout << "  * Press J three times: Punch3 (Animation 11: Punch3)" << std::endl;
     std::cout << "  * Combo window: " << COMBO_WINDOW << " seconds" << std::endl;
+    std::cout << "- L: Start/Continue Axe Combo" << std::endl;
+    std::cout << "  * Press L once: Axe1 (Animation 19: Axe1)" << std::endl;
+    std::cout << "  * Press L twice: Axe2 (Animation 20: Axe2)" << std::endl;
+    std::cout << "  * Press L three times: Axe3 (Animation 21: Axe3)" << std::endl;
+    std::cout << "  * Combo window: " << COMBO_WINDOW << " seconds" << std::endl;
     std::cout << "- K: Kick (Animation 18: Kick)" << std::endl;
 
     
@@ -148,6 +159,21 @@ void GSPlay::Update(float deltaTime) {
         }
     }
     
+    // Update axe combo timer
+    if (m_isInAxeCombo) {
+        m_axeComboTimer -= deltaTime;
+        if (m_axeComboTimer <= 0.0f) {
+            // Axe combo timeout - reset về idle
+            m_isInAxeCombo = false;
+            m_axeComboCount = 0;
+            m_axeComboCompleted = false;
+            if (m_animManager) {
+                m_animManager->Play(0, true); // Return to idle
+            }
+            std::cout << "Axe combo timeout - returning to idle" << std::endl;
+        }
+    }
+    
     // Xử lý di chuyển dựa trên trạng thái phím
     static int lastAnimation = -1; // Để tránh gọi Play() liên tục
     
@@ -164,6 +190,14 @@ void GSPlay::Update(float deltaTime) {
         m_comboTimer = 0.0f;
         m_comboCompleted = false;
         std::cout << "Combo cancelled due to other action (Sit/Roll/Jump)" << std::endl;
+    }
+    
+    if (isOtherAction && m_isInAxeCombo) {
+        m_isInAxeCombo = false;
+        m_axeComboCount = 0;
+        m_axeComboTimer = 0.0f;
+        m_axeComboCompleted = false;
+        std::cout << "Axe combo cancelled due to other action (Sit/Roll/Jump)" << std::endl;
     }
     
     // Xử lý Jump
@@ -290,7 +324,7 @@ void GSPlay::Update(float deltaTime) {
         }
         
         // Chỉ thay đổi animation nếu không đang trong combo
-        if (!m_isInCombo) {
+        if (!m_isInCombo && !m_isInAxeCombo) {
             if (isShiftPressed) {
                 if (m_animManager && lastAnimation != 2) {
                     m_animManager->Play(2, true); // Run animation
@@ -317,7 +351,7 @@ void GSPlay::Update(float deltaTime) {
         }
         
         // Chỉ thay đổi animation nếu không đang trong combo
-        if (!m_isInCombo) {
+        if (!m_isInCombo && !m_isInAxeCombo) {
             if (isShiftPressed) {
                 if (m_animManager && lastAnimation != 2) {
                     m_animManager->Play(2, true); // Run animation (sẽ đảo ngược UV)
@@ -340,7 +374,7 @@ void GSPlay::Update(float deltaTime) {
     } else {
         // Idle animation (animation 0) - giữ hướng cuối cùng
         // Chỉ chuyển về idle nếu không đang trong combo
-        if (!m_isInCombo) {
+        if (!m_isInCombo && !m_isInAxeCombo) {
             m_charState = CharState::Idle;
             if (m_animManager && lastAnimation != 0) {
                 m_animManager->Play(0, true); // Idle animation
@@ -374,10 +408,30 @@ void GSPlay::Update(float deltaTime) {
         }
         
         // Kiểm tra animation đá đã kết thúc chưa
-        if (!m_isInCombo && m_animManager->GetCurrentAnimation() == 18 && !m_animManager->IsPlaying()) {
+        if (!m_isInCombo && !m_isInAxeCombo && m_animManager->GetCurrentAnimation() == 18 && !m_animManager->IsPlaying()) {
             // Animation đá kết thúc, trở về trạng thái idle
             m_animManager->Play(0, true); // Trở về idle
             std::cout << "Animation đá kết thúc - trở về trạng thái idle" << std::endl;
+        }
+        
+        // Check if axe combo animation finished
+        if (m_isInAxeCombo && !m_animManager->IsPlaying()) {
+            // Animation finished, check if we need to continue combo or return to idle
+            if (m_axeComboCompleted) {
+                // Combo completed, return to idle
+                m_isInAxeCombo = false;
+                m_axeComboCount = 0;
+                m_axeComboCompleted = false;
+                m_animManager->Play(0, true); // Return to idle
+                std::cout << "Axe combo completed - returning to idle" << std::endl;
+            } else if (m_axeComboTimer <= 0.0f) {
+                // Combo timeout, return to idle
+                m_isInAxeCombo = false;
+                m_axeComboCount = 0;
+                m_axeComboCompleted = false;
+                m_animManager->Play(0, true); // Return to idle
+                std::cout << "Axe combo timeout - returning to idle" << std::endl;
+            }
         }
     }
     
@@ -436,6 +490,15 @@ void GSPlay::Draw() {
             if (m_isInCombo) {
                 std::cout << "Combo: " << m_comboCount << "/3 (Timer: " << m_comboTimer << "s)";
                 if (m_comboCompleted) {
+                    std::cout << " [COMPLETED]";
+                }
+                if (isMoving) {
+                    std::cout << " [MOVING DURING COMBO]";
+                }
+                std::cout << std::endl;
+            } else if (m_isInAxeCombo) {
+                std::cout << "Axe Combo: " << m_axeComboCount << "/3 (Timer: " << m_axeComboTimer << "s)";
+                if (m_axeComboCompleted) {
                     std::cout << " [COMPLETED]";
                 }
                 if (isMoving) {
@@ -506,11 +569,57 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 std::cout << "Combo cancelled due to kick" << std::endl;
             }
             
+            // Hủy axe combo đang chạy
+            if (m_isInAxeCombo) {
+                m_isInAxeCombo = false;
+                m_axeComboCount = 0;
+                m_axeComboTimer = 0.0f;
+                m_axeComboCompleted = false;
+                std::cout << "Axe combo cancelled due to kick" << std::endl;
+            }
+            
             // Play kick animation
             if (m_animManager) {
                 m_animManager->Play(18, false); // Kick animation (Animation 18) - không loop
                 std::cout << "=== KICK EXECUTED ===" << std::endl;
                 std::cout << "Playing Kick animation (Animation 18)" << std::endl;
+            }
+        }
+        
+        // Axe combo system - L key
+        if (key == 'L' || key == 'l') {
+            if (!m_isInAxeCombo) {
+                // Bắt đầu axe combo mới
+                m_axeComboCount = 1;
+                m_isInAxeCombo = true;
+                m_axeComboTimer = COMBO_WINDOW;
+                if (m_animManager) {
+                    m_animManager->Play(19, false); // Axe1 - không loop
+                }
+                std::cout << "=== AXE COMBO START ===" << std::endl;
+                std::cout << "Axe Combo " << m_axeComboCount << ": Axe1!" << std::endl;
+                std::cout << "Press L again within " << COMBO_WINDOW << " seconds for next axe attack!" << std::endl;
+            } else if (m_axeComboTimer > 0.0f) {
+                // Tiếp tục axe combo
+                m_axeComboCount++;
+                m_axeComboTimer = COMBO_WINDOW; // Reset timer
+                
+                if (m_axeComboCount == 2) {
+                    if (m_animManager) {
+                        m_animManager->Play(20, false); // Axe2 - không loop
+                    }
+                    std::cout << "=== AXE COMBO CONTINUE ===" << std::endl;
+                    std::cout << "Axe Combo " << m_axeComboCount << ": Axe2!" << std::endl;
+                    std::cout << "Press L again within " << COMBO_WINDOW << " seconds for final axe attack!" << std::endl;
+                } else if (m_axeComboCount == 3) {
+                    if (m_animManager) {
+                        m_animManager->Play(21, false); // Axe3 - không loop
+                    }
+                    std::cout << "=== AXE COMBO FINISH ===" << std::endl;
+                    std::cout << "Axe Combo " << m_axeComboCount << ": Axe3! AXE COMBO COMPLETE!" << std::endl;
+                    // Combo hoàn thành, set flag để logic Update xử lý
+                    m_axeComboCompleted = true;
+                }
             }
         }
     }
