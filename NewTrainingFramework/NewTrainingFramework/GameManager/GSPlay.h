@@ -1,6 +1,7 @@
 #pragma once
 #include "GameStateBase.h"
 #include "SceneManager.h"
+#include "../GameObject/AnimationManager.h"
 
 class GSPlay : public GameStateBase {
 private:
@@ -8,7 +9,7 @@ private:
     
     static const int MENU_BUTTON_ID = 301;
     static const int ANIM_OBJECT_ID = 1000;
-    std::shared_ptr<class Animation2D> m_anim;
+    std::shared_ptr<AnimationManager> m_animManager;
     
 public:
     GSPlay();

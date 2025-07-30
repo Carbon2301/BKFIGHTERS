@@ -53,7 +53,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\CODE\TrinhHuuAn\NewTrainingFramework\SDL2\Include;C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\SDL2\Include;$(SolutionDir)\Include;Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\CODE\TrinhHuuAn\NewTrainingFramework\SDL2\Include;C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\SDL2\Include;$(SolutionDir)\Include;Core;GameManager;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -76,7 +76,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Include;Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Include;Core;GameManager;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -107,6 +107,9 @@
     <ClCompile Include="GameManager\GSIntro.cpp" />
     <ClCompile Include="GameManager\GSMenu.cpp" />
     <ClCompile Include="GameManager\GSPlay.cpp" />
+    <ClCompile Include="GameObject\AnimationManager.cpp" />
+    <ClCompile Include="GameObject\Character.cpp" />
+    <ClCompile Include="GameObject\InputManager.cpp" />
     <ClCompile Include="GameObject\Shaders.cpp" />
     <ClCompile Include="Core\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -128,6 +131,9 @@
     <ClInclude Include="GameManager\GSIntro.h" />
     <ClInclude Include="GameManager\GSMenu.h" />
     <ClInclude Include="GameManager\GSPlay.h" />
+    <ClInclude Include="GameObject\AnimationManager.h" />
+    <ClInclude Include="GameObject\Character.h" />
+    <ClInclude Include="GameObject\InputManager.h" />
     <ClInclude Include="GameObject\Shaders.h" />
     <ClInclude Include="Core\stdafx.h" />
     <ClInclude Include="Core\targetver.h" />
