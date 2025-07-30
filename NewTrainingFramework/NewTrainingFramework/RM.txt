@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 6
+# 2DTexture 7
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -103,6 +103,83 @@ ANINUM 35
 96 1 300
 * Animation 34: Hit By Rocket
 97 4 300
+
+ID 11
+FILE "../Resources/Fighter/Characters/Player2_Body.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 8 16
+ANINUM 35
+* Animation 0: Idle
+0 4 300
+* Animation 1: Walk 
+4 4 300
+* Animation 2: Run
+8 4 300
+* Animation 3: Sit
+12 1 300
+* Animation 4: Roll
+13 2 100
+* Animation 5: Fly
+15 1 300
+* Animation 6: Climb Ladder
+16 4 300
+* Animation 7: Fall
+20 2 300
+* Animation 8: GetHit
+22 2 300
+* Animation 9: Punch1
+24 2 150
+* Animation 10: Punch2
+26 2 150
+* Animation 11: Punch3
+28 2 150
+* Animation 12: Knockdown
+30 1 300
+* Animation 13: Land 
+31 1 300
+* Animation 14: Lie 
+32 2 300
+* Animation 15: Jump 
+34 1 300
+* Animation 16: Air Kick 
+35 1 300
+* Animation 17: Die
+36 2 300
+* Animation 18: Kick  
+38 1 200
+* Animation 19: Axe1
+40 3 300
+* Animation 20: Axe2
+43 3 300
+* Animation 21: Axe3
+48 3 300
+* Animation 22: Sword1
+56 3 300
+* Animation 23: Sword2
+59 3 300
+* Animation 24: Sword3
+64 3 300
+* Animation 25: Pipe1
+72 3 300
+* Animation 26: Pipe2
+75 3 300
+* Animation 27: Pipe3
+80 3 300
+* Animation 28: Body Shoot
+88 1 300
+* Animation 29: Body Flamegun
+89 1 300
+* Animation 30: Body Grenade
+90 1 300
+* Animation 31: Body Molotov
+91 1 300
+* Animation 32: Throw
+92 1 300
+* Animation 33: Dont Know
+96 1 300
+* Animation 34: Hit By Rocket
+97 4 300
+
 
 # Shader 1
 ID 0
