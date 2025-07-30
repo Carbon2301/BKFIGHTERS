@@ -184,7 +184,8 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
             m_posX += MOVE_SPEED * deltaTime;
         }
         
-        if (!m_isInCombo && !m_isInAxeCombo) {
+        // Chỉ thay đổi animation nếu không đang nhảy và không đang trong combo
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping) {
             if (isShiftPressed) {
                 PlayAnimation(2, true);
             } else {
@@ -201,7 +202,8 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
             m_posX -= MOVE_SPEED * deltaTime;
         }
         
-        if (!m_isInCombo && !m_isInAxeCombo) {
+        // Chỉ thay đổi animation nếu không đang nhảy và không đang trong combo
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping) {
             if (isShiftPressed) {
                 PlayAnimation(2, true);
             } else {
@@ -212,7 +214,8 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
         m_state = CharState::Idle;
         PlayAnimation(3, true);
     } else {
-        if (!m_isInCombo && !m_isInAxeCombo) {
+        // Chỉ thay đổi animation nếu không đang nhảy và không đang trong combo
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping) {
             m_state = CharState::Idle;
             PlayAnimation(0, true);
         }
