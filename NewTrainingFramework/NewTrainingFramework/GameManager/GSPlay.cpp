@@ -118,26 +118,8 @@ void GSPlay::Init() {
     std::cout << "  * Press J twice: Punch2 (Animation 10: Punch2)" << std::endl;
     std::cout << "  * Press J three times: Punch3 (Animation 11: Punch3)" << std::endl;
     std::cout << "  * Combo window: " << COMBO_WINDOW << " seconds" << std::endl;
-    std::cout << "=== ANIMATION TEST MODE ===" << std::endl;
-    std::cout << "- 0: Animation 0 (Idle)" << std::endl;
-    std::cout << "- 1: Animation 1 (Walk)" << std::endl;
-    std::cout << "- 2: Animation 2 (Run)" << std::endl;
-    std::cout << "- 3: Animation 3 (Sit)" << std::endl;
-    std::cout << "- 4: Animation 4 (Roll)" << std::endl;
-    std::cout << "- 5: Animation 5 (Fly)" << std::endl;
-    std::cout << "- 6: Animation 6 (Climb Ladder)" << std::endl;
-    std::cout << "- 7: Animation 7 (Fall)" << std::endl;
-    std::cout << "- 8: Animation 8 (GetHit)" << std::endl;
-    std::cout << "- 9: Animation 9 (Punch1)" << std::endl;
-    std::cout << "- Q: Animation 10 (Punch2)" << std::endl;
-    std::cout << "- E: Animation 11 (Punch3)" << std::endl;
-    std::cout << "- R: Animation 12 (Knockdown)" << std::endl;
-    std::cout << "- T: Animation 15 (Jump)" << std::endl;
-    std::cout << "- Y: Animation 16 (Air Kick)" << std::endl;
-    std::cout << "- U: Animation 17 (Die)" << std::endl;
-    std::cout << "- I: Animation 18 (Kick)" << std::endl;
-    std::cout << "- O: Animation 19 (Axe1)" << std::endl;
-    std::cout << "- P: Animation 20 (Axe2)" << std::endl;
+    std::cout << "- K: Kick (Animation 18: Kick)" << std::endl;
+
     
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
     std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
@@ -390,6 +372,13 @@ void GSPlay::Update(float deltaTime) {
                 std::cout << "Combo timeout - returning to idle" << std::endl;
             }
         }
+        
+        // Kiểm tra animation đá đã kết thúc chưa
+        if (!m_isInCombo && m_animManager->GetCurrentAnimation() == 18 && !m_animManager->IsPlaying()) {
+            // Animation đá kết thúc, trở về trạng thái idle
+            m_animManager->Play(0, true); // Trở về idle
+            std::cout << "Animation đá kết thúc - trở về trạng thái idle" << std::endl;
+        }
     }
     
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
@@ -453,6 +442,8 @@ void GSPlay::Draw() {
                     std::cout << " [MOVING DURING COMBO]";
                 }
                 std::cout << std::endl;
+            } else if (m_animManager->GetCurrentAnimation() == 18) {
+                std::cout << "Action: KICK [Animation 18]" << std::endl;
             }
             std::cout << "=========================" << std::endl;
             
@@ -504,34 +495,22 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             }
         }
         
-        // Test animation keys
-        if (key >= '0' && key <= '9') {
-            int animIndex = key - '0';
-            if (m_animManager && animIndex < m_animManager->GetAnimationCount()) {
-                m_animManager->Play(animIndex, true);
-                std::cout << "Playing animation " << animIndex << std::endl;
-            } else {
-                std::cout << "Animation " << animIndex << " not available" << std::endl;
+        // Kick system - K key
+        if (key == 'K' || key == 'k') {
+            // Hủy combo đang chạy
+            if (m_isInCombo) {
+                m_isInCombo = false;
+                m_comboCount = 0;
+                m_comboTimer = 0.0f;
+                m_comboCompleted = false;
+                std::cout << "Combo cancelled due to kick" << std::endl;
             }
-        } else if (key == 'Q' || key == 'q') {
-            if (m_animManager && 10 < m_animManager->GetAnimationCount()) {
-                m_animManager->Play(10, true);
-                std::cout << "Playing animation 10" << std::endl;
-            }
-        } else if (key == 'E' || key == 'e') {
-            if (m_animManager && 11 < m_animManager->GetAnimationCount()) {
-                m_animManager->Play(11, true);
-                std::cout << "Playing animation 11" << std::endl;
-            }
-        } else if (key == 'R' || key == 'r') {
-            if (m_animManager && 12 < m_animManager->GetAnimationCount()) {
-                m_animManager->Play(12, true);
-                std::cout << "Playing animation 12" << std::endl;
-            }
-        } else if (key == 'T' || key == 't') {
-            if (m_animManager && 15 < m_animManager->GetAnimationCount()) {
-                m_animManager->Play(15, true);
-                std::cout << "Playing animation 15 (Jump)" << std::endl;
+            
+            // Play kick animation
+            if (m_animManager) {
+                m_animManager->Play(18, false); // Kick animation (Animation 18) - không loop
+                std::cout << "=== KICK EXECUTED ===" << std::endl;
+                std::cout << "Playing Kick animation (Animation 18)" << std::endl;
             }
         }
     }
