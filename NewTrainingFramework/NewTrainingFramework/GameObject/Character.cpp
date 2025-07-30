@@ -4,8 +4,7 @@
 #include "ResourceManager.h"
 #include <iostream>
 
-// Constants
-static const int ANIM_OBJECT_ID = 1000;
+
 
 // Static constants
 const float Character::JUMP_FORCE = 3.0f;
@@ -17,7 +16,7 @@ const float Character::COMBO_WINDOW = 0.5f;
 Character::Character() 
     : m_posX(0.0f), m_posY(0.0f), m_facingLeft(false), m_state(CharState::Idle),
       m_isJumping(false), m_jumpVelocity(0.0f), m_jumpStartY(0.0f),
-      m_lastAnimation(-1), m_comboCount(0), m_comboTimer(0.0f),
+      m_lastAnimation(-1), m_objectId(1000), m_comboCount(0), m_comboTimer(0.0f),
       m_isInCombo(false), m_comboCompleted(false),
       m_axeComboCount(0), m_axeComboTimer(0.0f),
       m_isInAxeCombo(false), m_axeComboCompleted(false),
@@ -27,12 +26,35 @@ Character::Character()
 Character::~Character() {
 }
 
-void Character::Initialize(std::shared_ptr<AnimationManager> animManager) {
+void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     m_animManager = animManager;
-    m_posX = 0.0f;
-    m_posY = 0.0f;
+    m_objectId = objectId;
     m_state = CharState::Idle;
     m_facingLeft = false;
+    
+    // Tạo Object riêng cho character này
+    m_characterObject = std::make_unique<Object>(objectId);
+    
+    // Copy settings từ Object gốc trong SceneManager
+    Object* originalObj = SceneManager::GetInstance()->GetObject(objectId);
+    if (originalObj) {
+        m_characterObject->SetModel(originalObj->GetModelId());
+        const std::vector<int>& textureIds = originalObj->GetTextureIds();
+        if (!textureIds.empty()) {
+            m_characterObject->SetTexture(textureIds[0], 0);
+        }
+        m_characterObject->SetShader(originalObj->GetShaderId());
+        m_characterObject->SetScale(originalObj->GetScale());
+        
+        // Đọc vị trí từ Object gốc thay vì hardcode
+        const Vector3& originalPos = originalObj->GetPosition();
+        m_posX = originalPos.x;
+        m_posY = originalPos.y;
+    } else {
+        // Fallback nếu không tìm thấy Object gốc
+        m_posX = 0.0f;
+        m_posY = 0.0f;
+    }
     
     if (m_animManager) {
         m_animManager->Play(0, true); // Start with idle animation
@@ -115,8 +137,7 @@ void Character::Update(float deltaTime) {
 }
 
 void Character::Draw(Camera* camera) {
-    Object* animObj = SceneManager::GetInstance()->GetObject(ANIM_OBJECT_ID);
-    if (animObj && m_animManager && animObj->GetModelId() >= 0 && animObj->GetModelPtr()) {
+    if (m_characterObject && m_animManager && m_characterObject->GetModelId() >= 0 && m_characterObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_animManager->GetUV(u0, v0, u1, v1);
         
@@ -127,11 +148,11 @@ void Character::Draw(Camera* camera) {
             u1 = temp;
         }
         
-        animObj->SetCustomUV(u0, v0, u1, v1);
-        animObj->SetPosition(Vector3(m_posX, m_posY, 0.0f));
+        m_characterObject->SetCustomUV(u0, v0, u1, v1);
+        m_characterObject->SetPosition(Vector3(m_posX, m_posY, 0.0f));
         
         if (camera) {
-            animObj->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+            m_characterObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
 }

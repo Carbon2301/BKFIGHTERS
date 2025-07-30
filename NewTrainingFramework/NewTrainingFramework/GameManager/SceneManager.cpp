@@ -335,9 +335,12 @@ void SceneManager::Draw() {
     viewMatrix = const_cast<Matrix&>(viewMatrixRef);
     projectionMatrix = const_cast<Matrix&>(projMatrixRef);
     
-    // Draw all objects
+    // Draw all objects except character objects (ID 1000, 1001)
+    // Character objects will be drawn by Character class
     for (auto& obj : m_objects) {
-        obj->Draw(viewMatrix, projectionMatrix);
+        if (obj->GetId() != 1000 && obj->GetId() != 1001) {
+            obj->Draw(viewMatrix, projectionMatrix);
+        }
     }
 }
 

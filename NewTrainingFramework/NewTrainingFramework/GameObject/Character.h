@@ -29,6 +29,8 @@ private:
     // Animation
     std::shared_ptr<AnimationManager> m_animManager;
     int m_lastAnimation;
+    int m_objectId; // Object ID for this character
+    std::unique_ptr<Object> m_characterObject; // Own Object instance for this character
     
     // Combo system variables
     int m_comboCount;
@@ -51,7 +53,7 @@ public:
     ~Character();
     
     // Initialization
-    void Initialize(std::shared_ptr<AnimationManager> animManager);
+    void Initialize(std::shared_ptr<AnimationManager> animManager, int objectId = 1000);
     
     // Core update
     void Update(float deltaTime);

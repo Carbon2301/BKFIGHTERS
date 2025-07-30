@@ -13,6 +13,7 @@
 
 // Character and Input Manager
 static Character m_player;
+static Character m_player2;
 static InputManager* m_inputManager = nullptr;
 
 GSPlay::GSPlay() 
@@ -55,10 +56,10 @@ void GSPlay::Init() {
     // Khởi tạo InputManager
     m_inputManager = InputManager::GetInstance();
 
-    // Khởi tạo AnimationManager với dữ liệu từ ResourceManager
+    // Khởi tạo AnimationManager với dữ liệu từ ResourceManager cho Player 1
     m_animManager = std::make_shared<AnimationManager>();
     
-    // Lấy animation data từ texture ID 10 (spritesheet)
+    // Lấy animation data từ texture ID 10 (Player1_Body.tga)
     const TextureData* textureData = ResourceManager::GetInstance()->GetTextureData(10);
     if (textureData && textureData->spriteWidth > 0 && textureData->spriteHeight > 0) {
         std::vector<AnimationData> animations;
@@ -66,13 +67,33 @@ void GSPlay::Init() {
             animations.push_back({anim.startFrame, anim.numFrames, anim.duration, 0.0f});
         }
         m_animManager->Initialize(textureData->spriteWidth, textureData->spriteHeight, animations);
-        std::cout << "Animation system initialized with " << animations.size() << " animations" << std::endl;
+        std::cout << "Animation system initialized for Player 1 with " << animations.size() << " animations" << std::endl;
     } else {
         std::cout << "Warning: No animation data found for texture ID 10" << std::endl;
     }
     
-    // Khởi tạo Character
-    m_player.Initialize(m_animManager);
+    // Khởi tạo Character Player 1
+    m_player.Initialize(m_animManager, 1000);
+    
+    // Khởi tạo AnimationManager cho Player 2
+    auto animManager2 = std::make_shared<AnimationManager>();
+    
+    // Lấy animation data từ texture ID 11 (Player2_Body.tga)
+    const TextureData* textureData2 = ResourceManager::GetInstance()->GetTextureData(11);
+    if (textureData2 && textureData2->spriteWidth > 0 && textureData2->spriteHeight > 0) {
+        std::vector<AnimationData> animations2;
+        for (const auto& anim : textureData2->animations) {
+            animations2.push_back({anim.startFrame, anim.numFrames, anim.duration, 0.0f});
+        }
+        animManager2->Initialize(textureData2->spriteWidth, textureData2->spriteHeight, animations2);
+        std::cout << "Animation system initialized for Player 2 with " << animations2.size() << " animations" << std::endl;
+    } else {
+        std::cout << "Warning: No animation data found for texture ID 11" << std::endl;
+    }
+    
+    // Khởi tạo Character Player 2
+    m_player2.Initialize(animManager2, 1001);
+    // Vị trí sẽ được đọc từ file scene (POS -1.0 0.0 0.0)
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
@@ -131,8 +152,9 @@ void GSPlay::Update(float deltaTime) {
         m_inputManager->Update();
     }
     
-    // Update character
+    // Update characters
     m_player.Update(deltaTime);
+    m_player2.Update(deltaTime);
     
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
     if (menuButton) {
@@ -148,10 +170,11 @@ void GSPlay::Update(float deltaTime) {
 void GSPlay::Draw() {
     SceneManager::GetInstance()->Draw();
     
-    // Draw character
+    // Draw characters
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
     if (cam) {
         m_player.Draw(cam);
+        m_player2.Draw(cam);
     }
     
     // Debug info
