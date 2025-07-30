@@ -203,13 +203,62 @@ void GSPlay::Update(float deltaTime) {
         m_jumpVelocity -= GRAVITY * deltaTime;
         m_charPosY += m_jumpVelocity * deltaTime;
         
+        // Cho phép di chuyển trong không khí khi đang nhảy
+        bool isMovingLeft = (keyStates['A'] || keyStates['a']);
+        bool isMovingRight = (keyStates['D'] || keyStates['d']);
+        bool isShiftPressed = keyStates[16];
+        
+        if (isMovingLeft) {
+            m_facingLeft = true;
+            m_charState = CharState::MoveLeft;
+            if (isShiftPressed) {
+                m_charPosX -= moveSpeed * 1.5f * deltaTime; // Chạy trong không khí
+            } else {
+                m_charPosX -= moveSpeed * 0.8f * deltaTime; // Đi bộ trong không khí (chậm hơn)
+            }
+        } else if (isMovingRight) {
+            m_facingLeft = false;
+            m_charState = CharState::MoveRight;
+            if (isShiftPressed) {
+                m_charPosX += moveSpeed * 1.5f * deltaTime; // Chạy trong không khí
+            } else {
+                m_charPosX += moveSpeed * 0.8f * deltaTime; // Đi bộ trong không khí (chậm hơn)
+            }
+        }
+        
         // Kiểm tra chạm đất
         if (m_charPosY <= GROUND_Y) {
             m_charPosY = GROUND_Y;
             m_isJumping = false;
             m_jumpVelocity = 0.0f;
-            if (m_animManager) {
-                m_animManager->Play(0, true); // Return to idle
+            
+            // Kiểm tra xem có đang giữ phím di chuyển không trước khi chuyển về idle
+            if (isMovingLeft || isMovingRight) {
+                // Cập nhật hướng di chuyển
+                if (isMovingLeft) {
+                    m_facingLeft = true;
+                    m_charState = CharState::MoveLeft;
+                } else if (isMovingRight) {
+                    m_facingLeft = false;
+                    m_charState = CharState::MoveRight;
+                }
+                
+                // Nếu đang giữ phím di chuyển, chuyển về animation di chuyển tương ứng
+                if (isShiftPressed) {
+                    if (m_animManager) {
+                        m_animManager->Play(2, true); // Run animation
+                    }
+                } else {
+                    if (m_animManager) {
+                        m_animManager->Play(1, true); // Walk animation
+                    }
+                }
+            } else {
+                // Nếu không di chuyển, chuyển về idle
+                m_charState = CharState::Idle;
+                if (m_animManager) {
+                    m_animManager->Play(0, true); // Return to idle
+                }
             }
             std::cout << "=== JUMP END ===" << std::endl;
         }
