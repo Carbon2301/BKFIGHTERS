@@ -64,7 +64,12 @@ void AnimationManager::Update(float deltaTime) {
     const AnimationData& currentAnim = m_animations[m_currentAnimation];
     
     if (currentAnim.numFrames <= 1) {
-        return; // Single frame animation
+        // Single frame animation - auto-finish after duration
+        m_timer += deltaTime;
+        if (m_timer >= (float)currentAnim.duration / 1000.0f) {
+            m_isPlaying = false;
+        }
+        return;
     }
     
     m_timer += deltaTime;

@@ -70,7 +70,7 @@ ANINUM 35
 * Animation 17: Die
 36 2 300
 * Animation 18: Kick  
-38 1 300
+38 1 200
 * Animation 19: Axe1
 40 3 300
 * Animation 20: Axe2
