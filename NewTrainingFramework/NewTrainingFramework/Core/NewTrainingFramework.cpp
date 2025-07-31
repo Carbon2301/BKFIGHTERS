@@ -25,35 +25,23 @@ GameStateMachine* g_gameStateMachine = nullptr;
 
 int Init(ESContext* esContext)
 {
-	glClearColor(0.5f, 0.5f, 0.5f, 1.0f); // Gray background
+	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
 	std::cout << "\n=== 2D Game Engine with State Machine ===" << std::endl;
 	std::cout << "Initializing New Training Framework Engine..." << std::endl;
 	
-	// Initialize Resource Manager
 	g_resourceManager = ResourceManager::GetInstance();
 	if (!g_resourceManager->LoadFromFile("RM.txt")) {
 		std::cout << "Failed to load resources!" << std::endl;
 		return -1;
 	}
 	
-	// Load music from RM.txt
 	SoundManager::Instance().LoadMusicFromFile("../NewTrainingFramework/RM.txt");
 	
 	g_sceneManager = SceneManager::GetInstance();
-	std::cout << "SceneManager initialized (scenes loaded per-state)" << std::endl;
 	
-	// Initialize Game State Machine
 	g_gameStateMachine = GameStateMachine::GetInstance();
 	
-	std::cout << "Engine initialized successfully!" << std::endl;
-	std::cout << "\n=== 2D Game State Machine ===" << std::endl;
-	std::cout << "Starting with Loading Screen..." << std::endl;
-	std::cout << "State Flow: Loading -> Menu -> Play" << std::endl;
-	std::cout << "\nGame Controls will be shown in each state." << std::endl;
-	std::cout << "==========================================\n" << std::endl;
-	
-	// Start with intro/loading state
 	g_gameStateMachine->ChangeState(StateType::INTRO);
 	
 	return 0;

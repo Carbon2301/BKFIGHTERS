@@ -2,6 +2,8 @@
 #include "GameStateBase.h"
 #include "SceneManager.h"
 #include "../GameObject/AnimationManager.h"
+#include "../GameObject/Character.h"
+#include "../GameObject/InputManager.h"
 
 class GSPlay : public GameStateBase {
 private:

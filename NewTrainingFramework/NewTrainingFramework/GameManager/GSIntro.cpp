@@ -33,9 +33,9 @@ void GSIntro::Init() {
         
         Object* backgroundObj = sceneManager->CreateObject(0);
         if (backgroundObj) {
-            backgroundObj->SetModel(0);    // Sprite2D model
-            backgroundObj->SetTexture(0, 0); // Background texture
-            backgroundObj->SetShader(0);   // Basic shader
+            backgroundObj->SetModel(0);
+            backgroundObj->SetTexture(0, 0);
+            backgroundObj->SetShader(0);
             backgroundObj->SetPosition(Vector3(0.0f, 0.0f, 0.0f));
             backgroundObj->SetScale(Vector3(2.0f, 2.0f, 1.0f));
         }
@@ -48,7 +48,6 @@ void GSIntro::Init() {
 void GSIntro::Update(float deltaTime) {
     m_loadingTimer += deltaTime;
     
-    // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
     static float lastProgressTime = 0.0f;
@@ -86,7 +85,6 @@ void GSIntro::HandleMouseEvent(int x, int y, bool bIsPressed) {
 }
 
 void GSIntro::HandleMouseMove(int x, int y) {
-    // std::cout << "Mouse moved to (" << x << ", " << y << ")" << std::endl;
 }
 
 void GSIntro::Resume() {
