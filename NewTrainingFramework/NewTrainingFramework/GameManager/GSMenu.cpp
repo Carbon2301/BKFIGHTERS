@@ -32,7 +32,6 @@ void GSMenu::Init() {
     std::cout << "Use P for Play, Q for Question/Help, X for Exit" << std::endl;
     std::cout << "ESC to exit game" << std::endl;
 
-    //Tạo texture text động bằng SDL_ttf
     if (TTF_WasInit() == 0) TTF_Init();
     TTF_Font* font = TTF_OpenFont("../Resources/Font/Roboto-Regular.ttf", 32);
     if (!font) {
@@ -51,12 +50,10 @@ void GSMenu::Init() {
     SDL_FreeSurface(textSurface);
     TTF_CloseFont(font);
 
-    //Phát nhạc nền
     SoundManager::Instance().PlayMusicByID(0, -1);
 
-    //Tạo object vẽ text
     m_textObject = std::make_shared<Object>();
-    m_textObject->SetId(-100); // ID đặc biệt cho text động
+    m_textObject->SetId(-100);
     m_textObject->SetModel(0);
     m_textObject->SetShader(0);
     m_textObject->SetDynamicTexture(m_textTexture);
@@ -75,7 +72,6 @@ void GSMenu::Update(float deltaTime) {
 
 void GSMenu::Draw() {
     SceneManager::GetInstance()->Draw();
-    // --- Vẽ text động ---
     if (m_textObject) {
         Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
         if (cam) {
@@ -90,14 +86,12 @@ void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     switch (key) {
         case 'P':
         case 'p':
-            // Direct play button
             std::cout << "=== Starting Game ===" << std::endl;
             GameStateMachine::GetInstance()->PushState(StateType::PLAY);
             break;
             
         case 'Q':
         case 'q':
-            // Direct question/help button
             std::cout << "=== HELP ===" << std::endl;
             std::cout << "Game Controls:" << std::endl;
             std::cout << "- P: Play game" << std::endl;
@@ -108,17 +102,16 @@ void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             
         case 'X':
         case 'x':
-            // Direct exit button
             std::cout << "=== Closing Game ===" << std::endl;
             std::cout << "Thanks for playing!" << std::endl;
             break;
             
-        case 13: // Enter
-        case ' ': // Space
+        case 13:
+        case ' ':
             HandleButtonSelection();
             break;
             
-        case 27: // ESC
+        case 27:
             std::cout << "Exit game requested" << std::endl;
             break;
     }
@@ -187,7 +180,6 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
 }
 
 void GSMenu::HandleMouseMove(int x, int y) {
-    // std::cout << "Mouse moved to (" << x << ", " << y << ")" << std::endl;
 }
 
 void GSMenu::HandleButtonSelection() {

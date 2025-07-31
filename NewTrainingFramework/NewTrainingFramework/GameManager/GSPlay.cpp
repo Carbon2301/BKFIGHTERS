@@ -2,16 +2,20 @@
 #include "GSPlay.h"
 #include "GameStateMachine.h"
 #include "../Core/Globals.h"
+#include "../../Utilities/Math.h"
 #include <iostream>
+#include <cmath>
 #include "../GameObject/Object.h"
 #include "../GameObject/Texture2D.h"
+#include "../GameObject/Camera.h"
 #include <memory>
 #include "../GameObject/AnimationManager.h"
 #include "../GameObject/Character.h"
 #include "../GameObject/InputManager.h"
 #include "ResourceManager.h"
 
-// Character and Input Manager
+#define MENU_BUTTON_ID 301
+
 static Character m_player;
 static Character m_player2;
 static InputManager* m_inputManager = nullptr;
@@ -35,7 +39,6 @@ void GSPlay::Init() {
         std::cout << "Failed to load play scene!" << std::endl;
         sceneManager->Clear();
         
-        // Create default 2D camera
         Camera* camera = sceneManager->CreateCamera();
         if (camera) {
             float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
@@ -44,7 +47,6 @@ void GSPlay::Init() {
             sceneManager->SetActiveCamera(0);
         }
     } else {
-        // Nếu đã có camera, vẫn chỉnh lại tỉ lệ aspect cho đúng
         Camera* camera = sceneManager->GetActiveCamera();
         if (camera) {
             float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
@@ -53,13 +55,10 @@ void GSPlay::Init() {
     }    
     m_gameTime = 0.0f;
 
-    // Khởi tạo InputManager
     m_inputManager = InputManager::GetInstance();
 
-    // Khởi tạo AnimationManager với dữ liệu từ ResourceManager cho Player 1
     m_animManager = std::make_shared<AnimationManager>();
     
-    // Lấy animation data từ texture ID 10 (Player1_Body.tga)
     const TextureData* textureData = ResourceManager::GetInstance()->GetTextureData(10);
     if (textureData && textureData->spriteWidth > 0 && textureData->spriteHeight > 0) {
         std::vector<AnimationData> animations;
@@ -72,13 +71,11 @@ void GSPlay::Init() {
         std::cout << "Warning: No animation data found for texture ID 10" << std::endl;
     }
     
-    // Khởi tạo Character Player 1
     m_player.Initialize(m_animManager, 1000);
+    m_player.SetInputConfig(Character::PLAYER1_INPUT);
     
-    // Khởi tạo AnimationManager cho Player 2
     auto animManager2 = std::make_shared<AnimationManager>();
     
-    // Lấy animation data từ texture ID 11 (Player2_Body.tga)
     const TextureData* textureData2 = ResourceManager::GetInstance()->GetTextureData(11);
     if (textureData2 && textureData2->spriteWidth > 0 && textureData2->spriteHeight > 0) {
         std::vector<AnimationData> animations2;
@@ -91,9 +88,8 @@ void GSPlay::Init() {
         std::cout << "Warning: No animation data found for texture ID 11" << std::endl;
     }
     
-    // Khởi tạo Character Player 2
     m_player2.Initialize(animManager2, 1001);
-    // Vị trí sẽ được đọc từ file scene (POS -1.0 0.0 0.0)
+    m_player2.SetInputConfig(Character::PLAYER2_INPUT);
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
@@ -157,24 +153,12 @@ void GSPlay::Init() {
 void GSPlay::Update(float deltaTime) {
     m_gameTime += deltaTime;
     
-    // Update scene
     SceneManager::GetInstance()->Update(deltaTime);
     
-    // Handle input and update character
     if (m_inputManager) {
-        const bool* keyStates = m_inputManager->GetKeyStates();
-        
-        // Handle movement and jump for Player 1 (WASD + Space)
-        m_player.HandleMovement(deltaTime, keyStates);
-        m_player.HandleJump(deltaTime, keyStates);
-        
-        // Handle movement and jump for Player 2 (Arrow keys + 0)
-        m_player2.HandleMovementPlayer2(deltaTime, keyStates);
-        m_player2.HandleJumpPlayer2(deltaTime, keyStates);
-        
-        // Handle combat input for both players (same keys: JKL)
-        m_inputManager->HandleInput(m_player);
-        m_inputManager->HandleInputPlayer2(m_player2);
+        // Unified input processing - Character handles all input logic
+        m_player.ProcessInput(deltaTime, m_inputManager);
+        m_player2.ProcessInput(deltaTime, m_inputManager);
         
         // Update input manager (reset key press events)
         m_inputManager->Update();
@@ -198,14 +182,12 @@ void GSPlay::Update(float deltaTime) {
 void GSPlay::Draw() {
     SceneManager::GetInstance()->Draw();
     
-    // Draw characters
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
     if (cam) {
         m_player.Draw(cam);
         m_player2.Draw(cam);
     }
     
-    // Debug info
     static float lastPosX = m_player.GetPosition().x;
     static int lastAnim = m_player.GetCurrentAnimation();
     static float lastPosX2 = m_player2.GetPosition().x;
@@ -214,8 +196,8 @@ void GSPlay::Draw() {
     static bool wasMoving2 = false;
         
     const bool* keyStates = m_inputManager ? m_inputManager->GetKeyStates() : nullptr;
-    bool isMoving = keyStates ? (keyStates['A'] || keyStates['D']) : false; // Only uppercase letters
-    bool isMoving2 = keyStates ? (keyStates[0x25] || keyStates[0x27]) : false; // Left or Right arrow
+    bool isMoving = keyStates ? (keyStates['A'] || keyStates['D']) : false;
+    bool isMoving2 = keyStates ? (keyStates[0x25] || keyStates[0x27]) : false;
         
     if (abs(m_player.GetPosition().x - lastPosX) > 0.01f || 
         lastAnim != m_player.GetCurrentAnimation() ||
@@ -303,16 +285,6 @@ void GSPlay::Draw() {
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (m_inputManager) {
         m_inputManager->UpdateKeyState(key, bIsPressed);
-    }
-    
-    if (!bIsPressed) {
-        if (key == 27 || key == 'M' || key == 'm') {
-            std::cout << "=== Returning to Menu ===" << std::endl;
-            std::cout << "Game paused. Returning to main menu..." << std::endl;
-            std::cout << "Calling ChangeState(MENU)..." << std::endl;
-            GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
-            std::cout << "ChangeState() called successfully!" << std::endl;
-        }
     }
 }
 

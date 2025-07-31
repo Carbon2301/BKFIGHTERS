@@ -1,19 +1,38 @@
 #pragma once
 #include <memory>
+#include <vector>
 #include "AnimationManager.h"
-#include "Object.h"
+#include "../../Utilities/Math.h"
 
-// Forward declarations
+class InputManager;
 class Camera;
 
-// Character states
-enum class CharState { Idle, MoveLeft, MoveRight, MoveBack, MoveFront };
+enum class CharState {
+    Idle,
+    MoveLeft,
+    MoveRight
+};
+
+// Input configuration for different players
+struct PlayerInputConfig {
+    int moveLeftKey;
+    int moveRightKey;
+    int jumpKey;
+    int sitKey;
+    int rollKey;
+    int punchKey;
+    int axeKey;
+    int kickKey;
+    
+    PlayerInputConfig(int left, int right, int jump, int sit, int roll, int punch, int axe, int kick)
+        : moveLeftKey(left), moveRightKey(right), jumpKey(jump), sitKey(sit), 
+          rollKey(roll), punchKey(punch), axeKey(axe), kickKey(kick) {}
+};
 
 class Character {
 private:
     // Basic properties
-    float m_posX;
-    float m_posY;
+    float m_posX, m_posY;
     bool m_facingLeft;
     CharState m_state;
     
@@ -21,21 +40,16 @@ private:
     bool m_isJumping;
     float m_jumpVelocity;
     float m_jumpStartY;
-    static const float JUMP_FORCE;
-    static const float GRAVITY;
-    static const float GROUND_Y;
-    static const float MOVE_SPEED;
     
     // Animation
     std::shared_ptr<AnimationManager> m_animManager;
     int m_lastAnimation;
     int m_objectId; // Object ID for this character
-    std::unique_ptr<Object> m_characterObject; // Own Object instance for this character
+    std::unique_ptr<class Object> m_characterObject; // Own Object instance for this character
     
     // Combo system variables
     int m_comboCount;
     float m_comboTimer;
-    static const float COMBO_WINDOW;
     bool m_isInCombo;
     bool m_comboCompleted;
     
@@ -50,24 +64,40 @@ private:
     
     // Sitting state tracking
     bool m_isSitting;
+    
+    // Input configuration
+    PlayerInputConfig m_inputConfig;
+
+    // Constants
+    static const float JUMP_FORCE;
+    static const float GRAVITY;
+    static const float GROUND_Y;
+    static const float MOVE_SPEED;
+    static const float COMBO_WINDOW;
+
+    // Helper methods
+    void HandleMovement(float deltaTime, const bool* keyStates);
+    void HandleJump(float deltaTime, const bool* keyStates);
+    void CancelCombosOnOtherAction(const bool* keyStates);
+    void UpdateComboTimers(float deltaTime);
+    void UpdateAnimationState();
 
 public:
     Character();
     ~Character();
     
     // Initialization
-    void Initialize(std::shared_ptr<AnimationManager> animManager, int objectId = 1000);
+    void Initialize(std::shared_ptr<AnimationManager> animManager, int objectId);
+    void SetInputConfig(const PlayerInputConfig& config) { m_inputConfig = config; }
     
     // Core update
     void Update(float deltaTime);
-    void Draw(Camera* camera);
+    void Draw(class Camera* camera);
+    
+    // Input handling - Unified input processing
+    void ProcessInput(float deltaTime, InputManager* inputManager);
     
     // Movement
-    void HandleMovement(float deltaTime, const bool* keyStates);
-    void HandleJump(float deltaTime, const bool* keyStates);
-    // Player 2 movement with arrow keys
-    void HandleMovementPlayer2(float deltaTime, const bool* keyStates);
-    void HandleJumpPlayer2(float deltaTime, const bool* keyStates);
     void SetPosition(float x, float y);
     Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
     bool IsFacingLeft() const { return m_facingLeft; }
@@ -96,4 +126,8 @@ public:
     int GetAxeComboCount() const { return m_axeComboCount; }
     float GetAxeComboTimer() const { return m_axeComboTimer; }
     bool IsAxeComboCompleted() const { return m_axeComboCompleted; }
+    
+    // Static input configurations
+    static const PlayerInputConfig PLAYER1_INPUT;
+    static const PlayerInputConfig PLAYER2_INPUT;
 }; 
