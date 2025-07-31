@@ -48,6 +48,24 @@ LRESULT WINAPI ESWindowProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		  }
 		  break;
 
+	  case WM_SYSKEYDOWN:
+		  {
+			  ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );
+
+			  if ( esContext && esContext->keyFunc )
+				  esContext->keyFunc ( esContext, (unsigned char) wParam, true );
+		  }
+		  break;
+
+	  case WM_SYSKEYUP:
+		  {
+			  ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );
+
+			  if ( esContext && esContext->keyFunc )
+				  esContext->keyFunc ( esContext, (unsigned char) wParam, false );
+		  }
+		  break;
+
       case WM_LBUTTONDOWN:
          {
             ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );

@@ -101,7 +101,7 @@ void GSPlay::Init() {
     std::cout << "- P: Quick play (from menu)" << std::endl;
     std::cout << "- Q: Help/Question (from menu)" << std::endl;
     std::cout << "- X: Exit game (from menu)" << std::endl;
-    std::cout << "=== MOVEMENT CONTROLS ===" << std::endl;
+    std::cout << "=== PLAYER 1 MOVEMENT CONTROLS ===" << std::endl;
     std::cout << "- A: Walk left (Animation 1: Walk)" << std::endl;
     std::cout << "- D: Walk right (Animation 1: Walk)" << std::endl;
     std::cout << "- Shift + A: Run left (Animation 2: Run)" << std::endl;
@@ -112,7 +112,7 @@ void GSPlay::Init() {
     std::cout << "- D + Space: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- Space: Roll in current direction (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
-    std::cout << "=== COMBO SYSTEM ===" << std::endl;
+    std::cout << "=== PLAYER 1 COMBO SYSTEM ===" << std::endl;
     std::cout << "- J: Start/Continue Punch Combo" << std::endl;
     std::cout << "  * Press J once: Punch1 (Animation 9: Punch1)" << std::endl;
     std::cout << "  * Press J twice: Punch2 (Animation 10: Punch2)" << std::endl;
@@ -124,6 +124,29 @@ void GSPlay::Init() {
     std::cout << "  * Press L three times: Axe3 (Animation 21: Axe3)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- K: Kick (Animation 18: Kick)" << std::endl;
+    std::cout << "=== PLAYER 2 MOVEMENT CONTROLS ===" << std::endl;
+    std::cout << "- Left Arrow: Walk left (Animation 1: Walk)" << std::endl;
+    std::cout << "- Right Arrow: Walk right (Animation 1: Walk)" << std::endl;
+    std::cout << "- Shift + Left Arrow: Run left (Animation 2: Run)" << std::endl;
+    std::cout << "- Shift + Right Arrow: Run right (Animation 2: Run)" << std::endl;
+    std::cout << "- Down Arrow: Sit down (Animation 3: Sit)" << std::endl;
+    std::cout << "- Up Arrow: Jump (Animation 15: Jump)" << std::endl;
+    std::cout << "- Left Arrow + 0: Roll left (Animation 4: Roll)" << std::endl;
+    std::cout << "- Right Arrow + 0: Roll right (Animation 4: Roll)" << std::endl;
+    std::cout << "- 0: Roll in current direction (Animation 4: Roll)" << std::endl;
+    std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
+    std::cout << "=== PLAYER 2 COMBO SYSTEM ===" << std::endl;
+    std::cout << "- 1: Start/Continue Punch Combo" << std::endl;
+    std::cout << "  * Press 1 once: Punch1 (Animation 9: Punch1)" << std::endl;
+    std::cout << "  * Press 1 twice: Punch2 (Animation 10: Punch2)" << std::endl;
+    std::cout << "  * Press 1 three times: Punch3 (Animation 11: Punch3)" << std::endl;
+    std::cout << "  * Combo window: 0.5 seconds" << std::endl;
+    std::cout << "- 3: Start/Continue Axe Combo" << std::endl;
+    std::cout << "  * Press 3 once: Axe1 (Animation 19: Axe1)" << std::endl;
+    std::cout << "  * Press 3 twice: Axe2 (Animation 20: Axe2)" << std::endl;
+    std::cout << "  * Press 3 three times: Axe3 (Animation 21: Axe3)" << std::endl;
+    std::cout << "  * Combo window: 0.5 seconds" << std::endl;
+    std::cout << "- 2: Kick (Animation 18: Kick)" << std::endl;
 
     
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
@@ -141,12 +164,17 @@ void GSPlay::Update(float deltaTime) {
     if (m_inputManager) {
         const bool* keyStates = m_inputManager->GetKeyStates();
         
-        // Handle movement and jump
+        // Handle movement and jump for Player 1 (WASD + Space)
         m_player.HandleMovement(deltaTime, keyStates);
         m_player.HandleJump(deltaTime, keyStates);
         
-        // Handle combat input
+        // Handle movement and jump for Player 2 (Arrow keys + 0)
+        m_player2.HandleMovementPlayer2(deltaTime, keyStates);
+        m_player2.HandleJumpPlayer2(deltaTime, keyStates);
+        
+        // Handle combat input for both players (same keys: JKL)
         m_inputManager->HandleInput(m_player);
+        m_inputManager->HandleInputPlayer2(m_player2);
         
         // Update input manager (reset key press events)
         m_inputManager->Update();
@@ -180,21 +208,25 @@ void GSPlay::Draw() {
     // Debug info
     static float lastPosX = m_player.GetPosition().x;
     static int lastAnim = m_player.GetCurrentAnimation();
-        static bool wasMoving = false;
+    static float lastPosX2 = m_player2.GetPosition().x;
+    static int lastAnim2 = m_player2.GetCurrentAnimation();
+    static bool wasMoving = false;
+    static bool wasMoving2 = false;
         
     const bool* keyStates = m_inputManager ? m_inputManager->GetKeyStates() : nullptr;
-    bool isMoving = keyStates ? (keyStates['A'] || keyStates['a'] || keyStates['D'] || keyStates['d']) : false;
+    bool isMoving = keyStates ? (keyStates['A'] || keyStates['D']) : false; // Only uppercase letters
+    bool isMoving2 = keyStates ? (keyStates[0x25] || keyStates[0x27]) : false; // Left or Right arrow
         
     if (abs(m_player.GetPosition().x - lastPosX) > 0.01f || 
         lastAnim != m_player.GetCurrentAnimation() ||
-            (isMoving && !wasMoving)) {
+        (isMoving && !wasMoving)) {
             
-            std::cout << "=== CHARACTER STATUS ===" << std::endl;
+        std::cout << "=== PLAYER 1 STATUS ===" << std::endl;
         std::cout << "Position: (" << m_player.GetPosition().x << ", " << m_player.GetPosition().y << ")" << std::endl;
         std::cout << "State: " << (int)m_player.GetState() << std::endl;
         std::cout << "Animation: " << m_player.GetCurrentAnimation() << std::endl;
         std::cout << "Facing: " << (m_player.IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
-            std::cout << "Movement: " << (isMoving ? "ACTIVE" : "IDLE") << std::endl;
+        std::cout << "Movement: " << (isMoving ? "ACTIVE" : "IDLE") << std::endl;
         
         if (m_player.IsInCombo()) {
             if (m_player.GetComboCount() > 0) {
@@ -218,12 +250,53 @@ void GSPlay::Draw() {
             }
         } else if (m_player.GetCurrentAnimation() == 18) {
             std::cout << "Action: KICK [Animation 18]" << std::endl;
-            }
-            std::cout << "=========================" << std::endl;
+        }
+        std::cout << "=========================" << std::endl;
             
         lastPosX = m_player.GetPosition().x;
         lastAnim = m_player.GetCurrentAnimation();
-            wasMoving = isMoving;
+        wasMoving = isMoving;
+    }
+    
+    if (abs(m_player2.GetPosition().x - lastPosX2) > 0.01f || 
+        lastAnim2 != m_player2.GetCurrentAnimation() ||
+        (isMoving2 && !wasMoving2)) {
+            
+        std::cout << "=== PLAYER 2 STATUS ===" << std::endl;
+        std::cout << "Position: (" << m_player2.GetPosition().x << ", " << m_player2.GetPosition().y << ")" << std::endl;
+        std::cout << "State: " << (int)m_player2.GetState() << std::endl;
+        std::cout << "Animation: " << m_player2.GetCurrentAnimation() << std::endl;
+        std::cout << "Facing: " << (m_player2.IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
+        std::cout << "Movement: " << (isMoving2 ? "ACTIVE" : "IDLE") << std::endl;
+        
+        if (m_player2.IsInCombo()) {
+            if (m_player2.GetComboCount() > 0) {
+                std::cout << "Combo: " << m_player2.GetComboCount() << "/3 (Timer: " << m_player2.GetComboTimer() << "s)";
+                if (m_player2.IsComboCompleted()) {
+                    std::cout << " [COMPLETED]";
+                }
+                if (isMoving2) {
+                    std::cout << " [MOVING DURING COMBO]";
+                }
+                std::cout << std::endl;
+            } else if (m_player2.GetAxeComboCount() > 0) {
+                std::cout << "Axe Combo: " << m_player2.GetAxeComboCount() << "/3 (Timer: " << m_player2.GetAxeComboTimer() << "s)";
+                if (m_player2.IsAxeComboCompleted()) {
+                    std::cout << " [COMPLETED]";
+                }
+                if (isMoving2) {
+                    std::cout << " [MOVING DURING COMBO]";
+                }
+                std::cout << std::endl;
+            }
+        } else if (m_player2.GetCurrentAnimation() == 18) {
+            std::cout << "Action: KICK [Animation 18]" << std::endl;
+        }
+        std::cout << "=========================" << std::endl;
+            
+        lastPosX2 = m_player2.GetPosition().x;
+        lastAnim2 = m_player2.GetCurrentAnimation();
+        wasMoving2 = isMoving2;
     }
 }
 

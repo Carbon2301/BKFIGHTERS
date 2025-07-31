@@ -3,8 +3,8 @@
 
 class InputManager {
 private:
-    bool m_keyStates[256];
-    bool m_keyPressed[256]; // Track key press events
+    bool m_keyStates[512];
+    bool m_keyPressed[512];
     static InputManager* s_instance;
 
 public:
@@ -14,15 +14,16 @@ public:
     static InputManager* GetInstance();
     static void DestroyInstance();
     
-    // Input handling
     void UpdateKeyState(unsigned char key, bool pressed);
+    void UpdateKeyState(int key, bool pressed); // Overload for arrow keys
     bool IsKeyPressed(unsigned char key) const;
+    bool IsKeyPressed(int key) const;
     bool IsKeyReleased(unsigned char key) const;
+    bool IsKeyReleased(int key) const;
     
-    // Handle input for character
     void HandleInput(Character& character);
-    void Update(); // Reset key press events
+    void HandleInputPlayer2(Character& character);
+    void Update();
     
-    // Get key states for external use
     const bool* GetKeyStates() const { return m_keyStates; }
 }; 
