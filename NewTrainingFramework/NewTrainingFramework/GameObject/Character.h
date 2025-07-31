@@ -47,6 +47,9 @@ private:
     
     // Kick system variables
     bool m_isKicking;
+    
+    // Sitting state tracking
+    bool m_isSitting;
 
 public:
     Character();
@@ -62,6 +65,9 @@ public:
     // Movement
     void HandleMovement(float deltaTime, const bool* keyStates);
     void HandleJump(float deltaTime, const bool* keyStates);
+    // Player 2 movement with arrow keys
+    void HandleMovementPlayer2(float deltaTime, const bool* keyStates);
+    void HandleJumpPlayer2(float deltaTime, const bool* keyStates);
     void SetPosition(float x, float y);
     Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
     bool IsFacingLeft() const { return m_facingLeft; }
@@ -73,18 +79,20 @@ public:
     void HandleAxeCombo();
     void HandleKick();
     void CancelAllCombos();
-    bool IsInCombo() const { return m_isInCombo || m_isInAxeCombo; }
-    bool IsKicking() const { return m_isKicking; }
     
     // Animation
-    void PlayAnimation(int animIndex, bool loop = true);
+    void PlayAnimation(int animIndex, bool loop);
     int GetCurrentAnimation() const;
     bool IsAnimationPlaying() const;
     
-    // Getters for combo system
+    // Combo getters
+    bool IsInCombo() const { return m_isInCombo; }
     int GetComboCount() const { return m_comboCount; }
     float GetComboTimer() const { return m_comboTimer; }
     bool IsComboCompleted() const { return m_comboCompleted; }
+    
+    // Axe combo getters
+    bool IsInAxeCombo() const { return m_isInAxeCombo; }
     int GetAxeComboCount() const { return m_axeComboCount; }
     float GetAxeComboTimer() const { return m_axeComboTimer; }
     bool IsAxeComboCompleted() const { return m_axeComboCompleted; }

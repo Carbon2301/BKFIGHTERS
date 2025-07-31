@@ -20,7 +20,8 @@ Character::Character()
       m_isInCombo(false), m_comboCompleted(false),
       m_axeComboCount(0), m_axeComboTimer(0.0f),
       m_isInAxeCombo(false), m_axeComboCompleted(false),
-      m_isKicking(false) {
+      m_isKicking(false),
+      m_isSitting(false) {
 }
 
 Character::~Character() {
@@ -106,6 +107,11 @@ void Character::Update(float deltaTime) {
             m_animManager->Play(0, true);
             std::cout << "Animation đá kết thúc - trở về trạng thái idle" << std::endl;
         }
+        
+        // Force return to idle if no animation is playing and not in any action
+        if (!m_animManager->IsPlaying() && !m_isInCombo && !m_isInAxeCombo && !m_isKicking && !m_isJumping && !m_isSitting) {
+            m_animManager->Play(0, true);
+        }
     }
     
     // Update combo timers
@@ -159,8 +165,8 @@ void Character::Draw(Camera* camera) {
 
 void Character::HandleMovement(float deltaTime, const bool* keyStates) {
     bool isShiftPressed = keyStates[16];
-    bool isMoving = (keyStates['A'] || keyStates['a'] || keyStates['D'] || keyStates['d']);
-    bool isOtherAction = (keyStates['S'] || keyStates['s'] || keyStates[' '] || keyStates['W'] || keyStates['w']);
+    bool isMoving = (keyStates['A'] || keyStates['D']); // Only uppercase letters
+    bool isOtherAction = (keyStates['S'] || keyStates[' '] || keyStates['W']); // Only uppercase letters
     
     // Reset combo chỉ khi thực hiện hành động khác
     if (isOtherAction && m_isInCombo) {
@@ -179,13 +185,18 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
         std::cout << "Axe combo cancelled due to other action (Sit/Roll/Jump)" << std::endl;
     }
     
+    if (isOtherAction && m_isKicking) {
+        m_isKicking = false;
+        std::cout << "Kick cancelled due to other action (Sit/Roll/Jump)" << std::endl;
+    }
+    
     // Handle Roll
-    if ((keyStates['A'] || keyStates['a']) && (keyStates[' '])) {
+    if (keyStates['A'] && keyStates[' ']) { // Only uppercase A
         m_state = CharState::MoveLeft;
         m_facingLeft = true;
         m_posX -= MOVE_SPEED * 1.5f * deltaTime;
         PlayAnimation(4, true);
-    } else if ((keyStates['D'] || keyStates['d']) && (keyStates[' '])) {
+    } else if (keyStates['D'] && keyStates[' ']) { // Only uppercase D
         m_state = CharState::MoveRight;
         m_facingLeft = false;
         m_posX += MOVE_SPEED * 1.5f * deltaTime;
@@ -197,7 +208,7 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
             m_posX += MOVE_SPEED * 1.5f * deltaTime;
         }
         PlayAnimation(4, true);
-    } else if (keyStates['D'] || keyStates['d']) {
+    } else if (keyStates['D']) { // Only uppercase D
         m_state = CharState::MoveRight;
         m_facingLeft = false;
         
@@ -215,7 +226,7 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
                 PlayAnimation(1, true);
             }
         }
-    } else if (keyStates['A'] || keyStates['a']) {
+    } else if (keyStates['A']) { // Only uppercase A
         m_state = CharState::MoveLeft;
         m_facingLeft = true;
         
@@ -233,10 +244,14 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
                 PlayAnimation(1, true);
             }
         }
-    } else if (keyStates['S'] || keyStates['s']) {
+    } else if (keyStates['S']) { // Only uppercase S
+        m_isSitting = true;
         m_state = CharState::Idle;
         PlayAnimation(3, true);
     } else {
+        // Reset sitting state when not pressing S
+        m_isSitting = false;
+        
         // Chỉ thay đổi animation nếu không đang nhảy, không đang trong combo, và không đang kick
         if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
             m_state = CharState::Idle;
@@ -246,8 +261,11 @@ void Character::HandleMovement(float deltaTime, const bool* keyStates) {
 }
 
 void Character::HandleJump(float deltaTime, const bool* keyStates) {
-    if (keyStates['W'] || keyStates['w']) {
+    if (keyStates['W']) { // Only uppercase W
         if (!m_isJumping) {
+            // Reset sitting state when jumping
+            m_isSitting = false;
+            
             // KHÔNG cancel combo khi nhảy - combo có thể tiếp tục trong không trung
             m_isJumping = true;
             m_jumpVelocity = JUMP_FORCE;
@@ -261,8 +279,8 @@ void Character::HandleJump(float deltaTime, const bool* keyStates) {
         m_jumpVelocity -= GRAVITY * deltaTime;
         m_posY += m_jumpVelocity * deltaTime;
         
-        bool isMovingLeft = (keyStates['A'] || keyStates['a']);
-        bool isMovingRight = (keyStates['D'] || keyStates['d']);
+        bool isMovingLeft = keyStates['A']; // Only uppercase A
+        bool isMovingRight = keyStates['D']; // Only uppercase D
         bool isShiftPressed = keyStates[16];
         
         if (isMovingLeft) {
@@ -283,38 +301,212 @@ void Character::HandleJump(float deltaTime, const bool* keyStates) {
             }
         }
         
-                 if (m_posY <= GROUND_Y) {
-             m_posY = GROUND_Y;
-             m_isJumping = false;
-             m_jumpVelocity = 0.0f;
-             
-             bool isMovingLeft = (keyStates['A'] || keyStates['a']);
-             bool isMovingRight = (keyStates['D'] || keyStates['d']);
-             bool isShiftPressed = keyStates[16];
-             
-             // Chỉ thay đổi animation nếu không đang trong combo và không đang kick
-             if (!m_isInCombo && !m_isInAxeCombo && !m_isKicking) {
-                 if (isMovingLeft || isMovingRight) {
-                     if (isMovingLeft) {
-                         m_facingLeft = true;
-                         m_state = CharState::MoveLeft;
-                     } else if (isMovingRight) {
-                         m_facingLeft = false;
-                         m_state = CharState::MoveRight;
-                     }
-                     
-                     if (isShiftPressed) {
-                         PlayAnimation(2, true);
-                     } else {
-                         PlayAnimation(1, true);
-                     }
-                 } else {
-                     m_state = CharState::Idle;
-                     PlayAnimation(0, true);
-                 }
-             }
-             std::cout << "=== JUMP END ===" << std::endl;
-         }
+        if (m_posY <= GROUND_Y) {
+            m_posY = GROUND_Y;
+            m_isJumping = false;
+            m_jumpVelocity = 0.0f;
+            
+            bool isMovingLeft = keyStates['A']; // Only uppercase A
+            bool isMovingRight = keyStates['D']; // Only uppercase D
+            bool isShiftPressed = keyStates[16];
+            
+            // Chỉ thay đổi animation nếu không đang trong combo và không đang kick
+            if (!m_isInCombo && !m_isInAxeCombo && !m_isKicking) {
+                if (isMovingLeft || isMovingRight) {
+                    if (isMovingLeft) {
+                        m_facingLeft = true;
+                        m_state = CharState::MoveLeft;
+                    } else if (isMovingRight) {
+                        m_facingLeft = false;
+                        m_state = CharState::MoveRight;
+                    }
+                    
+                    if (isShiftPressed) {
+                        PlayAnimation(2, true);
+                    } else {
+                        PlayAnimation(1, true);
+                    }
+                } else {
+                    m_state = CharState::Idle;
+                    PlayAnimation(0, true);
+                }
+            }
+            std::cout << "=== JUMP END ===" << std::endl;
+        }
+    }
+}
+
+void Character::HandleMovementPlayer2(float deltaTime, const bool* keyStates) {
+    bool isShiftPressed = keyStates[16];
+    // Try different key codes for arrow keys
+    bool isMoving = (keyStates[0x25] || keyStates[0x27]); // VK_LEFT=0x25, VK_RIGHT=0x27
+    bool isOtherAction = (keyStates[0x28] || keyStates[0x26] || keyStates['0']); // VK_DOWN=0x28, VK_UP=0x26, or '0'
+    
+    // Reset combo chỉ khi thực hiện hành động khác
+    if (isOtherAction && m_isInCombo) {
+        m_isInCombo = false;
+        m_comboCount = 0;
+        m_comboTimer = 0.0f;
+        m_comboCompleted = false;
+        std::cout << "Player 2: Combo cancelled due to other action (Sit/Roll/Jump)" << std::endl;
+    }
+    
+    if (isOtherAction && m_isInAxeCombo) {
+        m_isInAxeCombo = false;
+        m_axeComboCount = 0;
+        m_axeComboTimer = 0.0f;
+        m_axeComboCompleted = false;
+        std::cout << "Player 2: Axe combo cancelled due to other action (Sit/Roll/Jump)" << std::endl;
+    }
+    
+    if (isOtherAction && m_isKicking) {
+        m_isKicking = false;
+        std::cout << "Player 2: Kick cancelled due to other action (Sit/Roll/Jump)" << std::endl;
+    }
+    
+    // Handle Roll (using '0' key)
+    if (keyStates[0x25] && keyStates['0']) { // Left arrow + '0'
+        m_state = CharState::MoveLeft;
+        m_facingLeft = true;
+        m_posX -= MOVE_SPEED * 1.5f * deltaTime;
+        PlayAnimation(4, true);
+    } else if (keyStates[0x27] && keyStates['0']) { // Right arrow + '0'
+        m_state = CharState::MoveRight;
+        m_facingLeft = false;
+        m_posX += MOVE_SPEED * 1.5f * deltaTime;
+        PlayAnimation(4, true);
+    } else if (keyStates['0']) { // Just '0' key
+        if (m_facingLeft) {
+            m_posX -= MOVE_SPEED * 1.5f * deltaTime;
+        } else {
+            m_posX += MOVE_SPEED * 1.5f * deltaTime;
+        }
+        PlayAnimation(4, true);
+    } else if (keyStates[0x27]) { // Right arrow
+        m_state = CharState::MoveRight;
+        m_facingLeft = false;
+        
+        if (isShiftPressed) {
+            m_posX += MOVE_SPEED * 2.0f * deltaTime;
+        } else {
+            m_posX += MOVE_SPEED * deltaTime;
+        }
+        
+        // Chỉ thay đổi animation nếu không đang nhảy, không đang trong combo, và không đang kick
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
+            if (isShiftPressed) {
+                PlayAnimation(2, true);
+            } else {
+                PlayAnimation(1, true);
+            }
+        }
+    } else if (keyStates[0x25]) { // Left arrow
+        m_state = CharState::MoveLeft;
+        m_facingLeft = true;
+        
+        if (isShiftPressed) {
+            m_posX -= MOVE_SPEED * 2.0f * deltaTime;
+        } else {
+            m_posX -= MOVE_SPEED * deltaTime;
+        }
+        
+        // Chỉ thay đổi animation nếu không đang nhảy, không đang trong combo, và không đang kick
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
+            if (isShiftPressed) {
+                PlayAnimation(2, true);
+            } else {
+                PlayAnimation(1, true);
+            }
+        }
+    } else if (keyStates[0x28]) { // Down arrow (sit)
+        m_isSitting = true;
+        m_state = CharState::Idle;
+        PlayAnimation(3, true);
+    } else {
+        // Reset sitting state when not pressing down arrow
+        m_isSitting = false;
+        
+        // Chỉ thay đổi animation nếu không đang nhảy, không đang trong combo, và không đang kick
+        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
+            m_state = CharState::Idle;
+            PlayAnimation(0, true);
+        }
+    }
+}
+
+void Character::HandleJumpPlayer2(float deltaTime, const bool* keyStates) {
+    if (keyStates[0x26]) { // Up arrow
+        if (!m_isJumping) {
+            // Reset sitting state when jumping
+            m_isSitting = false;
+            
+            // KHÔNG cancel combo khi nhảy - combo có thể tiếp tục trong không trung
+            m_isJumping = true;
+            m_jumpVelocity = JUMP_FORCE;
+            m_jumpStartY = m_posY;
+            PlayAnimation(15, false);
+            std::cout << "=== PLAYER 2 JUMP START ===" << std::endl;
+        }
+    }
+    
+    if (m_isJumping) {
+        m_jumpVelocity -= GRAVITY * deltaTime;
+        m_posY += m_jumpVelocity * deltaTime;
+        
+        bool isMovingLeft = keyStates[0x25]; // Left arrow
+        bool isMovingRight = keyStates[0x27]; // Right arrow
+        bool isShiftPressed = keyStates[16];
+        
+        if (isMovingLeft) {
+            m_facingLeft = true;
+            m_state = CharState::MoveLeft;
+            if (isShiftPressed) {
+                m_posX -= MOVE_SPEED * 1.5f * deltaTime;
+            } else {
+                m_posX -= MOVE_SPEED * 0.8f * deltaTime;
+            }
+        } else if (isMovingRight) {
+            m_facingLeft = false;
+            m_state = CharState::MoveRight;
+            if (isShiftPressed) {
+                m_posX += MOVE_SPEED * 1.5f * deltaTime;
+            } else {
+                m_posX += MOVE_SPEED * 0.8f * deltaTime;
+            }
+        }
+        
+        if (m_posY <= GROUND_Y) {
+            m_posY = GROUND_Y;
+            m_isJumping = false;
+            m_jumpVelocity = 0.0f;
+            
+            bool isMovingLeft = keyStates[0x25]; // Left arrow
+            bool isMovingRight = keyStates[0x27]; // Right arrow
+            bool isShiftPressed = keyStates[16];
+            
+            // Chỉ thay đổi animation nếu không đang trong combo và không đang kick
+            if (!m_isInCombo && !m_isInAxeCombo && !m_isKicking) {
+                if (isMovingLeft || isMovingRight) {
+                    if (isMovingLeft) {
+                        m_facingLeft = true;
+                        m_state = CharState::MoveLeft;
+                    } else if (isMovingRight) {
+                        m_facingLeft = false;
+                        m_state = CharState::MoveRight;
+                    }
+                    
+                    if (isShiftPressed) {
+                        PlayAnimation(2, true);
+                    } else {
+                        PlayAnimation(1, true);
+                    }
+                } else {
+                    m_state = CharState::Idle;
+                    PlayAnimation(0, true);
+                }
+            }
+            std::cout << "=== PLAYER 2 JUMP END ===" << std::endl;
+        }
     }
 }
 
@@ -346,7 +538,20 @@ void Character::HandlePunchCombo() {
             std::cout << "=== COMBO FINISH ===" << std::endl;
             std::cout << "Combo " << m_comboCount << ": Punch3! COMBO COMPLETE!" << std::endl;
             m_comboCompleted = true;
+        } else if (m_comboCount > 3) {
+            // Prevent infinite combo by resetting
+            m_comboCount = 3;
+            m_comboCompleted = true;
+            std::cout << "=== COMBO OVERFLOW PREVENTED ===" << std::endl;
         }
+    } else {
+        // Combo timer expired, start new combo
+        m_comboCount = 1;
+        m_isInCombo = true;
+        m_comboTimer = COMBO_WINDOW;
+        PlayAnimation(9, false);
+        std::cout << "=== NEW COMBO START (timer expired) ===" << std::endl;
+        std::cout << "Combo " << m_comboCount << ": Punch1!" << std::endl;
     }
 }
 
@@ -373,7 +578,20 @@ void Character::HandleAxeCombo() {
             std::cout << "=== AXE COMBO FINISH ===" << std::endl;
             std::cout << "Axe Combo " << m_axeComboCount << ": Axe3! AXE COMBO COMPLETE!" << std::endl;
             m_axeComboCompleted = true;
+        } else if (m_axeComboCount > 3) {
+            // Prevent infinite combo by resetting
+            m_axeComboCount = 3;
+            m_axeComboCompleted = true;
+            std::cout << "=== AXE COMBO OVERFLOW PREVENTED ===" << std::endl;
         }
+    } else {
+        // Combo timer expired, start new combo
+        m_axeComboCount = 1;
+        m_isInAxeCombo = true;
+        m_axeComboTimer = COMBO_WINDOW;
+        PlayAnimation(19, false);
+        std::cout << "=== NEW AXE COMBO START (timer expired) ===" << std::endl;
+        std::cout << "Axe Combo " << m_axeComboCount << ": Axe1!" << std::endl;
     }
 }
 
