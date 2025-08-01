@@ -16,6 +16,9 @@ Camera::Camera()
     , m_minZoom(0.3f), m_maxZoom(2.0f)
     , m_currentZoom(1.0f), m_zoomSpeed(2.0f), m_targetZoom(1.0f)
     , m_autoZoomEnabled(false)
+    , m_initialPosition(0.0f, 0.0f, 1.0f)
+    , m_initialTarget(0.0f, 0.0f, 0.0f)
+    , m_initialZoom(1.0f)
     , m_viewNeedsUpdate(true)
     , m_projectionNeedsUpdate(true)
     , m_vpMatrixNeedsUpdate(true) {
@@ -31,6 +34,9 @@ Camera::Camera(const Vector3& position, const Vector3& target, const Vector3& up
     , m_minZoom(0.3f), m_maxZoom(2.0f)
     , m_currentZoom(1.0f), m_zoomSpeed(2.0f), m_targetZoom(1.0f)
     , m_autoZoomEnabled(false)
+    , m_initialPosition(position.x, position.y, position.z)
+    , m_initialTarget(target.x, target.y, target.z)
+    , m_initialZoom(1.0f)
     , m_viewNeedsUpdate(true)
     , m_projectionNeedsUpdate(true)
     , m_vpMatrixNeedsUpdate(true) {
@@ -104,6 +110,12 @@ void Camera::SetOrthographic(float left, float right, float bottom, float top, f
     m_baseRight = right;
     m_baseBottom = bottom;
     m_baseTop = top;
+    
+    if (m_initialZoom == 1.0f) {
+        m_initialPosition = m_position;
+        m_initialTarget = m_target;
+        m_initialZoom = 1.0f;
+    }
     
     m_projectionNeedsUpdate = true;
     m_vpMatrixNeedsUpdate = true;
@@ -198,6 +210,23 @@ void Camera::UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3&
     
     // Update camera position and target
     SetPosition2D(newPosition.x, newPosition.y);
+}
+
+void Camera::ResetToInitialState() {
+    m_position = m_initialPosition;
+    m_target = m_initialTarget;
+    
+    m_currentZoom = m_initialZoom;
+    m_targetZoom = m_initialZoom;
+    
+    m_left = m_baseLeft;
+    m_right = m_baseRight;
+    m_bottom = m_baseBottom;
+    m_top = m_baseTop;
+    
+    m_viewNeedsUpdate = true;
+    m_projectionNeedsUpdate = true;
+    m_vpMatrixNeedsUpdate = true;
 }
 
 const Matrix& Camera::GetViewMatrix() {

@@ -324,10 +324,19 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         if (camera) {
             bool currentState = camera->IsAutoZoomEnabled();
             camera->EnableAutoZoom(!currentState);
-            std::cout << "=== CAMERA ZOOM ===" << std::endl;
-            std::cout << "Auto zoom: " << (camera->IsAutoZoomEnabled() ? "ENABLED" : "DISABLED") << std::endl;
-            std::cout << "Current zoom: " << camera->GetCurrentZoom() << std::endl;
-            std::cout << "===================" << std::endl;
+            
+            if (!camera->IsAutoZoomEnabled()) {
+                camera->ResetToInitialState();
+                std::cout << "=== CAMERA RESET ===" << std::endl;
+                std::cout << "Auto zoom: DISABLED" << std::endl;
+                std::cout << "Camera reset to initial position and zoom" << std::endl;
+                std::cout << "===================" << std::endl;
+            } else {
+                std::cout << "=== CAMERA ZOOM ===" << std::endl;
+                std::cout << "Auto zoom: ENABLED" << std::endl;
+                std::cout << "Current zoom: " << camera->GetCurrentZoom() << std::endl;
+                std::cout << "===================" << std::endl;
+            }
         }
     }
 }

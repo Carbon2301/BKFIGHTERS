@@ -18,6 +18,11 @@ private:
     float m_targetZoom;
     bool m_autoZoomEnabled;
     
+    // Initial state variables
+    Vector3 m_initialPosition;
+    Vector3 m_initialTarget;
+    float m_initialZoom;
+    
     Matrix m_viewMatrix;
     Matrix m_projectionMatrix;
     Matrix m_viewProjectionMatrix;
@@ -52,6 +57,7 @@ public:
     void SetTargetZoom(float targetZoom);
     float GetCurrentZoom() const { return m_currentZoom; }
     bool IsAutoZoomEnabled() const { return m_autoZoomEnabled; }
+    void ResetToInitialState();
     
     // Dynamic camera positioning based on character positions
     void UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3& player2Pos, float deltaTime);
