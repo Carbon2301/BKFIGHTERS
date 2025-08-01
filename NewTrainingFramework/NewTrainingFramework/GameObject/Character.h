@@ -33,6 +33,7 @@ class Character {
 private:
     // Basic properties
     float m_posX, m_posY;
+    float m_groundY; // Vị trí mặt đất khởi tạo
     bool m_facingLeft;
     CharState m_state;
     

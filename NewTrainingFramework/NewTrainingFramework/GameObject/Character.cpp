@@ -51,14 +51,18 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
         const Vector3& originalPos = originalObj->GetPosition();
         m_posX = originalPos.x;
         m_posY = originalPos.y;
+        m_groundY = m_posY;
+        
     } else {
         m_posX = 0.0f;
         m_posY = 0.0f;
+        m_groundY = 0.0f;
     }
     
     if (m_animManager) {
         m_animManager->Play(0, true);
     }
+    
 }
 
 void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
@@ -192,7 +196,6 @@ void Character::HandleJump(float deltaTime, const bool* keyStates) {
             m_jumpVelocity = JUMP_FORCE;
             m_jumpStartY = m_posY;
             PlayAnimation(15, false);
-            std::cout << "=== JUMP START ===" << std::endl;
         }
     }
     
@@ -222,8 +225,8 @@ void Character::HandleJump(float deltaTime, const bool* keyStates) {
             }
         }
         
-        if (m_posY <= GROUND_Y) {
-            m_posY = GROUND_Y;
+        if (m_posY <= m_groundY) {
+            m_posY = m_groundY;
             m_isJumping = false;
             m_jumpVelocity = 0.0f;
             
@@ -251,7 +254,6 @@ void Character::HandleJump(float deltaTime, const bool* keyStates) {
                     PlayAnimation(0, true);
                 }
             }
-            std::cout << "=== JUMP END ===" << std::endl;
         }
     }
 }
