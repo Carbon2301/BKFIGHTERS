@@ -32,7 +32,7 @@ ID 10
 FILE "../Resources/Fighter/Characters/Player1_Body.tga"
 TILING GL_CLAMP_TO_EDGE
 SIZE 8 16
-ANINUM 35
+ANINUM 36
 * Animation 0: Idle
 0 4 300
 * Animation 1: Walk 
@@ -49,66 +49,68 @@ ANINUM 35
 16 4 300
 * Animation 7: Fall
 20 2 300
-* Animation 8: GetHit
-22 2 300
-* Animation 9: Punch1
+* Animation 8: GetHit1
+22 1 300
+* Animation 9: GetHit2
+23 1 300
+* Animation 10: Punch1
 24 2 150
-* Animation 10: Punch2
+* Animation 11: Punch2
 26 2 150
-* Animation 11: Punch3
+* Animation 12: Punch3
 28 2 150
-* Animation 12: Knockdown
+* Animation 13: Knockdown
 30 1 300
-* Animation 13: Land 
+* Animation 14: Land 
 31 1 300
-* Animation 14: Lie 
+* Animation 15: Lie 
 32 2 300
-* Animation 15: Jump 
+* Animation 16: Jump 
 34 1 300
-* Animation 16: Air Kick 
+* Animation 17: Air Kick 
 35 1 300
-* Animation 17: Die
+* Animation 18: Die
 36 2 300
-* Animation 18: Kick  
+* Animation 19: Kick  
 38 1 200
-* Animation 19: Axe1
+* Animation 20: Axe1
 40 3 300
-* Animation 20: Axe2
+* Animation 21: Axe2
 43 3 300
-* Animation 21: Axe3
+* Animation 22: Axe3
 48 3 300
-* Animation 22: Sword1
+* Animation 23: Sword1
 56 3 300
-* Animation 23: Sword2
+* Animation 24: Sword2
 59 3 300
-* Animation 24: Sword3
+* Animation 25: Sword3
 64 3 300
-* Animation 25: Pipe1
+* Animation 26: Pipe1
 72 3 300
-* Animation 26: Pipe2
+* Animation 27: Pipe2
 75 3 300
-* Animation 27: Pipe3
+* Animation 28: Pipe3
 80 3 300
-* Animation 28: Body Shoot
+* Animation 29: Body Shoot
 88 1 300
-* Animation 29: Body Flamegun
+* Animation 30: Body Flamegun
 89 1 300
-* Animation 30: Body Grenade
+* Animation 31: Body Grenade
 90 1 300
-* Animation 31: Body Molotov
+* Animation 32: Body Molotov
 91 1 300
-* Animation 32: Throw
+* Animation 33: Throw
 92 1 300
-* Animation 33: Dont Know
+* Animation 34: Dont Know
 96 1 300
-* Animation 34: Hit By Rocket
+* Animation 35: Hit By Rocket
 97 4 300
 
 ID 11
 FILE "../Resources/Fighter/Characters/Player2_Body.tga"
 TILING GL_CLAMP_TO_EDGE
 SIZE 8 16
-ANINUM 35
+ANINUM 36
 * Animation 0: Idle
 0 4 300
 * Animation 1: Walk 
@@ -125,59 +127,61 @@ ANINUM 35
 16 4 300
 * Animation 7: Fall
 20 2 300
-* Animation 8: GetHit
-22 2 300
-* Animation 9: Punch1
+* Animation 8: GetHit1
+22 1 300
+* Animation 9: GetHit2
+23 1 300
+* Animation 10: Punch1
 24 2 150
-* Animation 10: Punch2
+* Animation 11: Punch2
 26 2 150
-* Animation 11: Punch3
+* Animation 12: Punch3
 28 2 150
-* Animation 12: Knockdown
+* Animation 13: Knockdown
 30 1 300
-* Animation 13: Land 
+* Animation 14: Land 
 31 1 300
-* Animation 14: Lie 
+* Animation 15: Lie 
 32 2 300
-* Animation 15: Jump 
+* Animation 16: Jump 
 34 1 300
-* Animation 16: Air Kick 
+* Animation 17: Air Kick 
 35 1 300
-* Animation 17: Die
+* Animation 18: Die
 36 2 300
-* Animation 18: Kick  
+* Animation 19: Kick  
 38 1 200
-* Animation 19: Axe1
+* Animation 20: Axe1
 40 3 300
-* Animation 20: Axe2
+* Animation 21: Axe2
 43 3 300
-* Animation 21: Axe3
+* Animation 22: Axe3
 48 3 300
-* Animation 22: Sword1
+* Animation 23: Sword1
 56 3 300
-* Animation 23: Sword2
+* Animation 24: Sword2
 59 3 300
-* Animation 24: Sword3
+* Animation 25: Sword3
 64 3 300
-* Animation 25: Pipe1
+* Animation 26: Pipe1
 72 3 300
-* Animation 26: Pipe2
+* Animation 27: Pipe2
 75 3 300
-* Animation 27: Pipe3
+* Animation 28: Pipe3
 80 3 300
-* Animation 28: Body Shoot
+* Animation 29: Body Shoot
 88 1 300
-* Animation 29: Body Flamegun
+* Animation 30: Body Flamegun
 89 1 300
-* Animation 30: Body Grenade
+* Animation 31: Body Grenade
 90 1 300
-* Animation 31: Body Molotov
+* Animation 32: Body Molotov
 91 1 300
-* Animation 32: Throw
+* Animation 33: Throw
 92 1 300
-* Animation 33: Dont Know
+* Animation 34: Dont Know
 96 1 300
-* Animation 34: Hit By Rocket
+* Animation 35: Hit By Rocket
 97 4 300
 
 

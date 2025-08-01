@@ -66,6 +66,11 @@ private:
     // Sitting state tracking
     bool m_isSitting;
     
+    // GetHit state tracking
+    bool m_isHit;
+    float m_hitTimer;
+    static const float HIT_DURATION;
+    
     // Input configuration
     PlayerInputConfig m_inputConfig;
 
@@ -110,6 +115,7 @@ public:
     void HandleAxeCombo();
     void HandleKick();
     void CancelAllCombos();
+    void HandleRandomGetHit();
     
     // Animation
     void PlayAnimation(int animIndex, bool loop);
