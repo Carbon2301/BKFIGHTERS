@@ -115,46 +115,46 @@ void GSPlay::Init() {
     std::cout << "- Shift + A: Run left (Animation 2: Run)" << std::endl;
     std::cout << "- Shift + D: Run right (Animation 2: Run)" << std::endl;
     std::cout << "- S: Sit down (Animation 3: Sit)" << std::endl;
-    std::cout << "- W: Jump (Animation 15: Jump)" << std::endl;
+    std::cout << "- W: Jump (Animation 16: Jump)" << std::endl;
     std::cout << "- A + Space: Roll left (Animation 4: Roll)" << std::endl;
     std::cout << "- D + Space: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- Space: Roll in current direction (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
     std::cout << "=== PLAYER 1 COMBO SYSTEM ===" << std::endl;
     std::cout << "- J: Start/Continue Punch Combo" << std::endl;
-    std::cout << "  * Press J once: Punch1 (Animation 9: Punch1)" << std::endl;
-    std::cout << "  * Press J twice: Punch2 (Animation 10: Punch2)" << std::endl;
-    std::cout << "  * Press J three times: Punch3 (Animation 11: Punch3)" << std::endl;
+    std::cout << "  * Press J once: Punch1 (Animation 10: Punch1)" << std::endl;
+    std::cout << "  * Press J twice: Punch2 (Animation 11: Punch2)" << std::endl;
+    std::cout << "  * Press J three times: Punch3 (Animation 12: Punch3)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- L: Start/Continue Axe Combo" << std::endl;
-    std::cout << "  * Press L once: Axe1 (Animation 19: Axe1)" << std::endl;
-    std::cout << "  * Press L twice: Axe2 (Animation 20: Axe2)" << std::endl;
-    std::cout << "  * Press L three times: Axe3 (Animation 21: Axe3)" << std::endl;
+    std::cout << "  * Press L once: Axe1 (Animation 20: Axe1)" << std::endl;
+    std::cout << "  * Press L twice: Axe2 (Animation 21: Axe2)" << std::endl;
+    std::cout << "  * Press L three times: Axe3 (Animation 22: Axe3)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
-    std::cout << "- K: Kick (Animation 18: Kick)" << std::endl;
+    std::cout << "- K: Kick (Animation 19: Kick)" << std::endl;
     std::cout << "=== PLAYER 2 MOVEMENT CONTROLS ===" << std::endl;
     std::cout << "- Left Arrow: Walk left (Animation 1: Walk)" << std::endl;
     std::cout << "- Right Arrow: Walk right (Animation 1: Walk)" << std::endl;
     std::cout << "- Shift + Left Arrow: Run left (Animation 2: Run)" << std::endl;
     std::cout << "- Shift + Right Arrow: Run right (Animation 2: Run)" << std::endl;
     std::cout << "- Down Arrow: Sit down (Animation 3: Sit)" << std::endl;
-    std::cout << "- Up Arrow: Jump (Animation 15: Jump)" << std::endl;
+    std::cout << "- Up Arrow: Jump (Animation 16: Jump)" << std::endl;
     std::cout << "- Left Arrow + 0: Roll left (Animation 4: Roll)" << std::endl;
     std::cout << "- Right Arrow + 0: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- 0: Roll in current direction (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
     std::cout << "=== PLAYER 2 COMBO SYSTEM ===" << std::endl;
     std::cout << "- 1: Start/Continue Punch Combo" << std::endl;
-    std::cout << "  * Press 1 once: Punch1 (Animation 9: Punch1)" << std::endl;
-    std::cout << "  * Press 1 twice: Punch2 (Animation 10: Punch2)" << std::endl;
-    std::cout << "  * Press 1 three times: Punch3 (Animation 11: Punch3)" << std::endl;
+    std::cout << "  * Press 1 once: Punch1 (Animation 10: Punch1)" << std::endl;
+    std::cout << "  * Press 1 twice: Punch2 (Animation 11: Punch2)" << std::endl;
+    std::cout << "  * Press 1 three times: Punch3 (Animation 12: Punch3)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- 3: Start/Continue Axe Combo" << std::endl;
-    std::cout << "  * Press 3 once: Axe1 (Animation 19: Axe1)" << std::endl;
-    std::cout << "  * Press 3 twice: Axe2 (Animation 20: Axe2)" << std::endl;
-    std::cout << "  * Press 3 three times: Axe3 (Animation 21: Axe3)" << std::endl;
+    std::cout << "  * Press 3 once: Axe1 (Animation 20: Axe1)" << std::endl;
+    std::cout << "  * Press 3 twice: Axe2 (Animation 21: Axe2)" << std::endl;
+    std::cout << "  * Press 3 three times: Axe3 (Animation 22: Axe3)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
-    std::cout << "- 2: Kick (Animation 18: Kick)" << std::endl;
+    std::cout << "- 2: Kick (Animation 19: Kick)" << std::endl;
 
     
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
@@ -261,8 +261,8 @@ void GSPlay::Draw() {
                 }
                 std::cout << std::endl;
             }
-        } else if (m_player.GetCurrentAnimation() == 18) {
-            std::cout << "Action: KICK [Animation 18]" << std::endl;
+        } else if (m_player.GetCurrentAnimation() == 19) {
+            std::cout << "Action: KICK [Animation 19]" << std::endl;
         }
         std::cout << "=========================" << std::endl;
             
@@ -302,8 +302,8 @@ void GSPlay::Draw() {
                 }
                 std::cout << std::endl;
             }
-        } else if (m_player2.GetCurrentAnimation() == 18) {
-            std::cout << "Action: KICK [Animation 18]" << std::endl;
+        } else if (m_player2.GetCurrentAnimation() == 19) {
+            std::cout << "Action: KICK [Animation 19]" << std::endl;
         }
         std::cout << "=========================" << std::endl;
             

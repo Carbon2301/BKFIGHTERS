@@ -195,7 +195,7 @@ void Character::HandleJump(float deltaTime, const bool* keyStates) {
             m_isJumping = true;
             m_jumpVelocity = JUMP_FORCE;
             m_jumpStartY = m_posY;
-            PlayAnimation(15, false);
+            PlayAnimation(16, false);
         }
     }
     
@@ -344,7 +344,7 @@ void Character::UpdateAnimationState() {
         }
     }
     
-    if (m_isKicking && m_animManager->GetCurrentAnimation() == 18 && !m_animManager->IsPlaying()) {
+    if (m_isKicking && m_animManager->GetCurrentAnimation() == 19 && !m_animManager->IsPlaying()) {
         m_isKicking = false;
         m_animManager->Play(0, true);
         std::cout << "Animation đá kết thúc - trở về trạng thái idle" << std::endl;
@@ -365,7 +365,7 @@ void Character::HandlePunchCombo() {
         m_comboCount = 1;
         m_isInCombo = true;
         m_comboTimer = COMBO_WINDOW;
-        PlayAnimation(9, false);
+        PlayAnimation(10, false);
         std::cout << "=== COMBO START ===" << std::endl;
         std::cout << "Combo " << m_comboCount << ": Punch1!" << std::endl;
         std::cout << "Press J again within " << COMBO_WINDOW << " seconds for next punch!" << std::endl;
@@ -374,12 +374,12 @@ void Character::HandlePunchCombo() {
         m_comboTimer = COMBO_WINDOW;
         
         if (m_comboCount == 2) {
-            PlayAnimation(10, false);
+            PlayAnimation(11, false);
             std::cout << "=== COMBO CONTINUE ===" << std::endl;
             std::cout << "Combo " << m_comboCount << ": Punch2!" << std::endl;
             std::cout << "Press J again within " << COMBO_WINDOW << " seconds for final punch!" << std::endl;
         } else if (m_comboCount == 3) {
-            PlayAnimation(11, false);
+            PlayAnimation(12, false);
             std::cout << "=== COMBO FINISH ===" << std::endl;
             std::cout << "Combo " << m_comboCount << ": Punch3! COMBO COMPLETE!" << std::endl;
             m_comboCompleted = true;
@@ -392,7 +392,7 @@ void Character::HandlePunchCombo() {
         m_comboCount = 1;
         m_isInCombo = true;
         m_comboTimer = COMBO_WINDOW;
-        PlayAnimation(9, false);
+        PlayAnimation(10, false);
         std::cout << "=== NEW COMBO START (timer expired) ===" << std::endl;
         std::cout << "Combo " << m_comboCount << ": Punch1!" << std::endl;
     }
@@ -403,7 +403,7 @@ void Character::HandleAxeCombo() {
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
         m_axeComboTimer = COMBO_WINDOW;
-        PlayAnimation(19, false);
+        PlayAnimation(20, false);
         std::cout << "=== AXE COMBO START ===" << std::endl;
         std::cout << "Axe Combo " << m_axeComboCount << ": Axe1!" << std::endl;
         std::cout << "Press L again within " << COMBO_WINDOW << " seconds for next axe attack!" << std::endl;
@@ -412,12 +412,12 @@ void Character::HandleAxeCombo() {
         m_axeComboTimer = COMBO_WINDOW;
         
         if (m_axeComboCount == 2) {
-            PlayAnimation(20, false);
+            PlayAnimation(21, false);
             std::cout << "=== AXE COMBO CONTINUE ===" << std::endl;
             std::cout << "Axe Combo " << m_axeComboCount << ": Axe2!" << std::endl;
             std::cout << "Press L again within " << COMBO_WINDOW << " seconds for final axe attack!" << std::endl;
         } else if (m_axeComboCount == 3) {
-            PlayAnimation(21, false);
+            PlayAnimation(22, false);
             std::cout << "=== AXE COMBO FINISH ===" << std::endl;
             std::cout << "Axe Combo " << m_axeComboCount << ": Axe3! AXE COMBO COMPLETE!" << std::endl;
             m_axeComboCompleted = true;
@@ -430,7 +430,7 @@ void Character::HandleAxeCombo() {
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
         m_axeComboTimer = COMBO_WINDOW;
-        PlayAnimation(19, false);
+        PlayAnimation(20, false);
         std::cout << "=== NEW AXE COMBO START (timer expired) ===" << std::endl;
         std::cout << "Axe Combo " << m_axeComboCount << ": Axe1!" << std::endl;
     }
@@ -454,9 +454,9 @@ void Character::HandleKick() {
     }
     
     m_isKicking = true;
-    PlayAnimation(18, false);
+    PlayAnimation(19, false);
     std::cout << "=== KICK EXECUTED ===" << std::endl;
-    std::cout << "Playing Kick animation (Animation 18)" << std::endl;
+    std::cout << "Playing Kick animation (Animation 19)" << std::endl;
 }
 
 void Character::CancelAllCombos() {
@@ -475,9 +475,9 @@ void Character::CancelAllCombos() {
 
 void Character::PlayAnimation(int animIndex, bool loop) {
     if (m_animManager) {
-        bool allowReplay = (animIndex == 18) ||
-                          (animIndex >= 9 && animIndex <= 11) ||
-                          (animIndex >= 19 && animIndex <= 21);
+        bool allowReplay = (animIndex == 19) ||
+                          (animIndex >= 10 && animIndex <= 12) ||
+                          (animIndex >= 20 && animIndex <= 22);
         
         if (m_lastAnimation != animIndex || allowReplay) {
             m_animManager->Play(animIndex, loop);
