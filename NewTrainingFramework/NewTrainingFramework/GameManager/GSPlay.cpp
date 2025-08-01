@@ -192,22 +192,6 @@ void GSPlay::Update(float deltaTime) {
     if (menuButton) {
         menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
     }
-    
-    static float lastTimeShow = 0.0f;
-    if (m_gameTime - lastTimeShow > 5.0f) {
-        lastTimeShow = m_gameTime;
-        
-        // Debug camera zoom info
-        Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
-        if (camera && camera->IsAutoZoomEnabled()) {
-            float distance = std::abs(m_player.GetPosition().x - m_player2.GetPosition().x);
-            std::cout << "=== CAMERA ZOOM DEBUG ===" << std::endl;
-            std::cout << "Player distance: " << distance << std::endl;
-            std::cout << "Current zoom: " << camera->GetCurrentZoom() << std::endl;
-            std::cout << "Camera position: (" << camera->GetPosition().x << ", " << camera->GetPosition().y << ")" << std::endl;
-            std::cout << "=========================" << std::endl;
-        }
-    }
 }
 
 void GSPlay::Draw() {
@@ -327,15 +311,15 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             
             if (!camera->IsAutoZoomEnabled()) {
                 camera->ResetToInitialState();
-                std::cout << "=== CAMERA RESET ===" << std::endl;
-                std::cout << "Auto zoom: DISABLED" << std::endl;
-                std::cout << "Camera reset to initial position and zoom" << std::endl;
-                std::cout << "===================" << std::endl;
+                // std::cout << "=== CAMERA RESET ===" << std::endl;
+                // std::cout << "Auto zoom: DISABLED" << std::endl;
+                // std::cout << "Camera reset to initial position and zoom" << std::endl;
+                // std::cout << "===================" << std::endl;
             } else {
-                std::cout << "=== CAMERA ZOOM ===" << std::endl;
-                std::cout << "Auto zoom: ENABLED" << std::endl;
-                std::cout << "Current zoom: " << camera->GetCurrentZoom() << std::endl;
-                std::cout << "===================" << std::endl;
+                // std::cout << "=== CAMERA ZOOM ===" << std::endl;
+                // std::cout << "Auto zoom: ENABLED" << std::endl;
+                // std::cout << "Current zoom: " << camera->GetCurrentZoom() << std::endl;
+                // std::cout << "===================" << std::endl;
             }
         }
     }
