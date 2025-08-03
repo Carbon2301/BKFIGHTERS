@@ -47,6 +47,7 @@ private:
     int m_lastAnimation;
     int m_objectId; // Object ID for this character
     std::unique_ptr<class Object> m_characterObject; // Own Object instance for this character
+    std::unique_ptr<class Object> m_hitboxObject; // Object for hitbox visualization
     
     // Combo system variables
     int m_comboCount;
@@ -70,6 +71,15 @@ private:
     bool m_isHit;
     float m_hitTimer;
     static const float HIT_DURATION;
+    
+    // Hitbox system variables
+    bool m_showHitbox;
+    float m_hitboxTimer;
+    static const float HITBOX_DURATION;
+    float m_hitboxWidth;
+    float m_hitboxHeight;
+    float m_hitboxOffsetX;
+    float m_hitboxOffsetY;
     
     // Input configuration
     PlayerInputConfig m_inputConfig;
@@ -116,6 +126,12 @@ public:
     void HandleKick();
     void CancelAllCombos();
     void HandleRandomGetHit();
+    
+    // Hitbox management
+    void ShowHitbox(float width, float height, float offsetX, float offsetY);
+    void UpdateHitboxTimer(float deltaTime);
+    void DrawHitbox(class Camera* camera);
+    bool IsHitboxActive() const { return m_showHitbox && m_hitboxTimer > 0.0f; }
     
     // Animation
     void PlayAnimation(int animIndex, bool loop);

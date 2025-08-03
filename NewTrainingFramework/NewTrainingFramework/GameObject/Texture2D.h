@@ -30,4 +30,7 @@ public:
 
     // Tạo texture từ SDL_Surface (dùng cho text động)
     bool LoadFromSDLSurface(void* surface); // void* để tránh include SDL_ttf ở header
+    
+    // Create a simple colored texture
+    bool CreateColorTexture(int width, int height, unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
 }; 

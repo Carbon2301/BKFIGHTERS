@@ -174,6 +174,10 @@ void GSPlay::Update(float deltaTime) {
         
         // Update input manager (reset key press events)
         m_inputManager->Update();
+    } else {
+        std::cout << "Warning: m_inputManager is null in GSPlay::Update" << std::endl;
+        // Initialize input manager if it's null
+        m_inputManager = InputManager::GetInstance();
     }
     
     // Update characters
@@ -211,6 +215,10 @@ void GSPlay::Draw() {
     static bool wasMoving2 = false;
         
     const bool* keyStates = m_inputManager ? m_inputManager->GetKeyStates() : nullptr;
+    if (!keyStates) {
+        std::cout << "Warning: keyStates is null in GSPlay::Draw" << std::endl;
+        return;
+    }
     bool isMoving = keyStates ? (keyStates['A'] || keyStates['D']) : false;
     bool isMoving2 = keyStates ? (keyStates[0x25] || keyStates[0x27]) : false;
         
