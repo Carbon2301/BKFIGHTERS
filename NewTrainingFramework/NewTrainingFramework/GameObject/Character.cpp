@@ -11,21 +11,12 @@
 #include <cstdlib>
 #include <memory>
 
-const float Character::COMBO_WINDOW = 0.5f;
-const float Character::HIT_DURATION = 0.3f;
-const float Character::HITBOX_DURATION = 0.2f;
-
 
 
 Character::Character() 
     : m_movement(std::make_unique<CharacterMovement>(CharacterMovement::PLAYER1_INPUT)),
-      m_lastAnimation(-1), m_objectId(1000), m_comboCount(0), m_comboTimer(0.0f),
-      m_isInCombo(false), m_comboCompleted(false),
-      m_axeComboCount(0), m_axeComboTimer(0.0f),
-      m_isInAxeCombo(false), m_axeComboCompleted(false),
-      m_isKicking(false), m_isHit(false), m_hitTimer(0.0f),
-      m_showHitbox(false), m_hitboxTimer(0.0f), m_hitboxWidth(0.0f), m_hitboxHeight(0.0f),
-      m_hitboxOffsetX(0.0f), m_hitboxOffsetY(0.0f),
+      m_combat(std::make_unique<CharacterCombat>()),
+      m_lastAnimation(-1), m_objectId(1000),
       m_hurtboxWidth(0.0f), m_hurtboxHeight(0.0f), m_hurtboxOffsetX(0.0f), m_hurtboxOffsetY(0.0f) {
     
     // Initialize hitbox object
@@ -136,21 +127,26 @@ void Character::Update(float deltaTime) {
         UpdateAnimationState();
     }
     
-    UpdateComboTimers(deltaTime);
-    UpdateHitboxTimer(deltaTime);
+    if (m_combat) {
+        m_combat->Update(deltaTime);
+    }
     
-    // Update hit timer
-    if (m_isHit) {
-        m_hitTimer -= deltaTime;
-        if (m_hitTimer <= 0.0f) {
-            m_isHit = false;
-            m_hitTimer = 0.0f;
-            // Return to idle animation when hit animation finishes
-            if (!m_isInCombo && !m_isInAxeCombo && !m_movement->IsJumping() && !m_isKicking) {
-                PlayAnimation(0, true);
-            }
+    if (!m_combat->IsInCombo() && 
+        !m_combat->IsInAxeCombo() && 
+        !m_movement->IsJumping() && 
+        !m_combat->IsKicking() && 
+        !m_combat->IsHit() && 
+        !m_movement->IsSitting()) {
+        if (m_animManager && !m_animManager->IsPlaying()) {
+            PlayAnimation(0, true);
         }
     }
+    
+    if (m_movement->IsSitting() && m_animManager && !m_animManager->IsPlaying()) {
+        PlayAnimation(3, true);
+    }
+    
+
 }
 
 void Character::Draw(Camera* camera) {
@@ -191,93 +187,64 @@ void Character::CancelCombosOnOtherAction(const bool* keyStates) {
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     bool isOtherAction = (keyStates[inputConfig.sitKey] || keyStates[inputConfig.rollKey] || keyStates[inputConfig.jumpKey]);
     
-    if (isOtherAction && m_isInCombo) {
-        m_isInCombo = false;
-        m_comboCount = 0;
-        m_comboTimer = 0.0f;
-        m_comboCompleted = false;
+    if (isOtherAction && m_combat->IsInCombo()) {
+        m_combat->CancelAllCombos();
     }
     
-    if (isOtherAction && m_isInAxeCombo) {
-        m_isInAxeCombo = false;
-        m_axeComboCount = 0;
-        m_axeComboTimer = 0.0f;
-        m_axeComboCompleted = false;
+    if (isOtherAction && m_combat->IsInAxeCombo()) {
+        m_combat->CancelAllCombos();
     }
     
-    if (isOtherAction && m_isKicking) {
-        m_isKicking = false;
+    if (isOtherAction && m_combat->IsKicking()) {
+        m_combat->CancelAllCombos();
     }
 }
 
-void Character::UpdateComboTimers(float deltaTime) {
-    if (m_isInCombo) {
-        m_comboTimer -= deltaTime;
-        if (m_comboTimer <= 0.0f) {
-            m_isInCombo = false;
-            m_comboCount = 0;
-            m_comboCompleted = false;
-            if (m_animManager) {
-                m_animManager->Play(0, true);
-            }
-        }
-    }
-    
-    if (m_isInAxeCombo) {
-        m_axeComboTimer -= deltaTime;
-        if (m_axeComboTimer <= 0.0f) {
-            m_isInAxeCombo = false;
-            m_axeComboCount = 0;
-            m_axeComboCompleted = false;
-            if (m_animManager) {
-                m_animManager->Play(0, true);
-            }
-        }
-    }
-}
+
 
 void Character::UpdateAnimationState() {
-    if (m_isInCombo && !m_animManager->IsPlaying()) {
-        if (m_comboCompleted) {
-            m_isInCombo = false;
-            m_comboCount = 0;
-            m_comboCompleted = false;
+    if (m_movement->IsSitting()) {
+        return;
+    }
+    
+    if (m_combat->IsInCombo() && !m_animManager->IsPlaying()) {
+        if (m_combat->IsComboCompleted()) {
+            m_combat->CancelAllCombos();
             m_animManager->Play(0, true);
-        } else if (m_comboTimer <= 0.0f) {
-            m_isInCombo = false;
-            m_comboCount = 0;
-            m_comboCompleted = false;
+        } else if (m_combat->GetComboTimer() <= 0.0f) {
+            m_combat->CancelAllCombos();
             m_animManager->Play(0, true);
             std::cout << "Combo timeout - returning to idle" << std::endl;
         }
     }
     
-    if (m_isInAxeCombo && !m_animManager->IsPlaying()) {
-        if (m_axeComboCompleted) {
-            m_isInAxeCombo = false;
-            m_axeComboCount = 0;
-            m_axeComboCompleted = false;
+    if (m_combat->IsInAxeCombo() && !m_animManager->IsPlaying()) {
+        if (m_combat->IsAxeComboCompleted()) {
+            m_combat->CancelAllCombos();
             m_animManager->Play(0, true);
-        } else if (m_axeComboTimer <= 0.0f) {
-            m_isInAxeCombo = false;
-            m_axeComboCount = 0;
-            m_axeComboCompleted = false;
+        } else if (m_combat->GetAxeComboTimer() <= 0.0f) {
+            m_combat->CancelAllCombos();
             m_animManager->Play(0, true);
             std::cout << "Axe combo timeout - returning to idle" << std::endl;
         }
     }
     
-    if (m_isKicking && m_animManager->GetCurrentAnimation() == 19 && !m_animManager->IsPlaying()) {
-        m_isKicking = false;
+    if (m_combat->IsKicking() && m_animManager->GetCurrentAnimation() == 19 && !m_animManager->IsPlaying()) {
+        m_combat->CancelAllCombos();
         m_animManager->Play(0, true);
     }
     
-    // Handle landing animation when jumping ends
-    if (m_movement->JustLanded() && !m_isInCombo && !m_isInAxeCombo && !m_isKicking && !m_isHit) {
+    if (m_movement->JustLanded() && !m_combat->IsInCombo() && !m_combat->IsInAxeCombo() && !m_combat->IsKicking() && !m_combat->IsHit()) {
 
     }
     
-    if (!m_animManager->IsPlaying() && !m_isInCombo && !m_isInAxeCombo && !m_isKicking && !m_movement->IsJumping() && !m_movement->IsSitting() && !m_isHit) {
+    if (!m_animManager->IsPlaying() && 
+        !m_combat->IsInCombo() && 
+        !m_combat->IsInAxeCombo() && 
+        !m_combat->IsKicking() && 
+        !m_movement->IsJumping() && 
+        !m_movement->IsSitting() && 
+        !m_combat->IsHit()) {
         m_animManager->Play(0, true);
     }
 }
@@ -323,7 +290,7 @@ void Character::HandleMovementAnimations(const bool* keyStates) {
     bool isShiftPressed = keyStates[16];
     
     // Only play movement animations if not in combat states
-    if (!m_isInCombo && !m_isInAxeCombo && !m_isKicking && !m_isHit) {
+    if (!m_combat->IsInCombo() && !m_combat->IsInAxeCombo() && !m_combat->IsKicking() && !m_combat->IsHit()) {
         // Priority order: Jump > Roll > Movement > Sit > Idle
         
         if (m_movement->IsJumping()) {
@@ -346,135 +313,36 @@ void Character::HandleMovementAnimations(const bool* keyStates) {
             } else {
                 PlayAnimation(1, true);
             }
-        } else if (keyStates[inputConfig.sitKey]) {
+        } else if (keyStates[inputConfig.sitKey] || m_movement->IsSitting()) {
             PlayAnimation(3, true);
         } else {
-            // Default to idle animation
             PlayAnimation(0, true);
         }
     }
 }
 
 void Character::HandlePunchCombo() {
-    if (!m_isInCombo) {
-        m_comboCount = 1;
-        m_isInCombo = true;
-        m_comboTimer = COMBO_WINDOW;
-        PlayAnimation(10, false);
-        
-        // Show hitbox for punch 1
-        float hitboxWidth = 0.07f;
-        float hitboxHeight = 0.07f;
-        float hitboxOffsetX = m_movement->IsFacingLeft() ? -0.08f : 0.08f;
-        float hitboxOffsetY = -0.05f;
-        ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
-        
-        std::cout << "=== COMBO START ===" << std::endl;
-        std::cout << "Combo " << m_comboCount << ": Punch1!" << std::endl;
-        std::cout << "Press J again within " << COMBO_WINDOW << " seconds for next punch!" << std::endl;
-    } else if (m_comboTimer > 0.0f) {
-        m_comboCount++;
-        m_comboTimer = COMBO_WINDOW;
-        
-        if (m_comboCount == 2) {
-            PlayAnimation(11, false);
-            
-            // Show hitbox for punch 2
-            float hitboxWidth = 0.07f;
-            float hitboxHeight = 0.07f;
-            float hitboxOffsetX = m_movement->IsFacingLeft() ? -0.08f : 0.08f;
-            float hitboxOffsetY = -0.05f;
-            ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
-        } else if (m_comboCount == 3) {
-            PlayAnimation(12, false);
-            
-            // Show hitbox for punch 3
-            float hitboxWidth = 0.07f;
-            float hitboxHeight = 0.07f;
-            float hitboxOffsetX = m_movement->IsFacingLeft() ? -0.1f : 0.1f;
-            float hitboxOffsetY = -0.05f;
-            ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
-            
-            m_comboCompleted = true;
-        } else if (m_comboCount > 3) {
-            m_comboCount = 3;
-            m_comboCompleted = true;
-        }
-    } else {
-        m_comboCount = 1;
-        m_isInCombo = true;
-        m_comboTimer = COMBO_WINDOW;
-        PlayAnimation(10, false);
-        
-        // Show hitbox for punch 1
-        float hitboxWidth = 0.07f;
-        float hitboxHeight = 0.07f;
-        float hitboxOffsetX = m_movement->IsFacingLeft() ? -0.13f : 0.13f;
-        float hitboxOffsetY = -0.05f;
-        ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
+    if (m_combat) {
+        m_combat->HandlePunchCombo(this);
     }
 }
 
 void Character::HandleAxeCombo() {
-    if (!m_isInAxeCombo) {
-        m_axeComboCount = 1;
-        m_isInAxeCombo = true;
-        m_axeComboTimer = COMBO_WINDOW;
-        PlayAnimation(20, false);
-    } else if (m_axeComboTimer > 0.0f) {
-        m_axeComboCount++;
-        m_axeComboTimer = COMBO_WINDOW;
-        
-        if (m_axeComboCount == 2) {
-            PlayAnimation(21, false);
-        } else if (m_axeComboCount == 3) {
-            PlayAnimation(22, false);
-            m_axeComboCompleted = true;
-        } else if (m_axeComboCount > 3) {
-            m_axeComboCount = 3;
-            m_axeComboCompleted = true;
-        }
-    } else {
-        m_axeComboCount = 1;
-        m_isInAxeCombo = true;
-        m_axeComboTimer = COMBO_WINDOW;
-        PlayAnimation(20, false);
+    if (m_combat) {
+        m_combat->HandleAxeCombo(this);
     }
 }
 
 void Character::HandleKick() {
-    if (m_isInCombo) {
-        m_isInCombo = false;
-        m_comboCount = 0;
-        m_comboTimer = 0.0f;
-        m_comboCompleted = false;
+    if (m_combat) {
+        m_combat->HandleKick(this);
     }
-    
-    if (m_isInAxeCombo) {
-        m_isInAxeCombo = false;
-        m_axeComboCount = 0;
-        m_axeComboTimer = 0.0f;
-        m_axeComboCompleted = false;
-    }
-    
-    m_isKicking = true;
-    PlayAnimation(19, false);
 }
 
 void Character::CancelAllCombos() {
-    m_isInCombo = false;
-    m_comboCount = 0;
-    m_comboTimer = 0.0f;
-    m_comboCompleted = false;
-    
-    m_isInAxeCombo = false;
-    m_axeComboCount = 0;
-    m_axeComboTimer = 0.0f;
-    m_axeComboCompleted = false;
-    
-    m_isKicking = false;
-    m_isHit = false;
-    m_hitTimer = 0.0f;
+    if (m_combat) {
+        m_combat->CancelAllCombos();
+    }
 }
 
 void Character::PlayAnimation(int animIndex, bool loop) {
@@ -482,7 +350,8 @@ void Character::PlayAnimation(int animIndex, bool loop) {
         bool allowReplay = (animIndex == 19) ||
                           (animIndex >= 10 && animIndex <= 12) ||
                           (animIndex >= 20 && animIndex <= 22) ||
-                          (animIndex == 8 || animIndex == 9); // Allow replay for GetHit animations
+                          (animIndex == 8 || animIndex == 9) || // Allow replay for GetHit animations
+                          (animIndex == 3); // Allow replay for sit animation
         
         if (m_lastAnimation != animIndex || allowReplay) {
             m_animManager->Play(animIndex, loop);
@@ -499,45 +368,81 @@ bool Character::IsAnimationPlaying() const {
     return m_animManager ? m_animManager->IsPlaying() : false;
 }
 
+// Combat getters
+bool Character::IsInCombo() const {
+    return m_combat ? m_combat->IsInCombo() : false;
+}
+
+int Character::GetComboCount() const {
+    return m_combat ? m_combat->GetComboCount() : 0;
+}
+
+float Character::GetComboTimer() const {
+    return m_combat ? m_combat->GetComboTimer() : 0.0f;
+}
+
+bool Character::IsComboCompleted() const {
+    return m_combat ? m_combat->IsComboCompleted() : false;
+}
+
+// Axe combo getters
+bool Character::IsInAxeCombo() const {
+    return m_combat ? m_combat->IsInAxeCombo() : false;
+}
+
+int Character::GetAxeComboCount() const {
+    return m_combat ? m_combat->GetAxeComboCount() : 0;
+}
+
+float Character::GetAxeComboTimer() const {
+    return m_combat ? m_combat->GetAxeComboTimer() : 0.0f;
+}
+
+bool Character::IsAxeComboCompleted() const {
+    return m_combat ? m_combat->IsAxeComboCompleted() : false;
+}
+
+// Kick getter
+bool Character::IsKicking() const {
+    return m_combat ? m_combat->IsKicking() : false;
+}
+
+// Hit getter
+bool Character::IsHit() const {
+    return m_combat ? m_combat->IsHit() : false;
+}
+
+// Hitbox getter
+bool Character::IsHitboxActive() const {
+    return m_combat ? m_combat->IsHitboxActive() : false;
+}
+
 void Character::HandleRandomGetHit() {
-    Character dummyAttacker;
-    dummyAttacker.SetFacingLeft(rand() % 2 == 0);
-    TriggerGetHit(dummyAttacker);
-}
-
-// Hitbox management methods
-void Character::ShowHitbox(float width, float height, float offsetX, float offsetY) {
-    m_showHitbox = true;
-    m_hitboxTimer = HITBOX_DURATION;
-    m_hitboxWidth = width;
-    m_hitboxHeight = height;
-    m_hitboxOffsetX = offsetX;
-    m_hitboxOffsetY = offsetY;
-}
-
-void Character::UpdateHitboxTimer(float deltaTime) {
-    if (m_showHitbox && m_hitboxTimer > 0.0f) {
-        m_hitboxTimer -= deltaTime;
-        if (m_hitboxTimer <= 0.0f) {
-            m_showHitbox = false;
-            m_hitboxTimer = 0.0f;
-        }
+    if (m_combat) {
+        m_combat->HandleRandomGetHit(this);
     }
 }
 
+// Hitbox management methods
+
+
 void Character::DrawHitbox(Camera* camera, bool forceShow) {
-    if (!camera || !m_showHitbox || m_hitboxTimer <= 0.0f || !m_hitboxObject || !forceShow) {
+    if (!camera || !m_hitboxObject || !forceShow || !m_combat) {
+        return;
+    }
+    
+    if (!m_combat->IsHitboxActive()) {
         return;
     }
     
     // Calculate hitbox position based on character position and facing direction
     Vector3 position = m_movement->GetPosition();
-    float hitboxX = position.x + m_hitboxOffsetX;
-    float hitboxY = position.y + m_hitboxOffsetY;
+    float hitboxX = position.x + m_combat->GetHitboxOffsetX();
+    float hitboxY = position.y + m_combat->GetHitboxOffsetY();
     
     // Set hitbox object position and scale
     m_hitboxObject->SetPosition(hitboxX, hitboxY, 0.0f);
-    m_hitboxObject->SetScale(m_hitboxWidth, m_hitboxHeight, 1.0f);
+    m_hitboxObject->SetScale(m_combat->GetHitboxWidth(), m_combat->GetHitboxHeight(), 1.0f);
     
     // Draw hitbox object
     if (camera) {
@@ -574,54 +479,14 @@ void Character::DrawHurtbox(Camera* camera, bool forceShow) {
 
 // Collision detection methods
 bool Character::CheckHitboxCollision(const Character& other) const {
-    if (!IsHitboxActive()) {
+    if (!m_combat) {
         return false;
     }
-    
-    // Calculate this character's hitbox bounds
-    Vector3 thisPosition = m_movement->GetPosition();
-    float thisHitboxX = thisPosition.x + m_hitboxOffsetX;
-    float thisHitboxY = thisPosition.y + m_hitboxOffsetY;
-    float thisHitboxLeft = thisHitboxX - m_hitboxWidth * 0.5f;
-    float thisHitboxRight = thisHitboxX + m_hitboxWidth * 0.5f;
-    float thisHitboxTop = thisHitboxY + m_hitboxHeight * 0.5f;
-    float thisHitboxBottom = thisHitboxY - m_hitboxHeight * 0.5f;
-    
-    // Calculate other character's hurtbox bounds
-    Vector3 otherPosition = other.GetPosition();
-    float otherHurtboxX = otherPosition.x + other.GetHurtboxOffsetX();
-    float otherHurtboxY = otherPosition.y + other.GetHurtboxOffsetY();
-    float otherHurtboxLeft = otherHurtboxX - other.GetHurtboxWidth() * 0.5f;
-    float otherHurtboxRight = otherHurtboxX + other.GetHurtboxWidth() * 0.5f;
-    float otherHurtboxTop = otherHurtboxY + other.GetHurtboxHeight() * 0.5f;
-    float otherHurtboxBottom = otherHurtboxY - other.GetHurtboxHeight() * 0.5f;
-    
-    // Check for collision using AABB
-    bool collisionX = thisHitboxRight >= otherHurtboxLeft && thisHitboxLeft <= otherHurtboxRight;
-    bool collisionY = thisHitboxTop >= otherHurtboxBottom && thisHitboxBottom <= otherHurtboxTop;
-    
-    return collisionX && collisionY;
+    return m_combat->CheckHitboxCollision(*this, other);
 }
 
 void Character::TriggerGetHit(const Character& attacker) {
-    // Only trigger if not already hit
-    if (!m_isHit) {
-        CancelAllCombos();
-        
-        bool attackerFacingLeft = attacker.IsFacingLeft();
-        SetFacingLeft(!attackerFacingLeft);
-        
-        int randomHitAnimation = (rand() % 2) + 8;
-        
-        m_isHit = true;
-        m_hitTimer = HIT_DURATION;
-        
-        PlayAnimation(randomHitAnimation, false);
-        
-        std::cout << "=== HIT DETECTED ===" << std::endl;
-        std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
-        std::cout << "Attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
-        std::cout << "Hit character now facing: " << (m_movement->IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
-        std::cout << "===================" << std::endl;
+    if (m_combat) {
+        m_combat->TriggerGetHit(this, attacker);
     }
 } 

@@ -3,6 +3,7 @@
 #include <vector>
 #include "AnimationManager.h"
 #include "CharacterMovement.h"
+#include "CharacterCombat.h"
 #include "../../Utilities/Math.h"
 
 class InputManager;
@@ -13,41 +14,15 @@ private:
     // Movement component
     std::unique_ptr<CharacterMovement> m_movement;
     
+    // Combat component
+    std::unique_ptr<CharacterCombat> m_combat;
+    
     // Animation
     std::shared_ptr<AnimationManager> m_animManager;
     int m_lastAnimation;
     int m_objectId; // Object ID for this character
     std::unique_ptr<class Object> m_characterObject; // Own Object instance for this character
     std::unique_ptr<class Object> m_hitboxObject; // Object for hitbox visualization
-    
-    // Combo system variables
-    int m_comboCount;
-    float m_comboTimer;
-    bool m_isInCombo;
-    bool m_comboCompleted;
-    
-    // Axe combo system variables
-    int m_axeComboCount;
-    float m_axeComboTimer;
-    bool m_isInAxeCombo;
-    bool m_axeComboCompleted;
-    
-    // Kick system variables
-    bool m_isKicking;
-    
-    // GetHit state tracking
-    bool m_isHit;
-    float m_hitTimer;
-    static const float HIT_DURATION;
-    
-    // Hitbox system variables
-    bool m_showHitbox;
-    float m_hitboxTimer;
-    static const float HITBOX_DURATION;
-    float m_hitboxWidth;
-    float m_hitboxHeight;
-    float m_hitboxOffsetX;
-    float m_hitboxOffsetY;
     
     // Hurtbox system variables
     std::unique_ptr<class Object> m_hurtboxObject; // Object for hurtbox visualization
@@ -56,12 +31,8 @@ private:
     float m_hurtboxOffsetX;
     float m_hurtboxOffsetY;
 
-    // Constants
-    static const float COMBO_WINDOW;
-
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
-    void UpdateComboTimers(float deltaTime);
     void UpdateAnimationState();
     void HandleMovementAnimations(const bool* keyStates);
 
@@ -97,10 +68,8 @@ public:
     void HandleRandomGetHit();
     
     // Hitbox management
-    void ShowHitbox(float width, float height, float offsetX, float offsetY);
-    void UpdateHitboxTimer(float deltaTime);
     void DrawHitbox(class Camera* camera, bool forceShow = false);
-    bool IsHitboxActive() const { return m_showHitbox && m_hitboxTimer > 0.0f; }
+    bool IsHitboxActive() const;
     
     // Hurtbox management
     void SetHurtbox(float width, float height, float offsetX, float offsetY);
@@ -115,24 +84,27 @@ public:
     // Collision detection
     bool CheckHitboxCollision(const Character& other) const;
     void TriggerGetHit(const Character& attacker);
-    bool IsHit() const { return m_isHit; }
+    bool IsHit() const;
     
     // Animation
     void PlayAnimation(int animIndex, bool loop);
     int GetCurrentAnimation() const;
     bool IsAnimationPlaying() const;
     
-    // Combo getters
-    bool IsInCombo() const { return m_isInCombo; }
-    int GetComboCount() const { return m_comboCount; }
-    float GetComboTimer() const { return m_comboTimer; }
-    bool IsComboCompleted() const { return m_comboCompleted; }
+    // Combat getters
+    bool IsInCombo() const;
+    int GetComboCount() const;
+    float GetComboTimer() const;
+    bool IsComboCompleted() const;
     
     // Axe combo getters
-    bool IsInAxeCombo() const { return m_isInAxeCombo; }
-    int GetAxeComboCount() const { return m_axeComboCount; }
-    float GetAxeComboTimer() const { return m_axeComboTimer; }
-    bool IsAxeComboCompleted() const { return m_axeComboCompleted; }
+    bool IsInAxeCombo() const;
+    int GetAxeComboCount() const;
+    float GetAxeComboTimer() const;
+    bool IsAxeComboCompleted() const;
+    
+    // Kick getter
+    bool IsKicking() const;
     
 
 }; 
