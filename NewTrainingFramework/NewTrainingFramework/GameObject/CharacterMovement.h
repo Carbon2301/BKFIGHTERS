@@ -1,0 +1,85 @@
+#pragma once
+#include <memory>
+#include "../../Utilities/Math.h"
+
+enum class CharState {
+    Idle,
+    MoveLeft,
+    MoveRight
+};
+
+struct PlayerInputConfig {
+    int moveLeftKey;
+    int moveRightKey;
+    int jumpKey;
+    int sitKey;
+    int rollKey;
+    int punchKey;
+    int axeKey;
+    int kickKey;
+    
+    PlayerInputConfig() : moveLeftKey(0), moveRightKey(0), jumpKey(0), sitKey(0), 
+                         rollKey(0), punchKey(0), axeKey(0), kickKey(0) {}
+    
+    PlayerInputConfig(int left, int right, int jump, int sit, int roll, int punch, int axe, int kick)
+        : moveLeftKey(left), moveRightKey(right), jumpKey(jump), sitKey(sit), 
+          rollKey(roll), punchKey(punch), axeKey(axe), kickKey(kick) {}
+};
+
+class CharacterMovement {
+private:
+    // Position and state
+    float m_posX, m_posY;
+    float m_groundY;
+    bool m_facingLeft;
+    CharState m_state;
+    
+    // Jump properties
+    bool m_isJumping;
+    float m_jumpVelocity;
+    float m_jumpStartY;
+    bool m_wasJumping;
+    
+    // Sitting state
+    bool m_isSitting;
+    
+    // Input configuration
+    PlayerInputConfig m_inputConfig;
+
+    // Constants
+    static const float JUMP_FORCE;
+    static const float GRAVITY;
+    static const float GROUND_Y;
+    static const float MOVE_SPEED;
+
+public:
+    CharacterMovement();
+    CharacterMovement(const PlayerInputConfig& inputConfig);
+    ~CharacterMovement();
+    
+    void Initialize(float startX, float startY, float groundY);
+    void SetInputConfig(const PlayerInputConfig& config) { m_inputConfig = config; }
+    
+    void Update(float deltaTime, const bool* keyStates);
+    
+    void HandleMovement(float deltaTime, const bool* keyStates);
+    void HandleJump(float deltaTime, const bool* keyStates);
+    void HandleLanding(const bool* keyStates);
+    
+    void SetPosition(float x, float y);
+    Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
+    float GetPosX() const { return m_posX; }
+    float GetPosY() const { return m_posY; }
+    
+    bool IsFacingLeft() const { return m_facingLeft; }
+    void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
+    CharState GetState() const { return m_state; }
+    bool IsJumping() const { return m_isJumping; }
+    bool IsSitting() const { return m_isSitting; }
+    bool JustLanded() const { return m_wasJumping && !m_isJumping; }
+    
+    const PlayerInputConfig& GetInputConfig() const { return m_inputConfig; }
+    
+    static const PlayerInputConfig PLAYER1_INPUT;
+    static const PlayerInputConfig PLAYER2_INPUT;
+}; 
