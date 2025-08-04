@@ -97,10 +97,30 @@ void SoundManager::LoadMusicFromFile(const std::string& rmFilePath) {
     std::string line;
     int id = -1;
     std::string path;
+    std::string name;
+    bool inMusicSection = false;
+    
     while (std::getline(file, line)) {
-        if (line.empty() || line[0] == '#') continue;
+        if (line.empty() || line[0] == '#') {
+            if (line.find("# Music") != std::string::npos) {
+                inMusicSection = true;
+            } else if (line.find("# ") != std::string::npos) {
+                inMusicSection = false;
+            }
+            continue;
+        }
+        
+        if (!inMusicSection) continue;
+        
         if (line.find("ID") == 0) {
             id = std::stoi(line.substr(3));
+        }
+        if (line.find("NAME") == 0) {
+            size_t firstQuote = line.find('"');
+            size_t lastQuote = line.find_last_of('"');
+            if (firstQuote != std::string::npos && lastQuote != std::string::npos && lastQuote > firstQuote) {
+                name = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
+            }
         }
         if (line.find("FILE") == 0) {
             size_t firstQuote = line.find('"');
@@ -110,8 +130,12 @@ void SoundManager::LoadMusicFromFile(const std::string& rmFilePath) {
             }
             if (id != -1 && !path.empty()) {
                 LoadMusicByID(id, path);
+                if (!name.empty()) {
+                    LoadMusic(name, path);
+                }
                 id = -1;
                 path.clear();
+                name.clear();
             }
         }
     }

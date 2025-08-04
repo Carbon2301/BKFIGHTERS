@@ -20,6 +20,8 @@ static Character m_player;
 static Character m_player2;
 static InputManager* m_inputManager = nullptr;
 
+bool GSPlay::s_showHitboxHurtbox = false;
+
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f) {
 }
@@ -30,6 +32,8 @@ GSPlay::~GSPlay() {
 void GSPlay::Init() {
     std::cout << "=== GAMEPLAY MODE ===" << std::endl;
     std::cout << "Game started! Press ESC or M to return to menu" << std::endl;
+    std::cout << "Press C to toggle hitbox/hurtbox display" << std::endl;
+    std::cout << "Press Z to toggle camera auto-zoom" << std::endl;
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -85,6 +89,9 @@ void GSPlay::Init() {
     m_player.Initialize(m_animManager, 1000);
     m_player.SetInputConfig(Character::PLAYER1_INPUT);
     
+    // Setup hurtbox for Player 1
+    m_player.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
+    
     auto animManager2 = std::make_shared<AnimationManager>();
     
     const TextureData* textureData2 = ResourceManager::GetInstance()->GetTextureData(11);
@@ -101,6 +108,9 @@ void GSPlay::Init() {
     
     m_player2.Initialize(animManager2, 1001);
     m_player2.SetInputConfig(Character::PLAYER2_INPUT);
+    
+    // Setup hurtbox for Player 2
+    m_player2.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
@@ -174,11 +184,24 @@ void GSPlay::Update(float deltaTime) {
         
         // Update input manager (reset key press events)
         m_inputManager->Update();
+    } else {
+        std::cout << "Warning: m_inputManager is null in GSPlay::Update" << std::endl;
+        // Initialize input manager if it's null
+        m_inputManager = InputManager::GetInstance();
     }
     
     // Update characters
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
+    
+    // Check for hitbox-hurtbox collisions
+    if (m_player.CheckHitboxCollision(m_player2)) {
+        m_player2.TriggerGetHit(m_player);
+    }
+    
+    if (m_player2.CheckHitboxCollision(m_player)) {
+        m_player.TriggerGetHit(m_player2);
+    }
     
     // Update camera with auto zoom based on character positions
     Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
@@ -191,22 +214,6 @@ void GSPlay::Update(float deltaTime) {
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
     if (menuButton) {
         menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
-    }
-    
-    static float lastTimeShow = 0.0f;
-    if (m_gameTime - lastTimeShow > 5.0f) {
-        lastTimeShow = m_gameTime;
-        
-        // Debug camera zoom info
-        Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
-        if (camera && camera->IsAutoZoomEnabled()) {
-            float distance = std::abs(m_player.GetPosition().x - m_player2.GetPosition().x);
-            std::cout << "=== CAMERA ZOOM DEBUG ===" << std::endl;
-            std::cout << "Player distance: " << distance << std::endl;
-            std::cout << "Current zoom: " << camera->GetCurrentZoom() << std::endl;
-            std::cout << "Camera position: (" << camera->GetPosition().x << ", " << camera->GetPosition().y << ")" << std::endl;
-            std::cout << "=========================" << std::endl;
-        }
     }
 }
 
@@ -227,6 +234,10 @@ void GSPlay::Draw() {
     static bool wasMoving2 = false;
         
     const bool* keyStates = m_inputManager ? m_inputManager->GetKeyStates() : nullptr;
+    if (!keyStates) {
+        std::cout << "Warning: keyStates is null in GSPlay::Draw" << std::endl;
+        return;
+    }
     bool isMoving = keyStates ? (keyStates['A'] || keyStates['D']) : false;
     bool isMoving2 = keyStates ? (keyStates[0x25] || keyStates[0x27]) : false;
         
@@ -318,6 +329,15 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         m_inputManager->UpdateKeyState(key, bIsPressed);
     }
     
+    // Handle hitbox/hurtbox visibility toggle
+    if (bIsPressed && key == 'C') {
+        s_showHitboxHurtbox = !s_showHitboxHurtbox;
+        std::cout << "=== HITBOX/HURTBOX TOGGLE ===" << std::endl;
+        std::cout << "Hitbox/Hurtbox display: " << (s_showHitboxHurtbox ? "ENABLED" : "DISABLED") << std::endl;
+        std::cout << "Press C again to toggle" << std::endl;
+        std::cout << "=============================" << std::endl;
+    }
+    
     // Handle camera zoom toggle
     if (bIsPressed && key == 'Z') {
         Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
@@ -327,15 +347,15 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             
             if (!camera->IsAutoZoomEnabled()) {
                 camera->ResetToInitialState();
-                std::cout << "=== CAMERA RESET ===" << std::endl;
-                std::cout << "Auto zoom: DISABLED" << std::endl;
-                std::cout << "Camera reset to initial position and zoom" << std::endl;
-                std::cout << "===================" << std::endl;
+                // std::cout << "=== CAMERA RESET ===" << std::endl;
+                // std::cout << "Auto zoom: DISABLED" << std::endl;
+                // std::cout << "Camera reset to initial position and zoom" << std::endl;
+                // std::cout << "===================" << std::endl;
             } else {
-                std::cout << "=== CAMERA ZOOM ===" << std::endl;
-                std::cout << "Auto zoom: ENABLED" << std::endl;
-                std::cout << "Current zoom: " << camera->GetCurrentZoom() << std::endl;
-                std::cout << "===================" << std::endl;
+                // std::cout << "=== CAMERA ZOOM ===" << std::endl;
+                // std::cout << "Auto zoom: ENABLED" << std::endl;
+                // std::cout << "Current zoom: " << camera->GetCurrentZoom() << std::endl;
+                // std::cout << "===================" << std::endl;
             }
         }
     }

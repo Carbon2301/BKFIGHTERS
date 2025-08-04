@@ -104,4 +104,40 @@ bool Texture2D::LoadFromSDLSurface(void* surfacePtr) {
 
     SDL_FreeSurface(converted);
     return true;
+}
+
+bool Texture2D::CreateColorTexture(int width, int height, unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+    Cleanup();
+    
+    m_width = width;
+    m_height = height;
+    m_channels = 4; // RGBA
+    
+    // Create color data
+    std::vector<unsigned char> textureData(width * height * 4);
+    for (int i = 0; i < width * height; ++i) {
+        textureData[i * 4 + 0] = r; // Red
+        textureData[i * 4 + 1] = g; // Green
+        textureData[i * 4 + 2] = b; // Blue
+        textureData[i * 4 + 3] = a; // Alpha
+    }
+    
+    // Generate OpenGL texture
+    glGenTextures(1, &m_textureId);
+    glBindTexture(GL_TEXTURE_2D, m_textureId);
+    
+    // Upload texture data
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data());
+    
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    std::cout << "Created color texture: " << width << "x" << height << " RGBA(" << (int)r << "," << (int)g << "," << (int)b << "," << (int)a << ")" << std::endl;
+    return true;
 } 

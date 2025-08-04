@@ -23,13 +23,10 @@ void AnimationManager::Initialize(int spriteWidth, int spriteHeight, const std::
             anim.frameTime = 0.1f; // Default frame time
         }
     }
-    
-    std::cout << "AnimationManager initialized with " << animations.size() << " animations" << std::endl;
 }
 
 void AnimationManager::Play(int animationIndex, bool loop) {
     if (animationIndex < 0 || animationIndex >= static_cast<int>(m_animations.size())) {
-        std::cout << "Invalid animation index: " << animationIndex << std::endl;
         return;
     }
     

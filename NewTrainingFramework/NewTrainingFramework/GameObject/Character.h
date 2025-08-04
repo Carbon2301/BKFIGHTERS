@@ -47,6 +47,7 @@ private:
     int m_lastAnimation;
     int m_objectId; // Object ID for this character
     std::unique_ptr<class Object> m_characterObject; // Own Object instance for this character
+    std::unique_ptr<class Object> m_hitboxObject; // Object for hitbox visualization
     
     // Combo system variables
     int m_comboCount;
@@ -70,6 +71,22 @@ private:
     bool m_isHit;
     float m_hitTimer;
     static const float HIT_DURATION;
+    
+    // Hitbox system variables
+    bool m_showHitbox;
+    float m_hitboxTimer;
+    static const float HITBOX_DURATION;
+    float m_hitboxWidth;
+    float m_hitboxHeight;
+    float m_hitboxOffsetX;
+    float m_hitboxOffsetY;
+    
+    // Hurtbox system variables
+    std::unique_ptr<class Object> m_hurtboxObject; // Object for hurtbox visualization
+    float m_hurtboxWidth;
+    float m_hurtboxHeight;
+    float m_hurtboxOffsetX;
+    float m_hurtboxOffsetY;
     
     // Input configuration
     PlayerInputConfig m_inputConfig;
@@ -107,6 +124,7 @@ public:
     void SetPosition(float x, float y);
     Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
     bool IsFacingLeft() const { return m_facingLeft; }
+    void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
     CharState GetState() const { return m_state; }
     bool IsJumping() const { return m_isJumping; }
     
@@ -116,6 +134,21 @@ public:
     void HandleKick();
     void CancelAllCombos();
     void HandleRandomGetHit();
+    
+    // Hitbox management
+    void ShowHitbox(float width, float height, float offsetX, float offsetY);
+    void UpdateHitboxTimer(float deltaTime);
+    void DrawHitbox(class Camera* camera, bool forceShow = false);
+    bool IsHitboxActive() const { return m_showHitbox && m_hitboxTimer > 0.0f; }
+    
+    // Hurtbox management
+    void SetHurtbox(float width, float height, float offsetX, float offsetY);
+    void DrawHurtbox(class Camera* camera, bool forceShow = false);
+    
+    // Collision detection
+    bool CheckHitboxCollision(const Character& other) const;
+    void TriggerGetHit(const Character& attacker);
+    bool IsHit() const { return m_isHit; }
     
     // Animation
     void PlayAnimation(int animIndex, bool loop);
