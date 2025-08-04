@@ -110,6 +110,7 @@
     <ClCompile Include="GameObject\AnimationManager.cpp" />
     <ClCompile Include="GameObject\Character.cpp" />
     <ClCompile Include="GameObject\CharacterCombat.cpp" />
+    <ClCompile Include="GameObject\CharacterHitbox.cpp" />
     <ClCompile Include="GameObject\CharacterMovement.cpp" />
     <ClCompile Include="GameObject\InputManager.cpp" />
     <ClCompile Include="GameObject\Shaders.cpp" />
@@ -136,6 +137,7 @@
     <ClInclude Include="GameObject\AnimationManager.h" />
     <ClInclude Include="GameObject\Character.h" />
     <ClInclude Include="GameObject\CharacterCombat.h" />
+    <ClInclude Include="GameObject\CharacterHitbox.h" />
     <ClInclude Include="GameObject\CharacterMovement.h" />
     <ClInclude Include="GameObject\InputManager.h" />
     <ClInclude Include="GameObject\Shaders.h" />

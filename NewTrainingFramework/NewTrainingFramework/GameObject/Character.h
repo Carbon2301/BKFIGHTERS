@@ -4,6 +4,7 @@
 #include "AnimationManager.h"
 #include "CharacterMovement.h"
 #include "CharacterCombat.h"
+#include "CharacterHitbox.h"
 #include "../../Utilities/Math.h"
 
 class InputManager;
@@ -11,25 +12,16 @@ class Camera;
 
 class Character {
 private:
-    // Movement component
     std::unique_ptr<CharacterMovement> m_movement;
     
-    // Combat component
     std::unique_ptr<CharacterCombat> m_combat;
+    std::unique_ptr<CharacterHitbox> m_hitbox;
     
     // Animation
     std::shared_ptr<AnimationManager> m_animManager;
     int m_lastAnimation;
-    int m_objectId; // Object ID for this character
-    std::unique_ptr<class Object> m_characterObject; // Own Object instance for this character
-    std::unique_ptr<class Object> m_hitboxObject; // Object for hitbox visualization
-    
-    // Hurtbox system variables
-    std::unique_ptr<class Object> m_hurtboxObject; // Object for hurtbox visualization
-    float m_hurtboxWidth;
-    float m_hurtboxHeight;
-    float m_hurtboxOffsetX;
-    float m_hurtboxOffsetY;
+    int m_objectId;
+    std::unique_ptr<class Object> m_characterObject;
 
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
@@ -69,6 +61,7 @@ public:
     
     // Hitbox management
     void DrawHitbox(class Camera* camera, bool forceShow = false);
+    void DrawHitboxAndHurtbox(class Camera* camera);
     bool IsHitboxActive() const;
     
     // Hurtbox management
@@ -76,10 +69,16 @@ public:
     void DrawHurtbox(class Camera* camera, bool forceShow = false);
     
     // Hurtbox getters for collision detection
-    float GetHurtboxWidth() const { return m_hurtboxWidth; }
-    float GetHurtboxHeight() const { return m_hurtboxHeight; }
-    float GetHurtboxOffsetX() const { return m_hurtboxOffsetX; }
-    float GetHurtboxOffsetY() const { return m_hurtboxOffsetY; }
+    float GetHurtboxWidth() const;
+    float GetHurtboxHeight() const;
+    float GetHurtboxOffsetX() const;
+    float GetHurtboxOffsetY() const;
+    
+    // Hitbox getters for collision detection
+    float GetHitboxWidth() const;
+    float GetHitboxHeight() const;
+    float GetHitboxOffsetX() const;
+    float GetHitboxOffsetY() const;
     
     // Collision detection
     bool CheckHitboxCollision(const Character& other) const;
