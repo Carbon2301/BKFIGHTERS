@@ -11,6 +11,7 @@
 #include <memory>
 #include "../GameObject/AnimationManager.h"
 #include "../GameObject/Character.h"
+#include "../GameObject/CharacterMovement.h"
 #include "../GameObject/InputManager.h"
 #include "ResourceManager.h"
 
@@ -87,7 +88,7 @@ void GSPlay::Init() {
     }
     
     m_player.Initialize(m_animManager, 1000);
-    m_player.SetInputConfig(Character::PLAYER1_INPUT);
+    m_player.SetInputConfig(CharacterMovement::PLAYER1_INPUT);
     
     // Setup hurtbox for Player 1
     m_player.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
@@ -107,7 +108,7 @@ void GSPlay::Init() {
     }
     
     m_player2.Initialize(animManager2, 1001);
-    m_player2.SetInputConfig(Character::PLAYER2_INPUT);
+    m_player2.SetInputConfig(CharacterMovement::PLAYER2_INPUT);
     
     // Setup hurtbox for Player 2
     m_player2.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY

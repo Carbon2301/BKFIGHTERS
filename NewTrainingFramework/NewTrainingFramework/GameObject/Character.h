@@ -2,45 +2,16 @@
 #include <memory>
 #include <vector>
 #include "AnimationManager.h"
+#include "CharacterMovement.h"
 #include "../../Utilities/Math.h"
 
 class InputManager;
 class Camera;
 
-enum class CharState {
-    Idle,
-    MoveLeft,
-    MoveRight
-};
-
-// Input configuration for different players
-struct PlayerInputConfig {
-    int moveLeftKey;
-    int moveRightKey;
-    int jumpKey;
-    int sitKey;
-    int rollKey;
-    int punchKey;
-    int axeKey;
-    int kickKey;
-    
-    PlayerInputConfig(int left, int right, int jump, int sit, int roll, int punch, int axe, int kick)
-        : moveLeftKey(left), moveRightKey(right), jumpKey(jump), sitKey(sit), 
-          rollKey(roll), punchKey(punch), axeKey(axe), kickKey(kick) {}
-};
-
 class Character {
 private:
-    // Basic properties
-    float m_posX, m_posY;
-    float m_groundY; // Vị trí mặt đất khởi tạo
-    bool m_facingLeft;
-    CharState m_state;
-    
-    // Movement properties
-    bool m_isJumping;
-    float m_jumpVelocity;
-    float m_jumpStartY;
+    // Movement component
+    std::unique_ptr<CharacterMovement> m_movement;
     
     // Animation
     std::shared_ptr<AnimationManager> m_animManager;
@@ -64,9 +35,6 @@ private:
     // Kick system variables
     bool m_isKicking;
     
-    // Sitting state tracking
-    bool m_isSitting;
-    
     // GetHit state tracking
     bool m_isHit;
     float m_hitTimer;
@@ -87,23 +55,15 @@ private:
     float m_hurtboxHeight;
     float m_hurtboxOffsetX;
     float m_hurtboxOffsetY;
-    
-    // Input configuration
-    PlayerInputConfig m_inputConfig;
 
     // Constants
-    static const float JUMP_FORCE;
-    static const float GRAVITY;
-    static const float GROUND_Y;
-    static const float MOVE_SPEED;
     static const float COMBO_WINDOW;
 
     // Helper methods
-    void HandleMovement(float deltaTime, const bool* keyStates);
-    void HandleJump(float deltaTime, const bool* keyStates);
     void CancelCombosOnOtherAction(const bool* keyStates);
     void UpdateComboTimers(float deltaTime);
     void UpdateAnimationState();
+    void HandleMovementAnimations(const bool* keyStates);
 
 public:
     Character();
@@ -111,7 +71,7 @@ public:
     
     // Initialization
     void Initialize(std::shared_ptr<AnimationManager> animManager, int objectId);
-    void SetInputConfig(const PlayerInputConfig& config) { m_inputConfig = config; }
+    void SetInputConfig(const PlayerInputConfig& config);
     
     // Core update
     void Update(float deltaTime);
@@ -122,11 +82,12 @@ public:
     
     // Movement
     void SetPosition(float x, float y);
-    Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
-    bool IsFacingLeft() const { return m_facingLeft; }
-    void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
-    CharState GetState() const { return m_state; }
-    bool IsJumping() const { return m_isJumping; }
+    Vector3 GetPosition() const;
+    bool IsFacingLeft() const;
+    void SetFacingLeft(bool facingLeft);
+    CharState GetState() const;
+    bool IsJumping() const;
+    bool IsSitting() const;
     
     // Combat
     void HandlePunchCombo();
@@ -144,6 +105,12 @@ public:
     // Hurtbox management
     void SetHurtbox(float width, float height, float offsetX, float offsetY);
     void DrawHurtbox(class Camera* camera, bool forceShow = false);
+    
+    // Hurtbox getters for collision detection
+    float GetHurtboxWidth() const { return m_hurtboxWidth; }
+    float GetHurtboxHeight() const { return m_hurtboxHeight; }
+    float GetHurtboxOffsetX() const { return m_hurtboxOffsetX; }
+    float GetHurtboxOffsetY() const { return m_hurtboxOffsetY; }
     
     // Collision detection
     bool CheckHitboxCollision(const Character& other) const;
@@ -167,7 +134,5 @@ public:
     float GetAxeComboTimer() const { return m_axeComboTimer; }
     bool IsAxeComboCompleted() const { return m_axeComboCompleted; }
     
-    // Static input configurations
-    static const PlayerInputConfig PLAYER1_INPUT;
-    static const PlayerInputConfig PLAYER2_INPUT;
+
 }; 

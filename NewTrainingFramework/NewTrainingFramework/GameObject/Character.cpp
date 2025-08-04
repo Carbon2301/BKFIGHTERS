@@ -10,32 +10,23 @@
 #include <iostream>
 #include <cstdlib>
 #include <memory>
-#include <cstdlib>
 
-const float Character::JUMP_FORCE = 3.0f;
-const float Character::GRAVITY = 8.0f;
-const float Character::GROUND_Y = 0.0f;
-const float Character::MOVE_SPEED = 0.5f;
 const float Character::COMBO_WINDOW = 0.5f;
 const float Character::HIT_DURATION = 0.3f;
 const float Character::HITBOX_DURATION = 0.2f;
 
-// Static input configurations
-const PlayerInputConfig Character::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K');
-const PlayerInputConfig Character::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', '1', '3', '2');
+
 
 Character::Character() 
-    : m_posX(0.0f), m_posY(0.0f), m_facingLeft(false), m_state(CharState::Idle),
-      m_isJumping(false), m_jumpVelocity(0.0f), m_jumpStartY(0.0f),
+    : m_movement(std::make_unique<CharacterMovement>(CharacterMovement::PLAYER1_INPUT)),
       m_lastAnimation(-1), m_objectId(1000), m_comboCount(0), m_comboTimer(0.0f),
       m_isInCombo(false), m_comboCompleted(false),
       m_axeComboCount(0), m_axeComboTimer(0.0f),
       m_isInAxeCombo(false), m_axeComboCompleted(false),
-      m_isKicking(false), m_isSitting(false), m_isHit(false), m_hitTimer(0.0f),
-          m_showHitbox(false), m_hitboxTimer(0.0f), m_hitboxWidth(0.0f), m_hitboxHeight(0.0f),
-    m_hitboxOffsetX(0.0f), m_hitboxOffsetY(0.0f),
-    m_hurtboxWidth(0.0f), m_hurtboxHeight(0.0f), m_hurtboxOffsetX(0.0f), m_hurtboxOffsetY(0.0f),
-    m_inputConfig(PLAYER1_INPUT) {
+      m_isKicking(false), m_isHit(false), m_hitTimer(0.0f),
+      m_showHitbox(false), m_hitboxTimer(0.0f), m_hitboxWidth(0.0f), m_hitboxHeight(0.0f),
+      m_hitboxOffsetX(0.0f), m_hitboxOffsetY(0.0f),
+      m_hurtboxWidth(0.0f), m_hurtboxHeight(0.0f), m_hurtboxOffsetX(0.0f), m_hurtboxOffsetY(0.0f) {
     
     // Initialize hitbox object
     m_hitboxObject = std::make_unique<Object>(-1); // Use -1 as ID for hitbox
@@ -50,8 +41,6 @@ Character::~Character() {
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     m_animManager = animManager;
     m_objectId = objectId;
-    m_state = CharState::Idle;
-    m_facingLeft = false;
     
     m_characterObject = std::make_unique<Object>(objectId);
     
@@ -66,14 +55,10 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
         m_characterObject->SetScale(originalObj->GetScale());
         
         const Vector3& originalPos = originalObj->GetPosition();
-        m_posX = originalPos.x;
-        m_posY = originalPos.y;
-        m_groundY = m_posY;
+        m_movement->Initialize(originalPos.x, originalPos.y, originalPos.y);
         
     } else {
-        m_posX = 0.0f;
-        m_posY = 0.0f;
-        m_groundY = 0.0f;
+        m_movement->Initialize(0.0f, 0.0f, 0.0f);
     }
     
     // Setup hitbox object - use the same model as character but with red color
@@ -118,18 +103,24 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         return;
     }
     
-    HandleMovement(deltaTime, keyStates);
-    HandleJump(deltaTime, keyStates);
+    CancelCombosOnOtherAction(keyStates);
     
-    if (inputManager->IsKeyJustPressed(m_inputConfig.punchKey)) {
+    m_movement->Update(deltaTime, keyStates);
+    
+    // Handle movement animations
+    HandleMovementAnimations(keyStates);
+    
+    const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
+    
+    if (inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
         HandlePunchCombo();
     }
     
-    if (inputManager->IsKeyJustPressed(m_inputConfig.axeKey)) {
+    if (inputManager->IsKeyJustPressed(inputConfig.axeKey)) {
         HandleAxeCombo();
     }
     
-    if (inputManager->IsKeyJustPressed(m_inputConfig.kickKey)) {
+    if (inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         HandleKick();
     }
     
@@ -155,7 +146,7 @@ void Character::Update(float deltaTime) {
             m_isHit = false;
             m_hitTimer = 0.0f;
             // Return to idle animation when hit animation finishes
-            if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
+            if (!m_isInCombo && !m_isInAxeCombo && !m_movement->IsJumping() && !m_isKicking) {
                 PlayAnimation(0, true);
             }
         }
@@ -167,14 +158,15 @@ void Character::Draw(Camera* camera) {
         float u0, v0, u1, v1;
         m_animManager->GetUV(u0, v0, u1, v1);
         
-        if (m_facingLeft) {
+        if (m_movement->IsFacingLeft()) {
             float temp = u0;
             u0 = u1;
             u1 = temp;
         }
         
         m_characterObject->SetCustomUV(u0, v0, u1, v1);
-        m_characterObject->SetPosition(Vector3(m_posX, m_posY, 0.0f));
+        Vector3 position = m_movement->GetPosition();
+        m_characterObject->SetPosition(position);
         
         if (camera) {
             m_characterObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
@@ -188,158 +180,7 @@ void Character::Draw(Camera* camera) {
     DrawHurtbox(camera, showHitboxHurtbox);
 }
 
-void Character::HandleMovement(float deltaTime, const bool* keyStates) {
-    if (!keyStates) {
-        std::cout << "Warning: keyStates is null in HandleMovement" << std::endl;
-        return;
-    }
-    
-    bool isShiftPressed = keyStates[16];
-    bool isMoving = (keyStates[m_inputConfig.moveLeftKey] || keyStates[m_inputConfig.moveRightKey]);
-    bool isOtherAction = (keyStates[m_inputConfig.sitKey] || keyStates[m_inputConfig.rollKey] || keyStates[m_inputConfig.jumpKey]);
-    
-    CancelCombosOnOtherAction(keyStates);
-    
-    if (keyStates[m_inputConfig.moveLeftKey] && keyStates[m_inputConfig.rollKey]) {
-        m_state = CharState::MoveLeft;
-        m_facingLeft = true;
-        m_posX -= MOVE_SPEED * 1.5f * deltaTime;
-        PlayAnimation(4, true);
-    } else if (keyStates[m_inputConfig.moveRightKey] && keyStates[m_inputConfig.rollKey]) {
-        m_state = CharState::MoveRight;
-        m_facingLeft = false;
-        m_posX += MOVE_SPEED * 1.5f * deltaTime;
-        PlayAnimation(4, true);
-    } else if (keyStates[m_inputConfig.rollKey]) {
-        if (m_facingLeft) {
-            m_posX -= MOVE_SPEED * 1.5f * deltaTime;
-        } else {
-            m_posX += MOVE_SPEED * 1.5f * deltaTime;
-        }
-        PlayAnimation(4, true);
-    } else if (keyStates[m_inputConfig.moveRightKey]) {
-        m_state = CharState::MoveRight;
-        m_facingLeft = false;
-        
-        if (isShiftPressed) {
-            m_posX += MOVE_SPEED * 2.0f * deltaTime;
-        } else {
-            m_posX += MOVE_SPEED * deltaTime;
-        }
-        
-        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
-            if (isShiftPressed) {
-                PlayAnimation(2, true);
-            } else {
-                PlayAnimation(1, true);
-            }
-        }
-    } else if (keyStates[m_inputConfig.moveLeftKey]) {
-        m_state = CharState::MoveLeft;
-        m_facingLeft = true;
-        
-        if (isShiftPressed) {
-            m_posX -= MOVE_SPEED * 2.0f * deltaTime;
-        } else {
-            m_posX -= MOVE_SPEED * deltaTime;
-        }
-        
-        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking) {
-            if (isShiftPressed) {
-                PlayAnimation(2, true);
-            } else {
-                PlayAnimation(1, true);
-            }
-        }
-    } else if (keyStates[m_inputConfig.sitKey]) {
-        m_isSitting = true;
-        m_state = CharState::Idle;
-        PlayAnimation(3, true);
-    } else {
-        m_isSitting = false;
-        
-        if (!m_isInCombo && !m_isInAxeCombo && !m_isJumping && !m_isKicking && !m_isHit) {
-            m_state = CharState::Idle;
-            PlayAnimation(0, true);
-        }
-    }
-}
 
-void Character::HandleJump(float deltaTime, const bool* keyStates) {
-    if (!keyStates) {
-        std::cout << "Warning: keyStates is null in HandleJump" << std::endl;
-        return;
-    }
-    
-    if (keyStates[m_inputConfig.jumpKey]) {
-        if (!m_isJumping) {
-            m_isSitting = false;
-            
-            m_isJumping = true;
-            m_jumpVelocity = JUMP_FORCE;
-            m_jumpStartY = m_posY;
-            PlayAnimation(16, false);
-        }
-    }
-    
-    if (m_isJumping) {
-        m_jumpVelocity -= GRAVITY * deltaTime;
-        m_posY += m_jumpVelocity * deltaTime;
-        
-        bool isMovingLeft = keyStates[m_inputConfig.moveLeftKey];
-        bool isMovingRight = keyStates[m_inputConfig.moveRightKey];
-        bool isShiftPressed = keyStates[16];
-        
-        if (isMovingLeft) {
-            m_facingLeft = true;
-            m_state = CharState::MoveLeft;
-            if (isShiftPressed) {
-                m_posX -= MOVE_SPEED * 1.5f * deltaTime;
-            } else {
-                m_posX -= MOVE_SPEED * 0.8f * deltaTime;
-            }
-        } else if (isMovingRight) {
-            m_facingLeft = false;
-            m_state = CharState::MoveRight;
-            if (isShiftPressed) {
-                m_posX += MOVE_SPEED * 1.5f * deltaTime;
-            } else {
-                m_posX += MOVE_SPEED * 0.8f * deltaTime;
-            }
-        }
-        
-        if (m_posY <= m_groundY) {
-            m_posY = m_groundY;
-            m_isJumping = false;
-            m_jumpVelocity = 0.0f;
-            
-            bool isMovingLeft = keyStates[m_inputConfig.moveLeftKey];
-            bool isMovingRight = keyStates[m_inputConfig.moveRightKey];
-            bool isShiftPressed = keyStates[16];
-            
-            if (!m_isInCombo && !m_isInAxeCombo && !m_isKicking) {
-                if (isMovingLeft || isMovingRight) {
-                    if (isMovingLeft) {
-                        m_facingLeft = true;
-                        m_state = CharState::MoveLeft;
-                    } else if (isMovingRight) {
-                        m_facingLeft = false;
-                        m_state = CharState::MoveRight;
-                    }
-                    
-                    if (isShiftPressed) {
-                        PlayAnimation(2, true);
-                    } else {
-                        PlayAnimation(1, true);
-                    }
-                } else {
-                    m_state = CharState::Idle;
-                    PlayAnimation(0, true);
-                }
-            }
-        }
-    }
-}
 
 void Character::CancelCombosOnOtherAction(const bool* keyStates) {
     if (!keyStates) {
@@ -347,7 +188,8 @@ void Character::CancelCombosOnOtherAction(const bool* keyStates) {
         return;
     }
     
-    bool isOtherAction = (keyStates[m_inputConfig.sitKey] || keyStates[m_inputConfig.rollKey] || keyStates[m_inputConfig.jumpKey]);
+    const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
+    bool isOtherAction = (keyStates[inputConfig.sitKey] || keyStates[inputConfig.rollKey] || keyStates[inputConfig.jumpKey]);
     
     if (isOtherAction && m_isInCombo) {
         m_isInCombo = false;
@@ -430,14 +272,87 @@ void Character::UpdateAnimationState() {
         m_animManager->Play(0, true);
     }
     
-    if (!m_animManager->IsPlaying() && !m_isInCombo && !m_isInAxeCombo && !m_isKicking && !m_isJumping && !m_isSitting) {
+    // Handle landing animation when jumping ends
+    if (m_movement->JustLanded() && !m_isInCombo && !m_isInAxeCombo && !m_isKicking && !m_isHit) {
+
+    }
+    
+    if (!m_animManager->IsPlaying() && !m_isInCombo && !m_isInAxeCombo && !m_isKicking && !m_movement->IsJumping() && !m_movement->IsSitting() && !m_isHit) {
         m_animManager->Play(0, true);
     }
 }
 
 void Character::SetPosition(float x, float y) {
-    m_posX = x;
-    m_posY = y;
+    m_movement->SetPosition(x, y);
+}
+
+Vector3 Character::GetPosition() const {
+    return m_movement->GetPosition();
+}
+
+bool Character::IsFacingLeft() const {
+    return m_movement->IsFacingLeft();
+}
+
+void Character::SetFacingLeft(bool facingLeft) {
+    m_movement->SetFacingLeft(facingLeft);
+}
+
+CharState Character::GetState() const {
+    return m_movement->GetState();
+}
+
+bool Character::IsJumping() const {
+    return m_movement->IsJumping();
+}
+
+bool Character::IsSitting() const {
+    return m_movement->IsSitting();
+}
+
+void Character::SetInputConfig(const PlayerInputConfig& config) {
+    m_movement->SetInputConfig(config);
+}
+
+void Character::HandleMovementAnimations(const bool* keyStates) {
+    if (!keyStates) {
+        return;
+    }
+    
+    const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
+    bool isShiftPressed = keyStates[16];
+    
+    // Only play movement animations if not in combat states
+    if (!m_isInCombo && !m_isInAxeCombo && !m_isKicking && !m_isHit) {
+        // Priority order: Jump > Roll > Movement > Sit > Idle
+        
+        if (m_movement->IsJumping()) {
+            PlayAnimation(16, false);
+        } else if (keyStates[inputConfig.moveLeftKey] && keyStates[inputConfig.rollKey]) {
+            PlayAnimation(4, true);
+        } else if (keyStates[inputConfig.moveRightKey] && keyStates[inputConfig.rollKey]) {
+            PlayAnimation(4, true);
+        } else if (keyStates[inputConfig.rollKey]) {
+            PlayAnimation(4, true);
+        } else if (keyStates[inputConfig.moveRightKey]) {
+            if (isShiftPressed) {
+                PlayAnimation(2, true);
+            } else {
+                PlayAnimation(1, true);
+            }
+        } else if (keyStates[inputConfig.moveLeftKey]) {
+            if (isShiftPressed) {
+                PlayAnimation(2, true);
+            } else {
+                PlayAnimation(1, true);
+            }
+        } else if (keyStates[inputConfig.sitKey]) {
+            PlayAnimation(3, true);
+        } else {
+            // Default to idle animation
+            PlayAnimation(0, true);
+        }
+    }
 }
 
 void Character::HandlePunchCombo() {
@@ -450,7 +365,7 @@ void Character::HandlePunchCombo() {
         // Show hitbox for punch 1
         float hitboxWidth = 0.07f;
         float hitboxHeight = 0.07f;
-        float hitboxOffsetX = m_facingLeft ? -0.08f : 0.08f;
+        float hitboxOffsetX = m_movement->IsFacingLeft() ? -0.08f : 0.08f;
         float hitboxOffsetY = -0.05f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         
@@ -467,7 +382,7 @@ void Character::HandlePunchCombo() {
             // Show hitbox for punch 2
             float hitboxWidth = 0.07f;
             float hitboxHeight = 0.07f;
-            float hitboxOffsetX = m_facingLeft ? -0.08f : 0.08f;
+            float hitboxOffsetX = m_movement->IsFacingLeft() ? -0.08f : 0.08f;
             float hitboxOffsetY = -0.05f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         } else if (m_comboCount == 3) {
@@ -476,7 +391,7 @@ void Character::HandlePunchCombo() {
             // Show hitbox for punch 3
             float hitboxWidth = 0.07f;
             float hitboxHeight = 0.07f;
-            float hitboxOffsetX = m_facingLeft ? -0.1f : 0.1f;
+            float hitboxOffsetX = m_movement->IsFacingLeft() ? -0.1f : 0.1f;
             float hitboxOffsetY = -0.05f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
             
@@ -494,7 +409,7 @@ void Character::HandlePunchCombo() {
         // Show hitbox for punch 1
         float hitboxWidth = 0.07f;
         float hitboxHeight = 0.07f;
-        float hitboxOffsetX = m_facingLeft ? -0.13f : 0.13f;
+        float hitboxOffsetX = m_movement->IsFacingLeft() ? -0.13f : 0.13f;
         float hitboxOffsetY = -0.05f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
     }
@@ -616,8 +531,9 @@ void Character::DrawHitbox(Camera* camera, bool forceShow) {
     }
     
     // Calculate hitbox position based on character position and facing direction
-    float hitboxX = m_posX + m_hitboxOffsetX;
-    float hitboxY = m_posY + m_hitboxOffsetY;
+    Vector3 position = m_movement->GetPosition();
+    float hitboxX = position.x + m_hitboxOffsetX;
+    float hitboxY = position.y + m_hitboxOffsetY;
     
     // Set hitbox object position and scale
     m_hitboxObject->SetPosition(hitboxX, hitboxY, 0.0f);
@@ -642,8 +558,9 @@ void Character::DrawHurtbox(Camera* camera, bool forceShow) {
     }
     
     // Calculate hurtbox position based on character position
-    float hurtboxX = m_posX + m_hurtboxOffsetX;
-    float hurtboxY = m_posY + m_hurtboxOffsetY;
+    Vector3 position = m_movement->GetPosition();
+    float hurtboxX = position.x + m_hurtboxOffsetX;
+    float hurtboxY = position.y + m_hurtboxOffsetY;
     
     // Set hurtbox object position and scale
     m_hurtboxObject->SetPosition(hurtboxX, hurtboxY, 0.0f);
@@ -662,20 +579,22 @@ bool Character::CheckHitboxCollision(const Character& other) const {
     }
     
     // Calculate this character's hitbox bounds
-    float thisHitboxX = m_posX + m_hitboxOffsetX;
-    float thisHitboxY = m_posY + m_hitboxOffsetY;
+    Vector3 thisPosition = m_movement->GetPosition();
+    float thisHitboxX = thisPosition.x + m_hitboxOffsetX;
+    float thisHitboxY = thisPosition.y + m_hitboxOffsetY;
     float thisHitboxLeft = thisHitboxX - m_hitboxWidth * 0.5f;
     float thisHitboxRight = thisHitboxX + m_hitboxWidth * 0.5f;
     float thisHitboxTop = thisHitboxY + m_hitboxHeight * 0.5f;
     float thisHitboxBottom = thisHitboxY - m_hitboxHeight * 0.5f;
     
     // Calculate other character's hurtbox bounds
-    float otherHurtboxX = other.m_posX + other.m_hurtboxOffsetX;
-    float otherHurtboxY = other.m_posY + other.m_hurtboxOffsetY;
-    float otherHurtboxLeft = otherHurtboxX - other.m_hurtboxWidth * 0.5f;
-    float otherHurtboxRight = otherHurtboxX + other.m_hurtboxWidth * 0.5f;
-    float otherHurtboxTop = otherHurtboxY + other.m_hurtboxHeight * 0.5f;
-    float otherHurtboxBottom = otherHurtboxY - other.m_hurtboxHeight * 0.5f;
+    Vector3 otherPosition = other.GetPosition();
+    float otherHurtboxX = otherPosition.x + other.GetHurtboxOffsetX();
+    float otherHurtboxY = otherPosition.y + other.GetHurtboxOffsetY();
+    float otherHurtboxLeft = otherHurtboxX - other.GetHurtboxWidth() * 0.5f;
+    float otherHurtboxRight = otherHurtboxX + other.GetHurtboxWidth() * 0.5f;
+    float otherHurtboxTop = otherHurtboxY + other.GetHurtboxHeight() * 0.5f;
+    float otherHurtboxBottom = otherHurtboxY - other.GetHurtboxHeight() * 0.5f;
     
     // Check for collision using AABB
     bool collisionX = thisHitboxRight >= otherHurtboxLeft && thisHitboxLeft <= otherHurtboxRight;
@@ -702,7 +621,7 @@ void Character::TriggerGetHit(const Character& attacker) {
         std::cout << "=== HIT DETECTED ===" << std::endl;
         std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
         std::cout << "Attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
-        std::cout << "Hit character now facing: " << (m_facingLeft ? "LEFT" : "RIGHT") << std::endl;
+        std::cout << "Hit character now facing: " << (m_movement->IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
         std::cout << "===================" << std::endl;
     }
 } 
