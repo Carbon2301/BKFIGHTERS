@@ -109,6 +109,7 @@
     <ClCompile Include="GameManager\GSPlay.cpp" />
     <ClCompile Include="GameObject\AnimationManager.cpp" />
     <ClCompile Include="GameObject\Character.cpp" />
+    <ClCompile Include="GameObject\CharacterAnimation.cpp" />
     <ClCompile Include="GameObject\CharacterCombat.cpp" />
     <ClCompile Include="GameObject\CharacterHitbox.cpp" />
     <ClCompile Include="GameObject\CharacterMovement.cpp" />
@@ -136,6 +137,7 @@
     <ClInclude Include="GameManager\GSPlay.h" />
     <ClInclude Include="GameObject\AnimationManager.h" />
     <ClInclude Include="GameObject\Character.h" />
+    <ClInclude Include="GameObject\CharacterAnimation.h" />
     <ClInclude Include="GameObject\CharacterCombat.h" />
     <ClInclude Include="GameObject\CharacterHitbox.h" />
     <ClInclude Include="GameObject\CharacterMovement.h" />

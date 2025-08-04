@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Character.h"
+#include "CharacterAnimation.h"
 #include "CharacterHitbox.h"
 #include "SceneManager.h"
 #include "ResourceManager.h"
@@ -12,37 +13,26 @@
 #include <cstdlib>
 #include <memory>
 
-
-
 Character::Character() 
     : m_movement(std::make_unique<CharacterMovement>(CharacterMovement::PLAYER1_INPUT)),
       m_combat(std::make_unique<CharacterCombat>()),
       m_hitbox(std::make_unique<CharacterHitbox>()),
-      m_lastAnimation(-1), m_objectId(1000) {
+      m_animation(std::make_unique<CharacterAnimation>()) {
 }
 
 Character::~Character() {
 }
 
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
-    m_animManager = animManager;
-    m_objectId = objectId;
+    if (m_animation) {
+        m_animation->Initialize(animManager, objectId);
+    }
     
-    m_characterObject = std::make_unique<Object>(objectId);
-    
+    // Initialize movement with position from scene object
     Object* originalObj = SceneManager::GetInstance()->GetObject(objectId);
     if (originalObj) {
-        m_characterObject->SetModel(originalObj->GetModelId());
-        const std::vector<int>& textureIds = originalObj->GetTextureIds();
-        if (!textureIds.empty()) {
-            m_characterObject->SetTexture(textureIds[0], 0);
-        }
-        m_characterObject->SetShader(originalObj->GetShaderId());
-        m_characterObject->SetScale(originalObj->GetScale());
-        
         const Vector3& originalPos = originalObj->GetPosition();
         m_movement->Initialize(originalPos.x, originalPos.y, originalPos.y);
-        
     } else {
         m_movement->Initialize(0.0f, 0.0f, 0.0f);
     }
@@ -50,10 +40,6 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
     // Initialize hitbox system
     if (m_hitbox) {
         m_hitbox->Initialize(this, objectId);
-    }
-    
-    if (m_animManager) {
-        m_animManager->Play(0, true);
     }
 }
 
@@ -74,7 +60,9 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     m_movement->Update(deltaTime, keyStates);
     
     // Handle movement animations
-    HandleMovementAnimations(keyStates);
+    if (m_animation) {
+        m_animation->HandleMovementAnimations(keyStates, m_movement.get(), m_combat.get());
+    }
     
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     
@@ -97,53 +85,23 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
 }
 
 void Character::Update(float deltaTime) {
-    if (m_animManager) {
-        m_animManager->Update(deltaTime);
-        UpdateAnimationState();
+    // Update animation system
+    if (m_animation) {
+        m_animation->Update(deltaTime, m_movement.get(), m_combat.get());
     }
     
     if (m_combat) {
         m_combat->Update(deltaTime);
     }
-    
-    if (!m_combat->IsInCombo() && 
-        !m_combat->IsInAxeCombo() && 
-        !m_movement->IsJumping() && 
-        !m_combat->IsKicking() && 
-        !m_combat->IsHit() && 
-        !m_movement->IsSitting()) {
-        if (m_animManager && !m_animManager->IsPlaying()) {
-            PlayAnimation(0, true);
-        }
-    }
-    
-    if (m_movement->IsSitting() && m_animManager && !m_animManager->IsPlaying()) {
-        PlayAnimation(3, true);
-    }
-    
-
 }
 
 void Character::Draw(Camera* camera) {
-    if (m_characterObject && m_animManager && m_characterObject->GetModelId() >= 0 && m_characterObject->GetModelPtr()) {
-        float u0, v0, u1, v1;
-        m_animManager->GetUV(u0, v0, u1, v1);
-        
-        if (m_movement->IsFacingLeft()) {
-            float temp = u0;
-            u0 = u1;
-            u1 = temp;
-        }
-        
-        m_characterObject->SetCustomUV(u0, v0, u1, v1);
-        Vector3 position = m_movement->GetPosition();
-        m_characterObject->SetPosition(position);
-        
-        if (camera) {
-            m_characterObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
-        }
+    // Draw character animation
+    if (m_animation) {
+        m_animation->Draw(camera, m_movement.get());
     }
     
+    // Draw hitbox
     if (m_hitbox) {
         m_hitbox->DrawHitboxAndHurtbox(camera);
     }
@@ -170,55 +128,6 @@ void Character::CancelCombosOnOtherAction(const bool* keyStates) {
     
     if (isOtherAction && m_combat->IsKicking()) {
         m_combat->CancelAllCombos();
-    }
-}
-
-
-
-void Character::UpdateAnimationState() {
-    if (m_movement->IsSitting()) {
-        return;
-    }
-    
-    if (m_combat->IsInCombo() && !m_animManager->IsPlaying()) {
-        if (m_combat->IsComboCompleted()) {
-            m_combat->CancelAllCombos();
-            m_animManager->Play(0, true);
-        } else if (m_combat->GetComboTimer() <= 0.0f) {
-            m_combat->CancelAllCombos();
-            m_animManager->Play(0, true);
-            std::cout << "Combo timeout - returning to idle" << std::endl;
-        }
-    }
-    
-    if (m_combat->IsInAxeCombo() && !m_animManager->IsPlaying()) {
-        if (m_combat->IsAxeComboCompleted()) {
-            m_combat->CancelAllCombos();
-            m_animManager->Play(0, true);
-        } else if (m_combat->GetAxeComboTimer() <= 0.0f) {
-            m_combat->CancelAllCombos();
-            m_animManager->Play(0, true);
-            std::cout << "Axe combo timeout - returning to idle" << std::endl;
-        }
-    }
-    
-    if (m_combat->IsKicking() && m_animManager->GetCurrentAnimation() == 19 && !m_animManager->IsPlaying()) {
-        m_combat->CancelAllCombos();
-        m_animManager->Play(0, true);
-    }
-    
-    if (m_movement->JustLanded() && !m_combat->IsInCombo() && !m_combat->IsInAxeCombo() && !m_combat->IsKicking() && !m_combat->IsHit()) {
-
-    }
-    
-    if (!m_animManager->IsPlaying() && 
-        !m_combat->IsInCombo() && 
-        !m_combat->IsInAxeCombo() && 
-        !m_combat->IsKicking() && 
-        !m_movement->IsJumping() && 
-        !m_movement->IsSitting() && 
-        !m_combat->IsHit()) {
-        m_animManager->Play(0, true);
     }
 }
 
@@ -254,61 +163,21 @@ void Character::SetInputConfig(const PlayerInputConfig& config) {
     m_movement->SetInputConfig(config);
 }
 
-void Character::HandleMovementAnimations(const bool* keyStates) {
-    if (!keyStates) {
-        return;
-    }
-    
-    const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
-    bool isShiftPressed = keyStates[16];
-    
-    // Only play movement animations if not in combat states
-    if (!m_combat->IsInCombo() && !m_combat->IsInAxeCombo() && !m_combat->IsKicking() && !m_combat->IsHit()) {
-        // Priority order: Jump > Roll > Movement > Sit > Idle
-        
-        if (m_movement->IsJumping()) {
-            PlayAnimation(16, false);
-        } else if (keyStates[inputConfig.moveLeftKey] && keyStates[inputConfig.rollKey]) {
-            PlayAnimation(4, true);
-        } else if (keyStates[inputConfig.moveRightKey] && keyStates[inputConfig.rollKey]) {
-            PlayAnimation(4, true);
-        } else if (keyStates[inputConfig.rollKey]) {
-            PlayAnimation(4, true);
-        } else if (keyStates[inputConfig.moveRightKey]) {
-            if (isShiftPressed) {
-                PlayAnimation(2, true);
-            } else {
-                PlayAnimation(1, true);
-            }
-        } else if (keyStates[inputConfig.moveLeftKey]) {
-            if (isShiftPressed) {
-                PlayAnimation(2, true);
-            } else {
-                PlayAnimation(1, true);
-            }
-        } else if (keyStates[inputConfig.sitKey] || m_movement->IsSitting()) {
-            PlayAnimation(3, true);
-        } else {
-            PlayAnimation(0, true);
-        }
-    }
-}
-
 void Character::HandlePunchCombo() {
-    if (m_combat) {
-        m_combat->HandlePunchCombo(this);
+    if (m_combat && m_animation) {
+        m_combat->HandlePunchCombo(m_animation.get(), m_movement.get());
     }
 }
 
 void Character::HandleAxeCombo() {
-    if (m_combat) {
-        m_combat->HandleAxeCombo(this);
+    if (m_combat && m_animation) {
+        m_combat->HandleAxeCombo(m_animation.get(), m_movement.get());
     }
 }
 
 void Character::HandleKick() {
-    if (m_combat) {
-        m_combat->HandleKick(this);
+    if (m_combat && m_animation) {
+        m_combat->HandleKick(m_animation.get(), m_movement.get());
     }
 }
 
@@ -319,26 +188,17 @@ void Character::CancelAllCombos() {
 }
 
 void Character::PlayAnimation(int animIndex, bool loop) {
-    if (m_animManager) {
-        bool allowReplay = (animIndex == 19) ||
-                          (animIndex >= 10 && animIndex <= 12) ||
-                          (animIndex >= 20 && animIndex <= 22) ||
-                          (animIndex == 8 || animIndex == 9) ||
-                          (animIndex == 3);
-        
-        if (m_lastAnimation != animIndex || allowReplay) {
-            m_animManager->Play(animIndex, loop);
-            m_lastAnimation = animIndex;
-        }
+    if (m_animation) {
+        m_animation->PlayAnimation(animIndex, loop);
     }
 }
 
 int Character::GetCurrentAnimation() const {
-    return m_animManager ? m_animManager->GetCurrentAnimation() : -1;
+    return m_animation ? m_animation->GetCurrentAnimation() : -1;
 }
 
 bool Character::IsAnimationPlaying() const {
-    return m_animManager ? m_animManager->IsPlaying() : false;
+    return m_animation ? m_animation->IsAnimationPlaying() : false;
 }
 
 // Combat getters
@@ -391,8 +251,8 @@ bool Character::IsHitboxActive() const {
 }
 
 void Character::HandleRandomGetHit() {
-    if (m_combat) {
-        m_combat->HandleRandomGetHit(this);
+    if (m_combat && m_animation) {
+        m_combat->HandleRandomGetHit(m_animation.get(), m_movement.get());
     }
 }
 
@@ -464,7 +324,9 @@ bool Character::CheckHitboxCollision(const Character& other) const {
 }
 
 void Character::TriggerGetHit(const Character& attacker) {
-    if (m_combat) {
-        m_combat->TriggerGetHit(this, attacker);
+    if (m_combat && m_animation) {
+        // Set facing direction based on attacker
+        SetFacingLeft(!attacker.IsFacingLeft());
+        m_combat->TriggerGetHit(m_animation.get(), attacker);
     }
 } 

@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "CharacterCombat.h"
 #include "Character.h"
+#include "CharacterAnimation.h"
+#include "CharacterMovement.h"
 #include "AnimationManager.h"
 #include <iostream>
 #include <cstdlib>
@@ -66,19 +68,19 @@ void CharacterCombat::UpdateHitboxTimer(float deltaTime) {
     }
 }
 
-void CharacterCombat::HandlePunchCombo(Character* character) {
-    if (!character) return;
+void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterMovement* movement) {
+    if (!animation || !movement) return;
     
     if (!m_isInCombo) {
         m_comboCount = 1;
         m_isInCombo = true;
         m_comboTimer = COMBO_WINDOW;
-        character->PlayAnimation(10, false);
+        animation->PlayAnimation(10, false);
         
         // Show hitbox for punch 1
         float hitboxWidth = 0.07f;
         float hitboxHeight = 0.07f;
-        float hitboxOffsetX = character->IsFacingLeft() ? -0.08f : 0.08f;
+        float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.08f : 0.08f;
         float hitboxOffsetY = -0.05f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         
@@ -90,21 +92,21 @@ void CharacterCombat::HandlePunchCombo(Character* character) {
         m_comboTimer = COMBO_WINDOW;
         
         if (m_comboCount == 2) {
-            character->PlayAnimation(11, false);
+            animation->PlayAnimation(11, false);
             
             // Show hitbox for punch 2
             float hitboxWidth = 0.07f;
             float hitboxHeight = 0.07f;
-            float hitboxOffsetX = character->IsFacingLeft() ? -0.08f : 0.08f;
+            float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.08f : 0.08f;
             float hitboxOffsetY = -0.05f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         } else if (m_comboCount == 3) {
-            character->PlayAnimation(12, false);
+            animation->PlayAnimation(12, false);
             
             // Show hitbox for punch 3
             float hitboxWidth = 0.07f;
             float hitboxHeight = 0.07f;
-            float hitboxOffsetX = character->IsFacingLeft() ? -0.1f : 0.1f;
+            float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.1f : 0.1f;
             float hitboxOffsetY = -0.05f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
             
@@ -117,33 +119,33 @@ void CharacterCombat::HandlePunchCombo(Character* character) {
         m_comboCount = 1;
         m_isInCombo = true;
         m_comboTimer = COMBO_WINDOW;
-        character->PlayAnimation(10, false);
+        animation->PlayAnimation(10, false);
         
         // Show hitbox for punch 1
         float hitboxWidth = 0.07f;
         float hitboxHeight = 0.07f;
-        float hitboxOffsetX = character->IsFacingLeft() ? -0.13f : 0.13f;
+        float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.13f : 0.13f;
         float hitboxOffsetY = -0.05f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
     }
 }
 
-void CharacterCombat::HandleAxeCombo(Character* character) {
-    if (!character) return;
+void CharacterCombat::HandleAxeCombo(CharacterAnimation* animation, CharacterMovement* movement) {
+    if (!animation || !movement) return;
     
     if (!m_isInAxeCombo) {
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
         m_axeComboTimer = COMBO_WINDOW;
-        character->PlayAnimation(20, false);
+        animation->PlayAnimation(20, false);
     } else if (m_axeComboTimer > 0.0f) {
         m_axeComboCount++;
         m_axeComboTimer = COMBO_WINDOW;
         
         if (m_axeComboCount == 2) {
-            character->PlayAnimation(21, false);
+            animation->PlayAnimation(21, false);
         } else if (m_axeComboCount == 3) {
-            character->PlayAnimation(22, false);
+            animation->PlayAnimation(22, false);
             m_axeComboCompleted = true;
         } else if (m_axeComboCount > 3) {
             m_axeComboCount = 3;
@@ -153,12 +155,12 @@ void CharacterCombat::HandleAxeCombo(Character* character) {
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
         m_axeComboTimer = COMBO_WINDOW;
-        character->PlayAnimation(20, false);
+        animation->PlayAnimation(20, false);
     }
 }
 
-void CharacterCombat::HandleKick(Character* character) {
-    if (!character) return;
+void CharacterCombat::HandleKick(CharacterAnimation* animation, CharacterMovement* movement) {
+    if (!animation || !movement) return;
     
     if (m_isInCombo) {
         m_isInCombo = false;
@@ -175,7 +177,7 @@ void CharacterCombat::HandleKick(Character* character) {
     }
     
     m_isKicking = true;
-    character->PlayAnimation(19, false);
+    animation->PlayAnimation(19, false);
 }
 
 void CharacterCombat::CancelAllCombos() {
@@ -194,12 +196,23 @@ void CharacterCombat::CancelAllCombos() {
     m_hitTimer = 0.0f;
 }
 
-void CharacterCombat::HandleRandomGetHit(Character* character) {
-    if (!character) return;
+void CharacterCombat::HandleRandomGetHit(CharacterAnimation* animation, CharacterMovement* movement) {
+    if (!animation || !movement) return;
     
-    Character dummyAttacker;
-    dummyAttacker.SetFacingLeft(rand() % 2 == 0);
-    TriggerGetHit(character, dummyAttacker);
+    bool attackerFacingLeft = rand() % 2 == 0;
+    
+    CancelAllCombos();
+    
+    int randomHitAnimation = (rand() % 2) + 8;
+    
+    m_isHit = true;
+    m_hitTimer = HIT_DURATION;
+    
+    animation->PlayAnimation(randomHitAnimation, false);
+    
+    std::cout << "=== RANDOM HIT ===" << std::endl;
+    std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
+    std::cout << "===================" << std::endl;
 }
 
 void CharacterCombat::ShowHitbox(float width, float height, float offsetX, float offsetY) {
@@ -243,26 +256,25 @@ bool CharacterCombat::CheckHitboxCollision(const Character& attacker, const Char
     return collisionX && collisionY;
 }
 
-void CharacterCombat::TriggerGetHit(Character* character, const Character& attacker) {
-    if (!character || m_isHit) {
+void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Character& attacker) {
+    if (!animation || m_isHit) {
         return;
     }
     
     CancelAllCombos();
     
     bool attackerFacingLeft = attacker.IsFacingLeft();
-    character->SetFacingLeft(!attackerFacingLeft);
+    // Note: Character facing direction should be set by the Character class
     
     int randomHitAnimation = (rand() % 2) + 8;
     
     m_isHit = true;
     m_hitTimer = HIT_DURATION;
     
-    character->PlayAnimation(randomHitAnimation, false);
+    animation->PlayAnimation(randomHitAnimation, false);
     
     std::cout << "=== HIT DETECTED ===" << std::endl;
     std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
     std::cout << "Attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
-    std::cout << "Hit character now facing: " << (character->IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
     std::cout << "===================" << std::endl;
 } 

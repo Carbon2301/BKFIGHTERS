@@ -7,7 +7,6 @@ const float CharacterMovement::GRAVITY = 8.0f;
 const float CharacterMovement::GROUND_Y = 0.0f;
 const float CharacterMovement::MOVE_SPEED = 0.5f;
 
-// Static input configurations
 const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K');
 const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', '1', '3', '2');
 
@@ -167,7 +166,6 @@ void CharacterMovement::HandleLanding(const bool* keyStates) {
         return;
     }
     
-    // When landing, immediately check movement keys and set appropriate state
     if (keyStates[m_inputConfig.moveLeftKey]) {
         m_state = CharState::MoveLeft;
         m_facingLeft = true;

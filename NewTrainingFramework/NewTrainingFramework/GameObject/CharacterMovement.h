@@ -8,7 +8,6 @@ enum class CharState {
     MoveRight
 };
 
-// Input configuration for different players
 struct PlayerInputConfig {
     int moveLeftKey;
     int moveRightKey;
@@ -39,7 +38,7 @@ private:
     bool m_isJumping;
     float m_jumpVelocity;
     float m_jumpStartY;
-    bool m_wasJumping; // Track previous jump state
+    bool m_wasJumping;
     
     // Sitting state
     bool m_isSitting;
@@ -58,25 +57,20 @@ public:
     CharacterMovement(const PlayerInputConfig& inputConfig);
     ~CharacterMovement();
     
-    // Initialization
     void Initialize(float startX, float startY, float groundY);
     void SetInputConfig(const PlayerInputConfig& config) { m_inputConfig = config; }
     
-    // Core update
     void Update(float deltaTime, const bool* keyStates);
     
-    // Movement handling
     void HandleMovement(float deltaTime, const bool* keyStates);
     void HandleJump(float deltaTime, const bool* keyStates);
     void HandleLanding(const bool* keyStates);
     
-    // Position management
     void SetPosition(float x, float y);
     Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
     float GetPosX() const { return m_posX; }
     float GetPosY() const { return m_posY; }
     
-    // State getters
     bool IsFacingLeft() const { return m_facingLeft; }
     void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
     CharState GetState() const { return m_state; }
@@ -84,10 +78,8 @@ public:
     bool IsSitting() const { return m_isSitting; }
     bool JustLanded() const { return m_wasJumping && !m_isJumping; }
     
-    // Input configuration getters
     const PlayerInputConfig& GetInputConfig() const { return m_inputConfig; }
     
-    // Static input configurations
     static const PlayerInputConfig PLAYER1_INPUT;
     static const PlayerInputConfig PLAYER2_INPUT;
 }; 

@@ -1,11 +1,13 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include "AnimationManager.h"
 #include "CharacterMovement.h"
 #include "CharacterCombat.h"
 #include "CharacterHitbox.h"
 #include "../../Utilities/Math.h"
+
+class AnimationManager;
+class CharacterAnimation;
 
 class InputManager;
 class Camera;
@@ -13,20 +15,12 @@ class Camera;
 class Character {
 private:
     std::unique_ptr<CharacterMovement> m_movement;
-    
     std::unique_ptr<CharacterCombat> m_combat;
     std::unique_ptr<CharacterHitbox> m_hitbox;
-    
-    // Animation
-    std::shared_ptr<AnimationManager> m_animManager;
-    int m_lastAnimation;
-    int m_objectId;
-    std::unique_ptr<class Object> m_characterObject;
+    std::unique_ptr<CharacterAnimation> m_animation;
 
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
-    void UpdateAnimationState();
-    void HandleMovementAnimations(const bool* keyStates);
 
 public:
     Character();
@@ -40,7 +34,7 @@ public:
     void Update(float deltaTime);
     void Draw(class Camera* camera);
     
-    // Input handling - Unified input processing
+    // Input handling
     void ProcessInput(float deltaTime, InputManager* inputManager);
     
     // Movement
