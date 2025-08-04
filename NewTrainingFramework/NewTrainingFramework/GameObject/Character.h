@@ -138,12 +138,12 @@ public:
     // Hitbox management
     void ShowHitbox(float width, float height, float offsetX, float offsetY);
     void UpdateHitboxTimer(float deltaTime);
-    void DrawHitbox(class Camera* camera);
+    void DrawHitbox(class Camera* camera, bool forceShow = false);
     bool IsHitboxActive() const { return m_showHitbox && m_hitboxTimer > 0.0f; }
     
     // Hurtbox management
     void SetHurtbox(float width, float height, float offsetX, float offsetY);
-    void DrawHurtbox(class Camera* camera);
+    void DrawHurtbox(class Camera* camera, bool forceShow = false);
     
     // Collision detection
     bool CheckHitboxCollision(const Character& other) const;

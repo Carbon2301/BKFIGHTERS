@@ -13,6 +13,9 @@ private:
     static const int ANIM_OBJECT_ID = 1000;
     std::shared_ptr<AnimationManager> m_animManager;
     
+    // Static variable to control hitbox/hurtbox visibility
+    static bool s_showHitboxHurtbox;
+    
 public:
     GSPlay();
     ~GSPlay();
@@ -27,4 +30,7 @@ public:
     void Pause() override;
     void Exit() override;
     void Cleanup() override;
+    
+    // Static getter for hitbox/hurtbox visibility
+    static bool IsShowHitboxHurtbox() { return s_showHitboxHurtbox; }
 }; 

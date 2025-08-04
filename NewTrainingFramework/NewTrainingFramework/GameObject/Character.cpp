@@ -5,6 +5,7 @@
 #include "InputManager.h"
 #include "Object.h"
 #include "Texture2D.h"
+#include "../GameManager/GSPlay.h"
 #include <GLES3/gl3.h>
 #include <iostream>
 #include <cstdlib>
@@ -180,13 +181,11 @@ void Character::Draw(Camera* camera) {
         }
     }
     
-    // Draw hitbox if active
-    if (IsHitboxActive()) {
-        DrawHitbox(camera);
-    }
+    bool showHitboxHurtbox = GSPlay::IsShowHitboxHurtbox();
     
-    // Draw hurtbox (always visible)
-    DrawHurtbox(camera);
+    DrawHitbox(camera, showHitboxHurtbox);
+    
+    DrawHurtbox(camera, showHitboxHurtbox);
 }
 
 void Character::HandleMovement(float deltaTime, const bool* keyStates) {
@@ -586,9 +585,8 @@ bool Character::IsAnimationPlaying() const {
 }
 
 void Character::HandleRandomGetHit() {
-    // Create a dummy attacker character for random hit testing
     Character dummyAttacker;
-    dummyAttacker.SetFacingLeft(rand() % 2 == 0); // Random direction
+    dummyAttacker.SetFacingLeft(rand() % 2 == 0);
     TriggerGetHit(dummyAttacker);
 }
 
@@ -612,8 +610,8 @@ void Character::UpdateHitboxTimer(float deltaTime) {
     }
 }
 
-void Character::DrawHitbox(Camera* camera) {
-    if (!camera || !m_showHitbox || m_hitboxTimer <= 0.0f || !m_hitboxObject) {
+void Character::DrawHitbox(Camera* camera, bool forceShow) {
+    if (!camera || !m_showHitbox || m_hitboxTimer <= 0.0f || !m_hitboxObject || !forceShow) {
         return;
     }
     
@@ -638,8 +636,8 @@ void Character::SetHurtbox(float width, float height, float offsetX, float offse
     m_hurtboxOffsetY = offsetY;
 }
 
-void Character::DrawHurtbox(Camera* camera) {
-    if (!camera || !m_hurtboxObject) {
+void Character::DrawHurtbox(Camera* camera, bool forceShow) {
+    if (!camera || !m_hurtboxObject || !forceShow) {
         return;
     }
     

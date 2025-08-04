@@ -20,6 +20,8 @@ static Character m_player;
 static Character m_player2;
 static InputManager* m_inputManager = nullptr;
 
+bool GSPlay::s_showHitboxHurtbox = false;
+
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f) {
 }
@@ -30,6 +32,8 @@ GSPlay::~GSPlay() {
 void GSPlay::Init() {
     std::cout << "=== GAMEPLAY MODE ===" << std::endl;
     std::cout << "Game started! Press ESC or M to return to menu" << std::endl;
+    std::cout << "Press C to toggle hitbox/hurtbox display" << std::endl;
+    std::cout << "Press Z to toggle camera auto-zoom" << std::endl;
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -323,6 +327,15 @@ void GSPlay::Draw() {
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (m_inputManager) {
         m_inputManager->UpdateKeyState(key, bIsPressed);
+    }
+    
+    // Handle hitbox/hurtbox visibility toggle
+    if (bIsPressed && key == 'C') {
+        s_showHitboxHurtbox = !s_showHitboxHurtbox;
+        std::cout << "=== HITBOX/HURTBOX TOGGLE ===" << std::endl;
+        std::cout << "Hitbox/Hurtbox display: " << (s_showHitboxHurtbox ? "ENABLED" : "DISABLED") << std::endl;
+        std::cout << "Press C again to toggle" << std::endl;
+        std::cout << "=============================" << std::endl;
     }
     
     // Handle camera zoom toggle
