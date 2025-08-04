@@ -77,11 +77,6 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         HandleKick();
     }
-    
-    // Handle random GetHit animation with 'H' key
-    if (inputManager->IsKeyJustPressed('H')) {
-        HandleRandomGetHit();
-    }
 }
 
 void Character::Update(float deltaTime) {
@@ -250,11 +245,7 @@ bool Character::IsHitboxActive() const {
     return m_combat ? m_combat->IsHitboxActive() : false;
 }
 
-void Character::HandleRandomGetHit() {
-    if (m_combat && m_animation) {
-        m_combat->HandleRandomGetHit(m_animation.get(), m_movement.get());
-    }
-}
+
 
 // Hitbox management methods
 void Character::DrawHitbox(Camera* camera, bool forceShow) {
