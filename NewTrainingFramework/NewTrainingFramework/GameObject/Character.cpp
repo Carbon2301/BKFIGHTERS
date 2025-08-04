@@ -586,7 +586,10 @@ bool Character::IsAnimationPlaying() const {
 }
 
 void Character::HandleRandomGetHit() {
-    TriggerGetHit();
+    // Create a dummy attacker character for random hit testing
+    Character dummyAttacker;
+    dummyAttacker.SetFacingLeft(rand() % 2 == 0); // Random direction
+    TriggerGetHit(dummyAttacker);
 }
 
 // Hitbox management methods
@@ -656,7 +659,6 @@ void Character::DrawHurtbox(Camera* camera) {
 
 // Collision detection methods
 bool Character::CheckHitboxCollision(const Character& other) const {
-    // Only check collision if this character has an active hitbox
     if (!IsHitboxActive()) {
         return false;
     }
@@ -677,19 +679,21 @@ bool Character::CheckHitboxCollision(const Character& other) const {
     float otherHurtboxTop = otherHurtboxY + other.m_hurtboxHeight * 0.5f;
     float otherHurtboxBottom = otherHurtboxY - other.m_hurtboxHeight * 0.5f;
     
-    // Check for collision using AABB (Axis-Aligned Bounding Box)
+    // Check for collision using AABB
     bool collisionX = thisHitboxRight >= otherHurtboxLeft && thisHitboxLeft <= otherHurtboxRight;
     bool collisionY = thisHitboxTop >= otherHurtboxBottom && thisHitboxBottom <= otherHurtboxTop;
     
     return collisionX && collisionY;
 }
 
-void Character::TriggerGetHit() {
+void Character::TriggerGetHit(const Character& attacker) {
     // Only trigger if not already hit
     if (!m_isHit) {
         CancelAllCombos();
         
-        // Randomly choose between GetHit animations (8 or 9)
+        bool attackerFacingLeft = attacker.IsFacingLeft();
+        SetFacingLeft(!attackerFacingLeft);
+        
         int randomHitAnimation = (rand() % 2) + 8;
         
         m_isHit = true;
@@ -699,6 +703,8 @@ void Character::TriggerGetHit() {
         
         std::cout << "=== HIT DETECTED ===" << std::endl;
         std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
+        std::cout << "Attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
+        std::cout << "Hit character now facing: " << (m_facingLeft ? "LEFT" : "RIGHT") << std::endl;
         std::cout << "===================" << std::endl;
     }
 } 

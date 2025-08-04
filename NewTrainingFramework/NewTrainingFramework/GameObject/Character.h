@@ -124,6 +124,7 @@ public:
     void SetPosition(float x, float y);
     Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
     bool IsFacingLeft() const { return m_facingLeft; }
+    void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
     CharState GetState() const { return m_state; }
     bool IsJumping() const { return m_isJumping; }
     
@@ -146,7 +147,7 @@ public:
     
     // Collision detection
     bool CheckHitboxCollision(const Character& other) const;
-    void TriggerGetHit();
+    void TriggerGetHit(const Character& attacker);
     bool IsHit() const { return m_isHit; }
     
     // Animation
