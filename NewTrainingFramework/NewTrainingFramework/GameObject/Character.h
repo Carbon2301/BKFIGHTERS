@@ -81,6 +81,13 @@ private:
     float m_hitboxOffsetX;
     float m_hitboxOffsetY;
     
+    // Hurtbox system variables
+    std::unique_ptr<class Object> m_hurtboxObject; // Object for hurtbox visualization
+    float m_hurtboxWidth;
+    float m_hurtboxHeight;
+    float m_hurtboxOffsetX;
+    float m_hurtboxOffsetY;
+    
     // Input configuration
     PlayerInputConfig m_inputConfig;
 
@@ -132,6 +139,10 @@ public:
     void UpdateHitboxTimer(float deltaTime);
     void DrawHitbox(class Camera* camera);
     bool IsHitboxActive() const { return m_showHitbox && m_hitboxTimer > 0.0f; }
+    
+    // Hurtbox management
+    void SetHurtbox(float width, float height, float offsetX, float offsetY);
+    void DrawHurtbox(class Camera* camera);
     
     // Animation
     void PlayAnimation(int animIndex, bool loop);

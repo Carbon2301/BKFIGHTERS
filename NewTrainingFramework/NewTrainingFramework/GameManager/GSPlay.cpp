@@ -85,6 +85,9 @@ void GSPlay::Init() {
     m_player.Initialize(m_animManager, 1000);
     m_player.SetInputConfig(Character::PLAYER1_INPUT);
     
+    // Setup hurtbox for Player 1
+    m_player.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
+    
     auto animManager2 = std::make_shared<AnimationManager>();
     
     const TextureData* textureData2 = ResourceManager::GetInstance()->GetTextureData(11);
@@ -101,6 +104,9 @@ void GSPlay::Init() {
     
     m_player2.Initialize(animManager2, 1001);
     m_player2.SetInputConfig(Character::PLAYER2_INPUT);
+    
+    // Setup hurtbox for Player 2
+    m_player2.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;

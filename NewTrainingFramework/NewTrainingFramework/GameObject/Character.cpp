@@ -8,6 +8,7 @@
 #include <GLES3/gl3.h>
 #include <iostream>
 #include <cstdlib>
+#include <memory>
 
 const float Character::JUMP_FORCE = 3.0f;
 const float Character::GRAVITY = 8.0f;
@@ -29,12 +30,16 @@ Character::Character()
       m_axeComboCount(0), m_axeComboTimer(0.0f),
       m_isInAxeCombo(false), m_axeComboCompleted(false),
       m_isKicking(false), m_isSitting(false), m_isHit(false), m_hitTimer(0.0f),
-      m_showHitbox(false), m_hitboxTimer(0.0f), m_hitboxWidth(0.0f), m_hitboxHeight(0.0f),
-      m_hitboxOffsetX(0.0f), m_hitboxOffsetY(0.0f),
-      m_inputConfig(PLAYER1_INPUT) {
+          m_showHitbox(false), m_hitboxTimer(0.0f), m_hitboxWidth(0.0f), m_hitboxHeight(0.0f),
+    m_hitboxOffsetX(0.0f), m_hitboxOffsetY(0.0f),
+    m_hurtboxWidth(0.0f), m_hurtboxHeight(0.0f), m_hurtboxOffsetX(0.0f), m_hurtboxOffsetY(0.0f),
+    m_inputConfig(PLAYER1_INPUT) {
     
     // Initialize hitbox object
     m_hitboxObject = std::make_unique<Object>(-1); // Use -1 as ID for hitbox
+    
+    // Initialize hurtbox object
+    m_hurtboxObject = std::make_unique<Object>(-2); // Use -2 as ID for hurtbox
 }
 
 Character::~Character() {
@@ -78,6 +83,18 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
         auto redTexture = std::make_shared<Texture2D>();
         if (redTexture->CreateColorTexture(64, 64, 255, 0, 0, 180)) { // Red with some transparency
             m_hitboxObject->SetDynamicTexture(redTexture);
+        }
+    }
+    
+    // Setup hurtbox object
+    if (m_hurtboxObject && originalObj) {
+        m_hurtboxObject->SetModel(originalObj->GetModelId());
+        m_hurtboxObject->SetShader(originalObj->GetShaderId());
+        
+        // Create a blue texture for hurtbox
+        auto blueTexture = std::make_shared<Texture2D>();
+        if (blueTexture->CreateColorTexture(64, 64, 0, 0, 255, 180)) {
+            m_hurtboxObject->SetDynamicTexture(blueTexture);
         }
     }
     
@@ -166,6 +183,9 @@ void Character::Draw(Camera* camera) {
     if (IsHitboxActive()) {
         DrawHitbox(camera);
     }
+    
+    // Draw hurtbox (always visible)
+    DrawHurtbox(camera);
 }
 
 void Character::HandleMovement(float deltaTime, const bool* keyStates) {
@@ -428,9 +448,9 @@ void Character::HandlePunchCombo() {
         PlayAnimation(10, false);
         
         // Show hitbox for punch 1
-        float hitboxWidth = 0.08f;
-        float hitboxHeight = 0.08f;
-        float hitboxOffsetX = m_facingLeft ? -0.1f : 0.1f;
+        float hitboxWidth = 0.07f;
+        float hitboxHeight = 0.07f;
+        float hitboxOffsetX = m_facingLeft ? -0.08f : 0.08f;
         float hitboxOffsetY = -0.05f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         
@@ -445,17 +465,17 @@ void Character::HandlePunchCombo() {
             PlayAnimation(11, false);
             
             // Show hitbox for punch 2
-            float hitboxWidth = 0.08f;
-            float hitboxHeight = 0.08f;
-            float hitboxOffsetX = m_facingLeft ? -0.1f : 0.1f;
+            float hitboxWidth = 0.07f;
+            float hitboxHeight = 0.07f;
+            float hitboxOffsetX = m_facingLeft ? -0.08f : 0.08f;
             float hitboxOffsetY = -0.05f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         } else if (m_comboCount == 3) {
             PlayAnimation(12, false);
             
             // Show hitbox for punch 3
-            float hitboxWidth = 0.08f;
-            float hitboxHeight = 0.08f;
+            float hitboxWidth = 0.07f;
+            float hitboxHeight = 0.07f;
             float hitboxOffsetX = m_facingLeft ? -0.1f : 0.1f;
             float hitboxOffsetY = -0.05f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
@@ -472,9 +492,9 @@ void Character::HandlePunchCombo() {
         PlayAnimation(10, false);
         
         // Show hitbox for punch 1
-        float hitboxWidth = 0.08f;
-        float hitboxHeight = 0.08f;
-        float hitboxOffsetX = m_facingLeft ? -0.1f : 0.1f;
+        float hitboxWidth = 0.07f;
+        float hitboxHeight = 0.07f;
+        float hitboxOffsetX = m_facingLeft ? -0.13f : 0.13f;
         float hitboxOffsetY = -0.05f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
     }
@@ -611,5 +631,31 @@ void Character::DrawHitbox(Camera* camera) {
     // Draw hitbox object
     if (camera) {
         m_hitboxObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+    }
+}
+
+void Character::SetHurtbox(float width, float height, float offsetX, float offsetY) {
+    m_hurtboxWidth = width;
+    m_hurtboxHeight = height;
+    m_hurtboxOffsetX = offsetX;
+    m_hurtboxOffsetY = offsetY;
+}
+
+void Character::DrawHurtbox(Camera* camera) {
+    if (!camera || !m_hurtboxObject) {
+        return;
+    }
+    
+    // Calculate hurtbox position based on character position
+    float hurtboxX = m_posX + m_hurtboxOffsetX;
+    float hurtboxY = m_posY + m_hurtboxOffsetY;
+    
+    // Set hurtbox object position and scale
+    m_hurtboxObject->SetPosition(hurtboxX, hurtboxY, 0.0f);
+    m_hurtboxObject->SetScale(m_hurtboxWidth, m_hurtboxHeight, 1.0f);
+    
+    // Draw hurtbox object
+    if (camera) {
+        m_hurtboxObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
     }
 } 
