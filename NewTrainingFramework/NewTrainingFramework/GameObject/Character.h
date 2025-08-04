@@ -144,6 +144,11 @@ public:
     void SetHurtbox(float width, float height, float offsetX, float offsetY);
     void DrawHurtbox(class Camera* camera);
     
+    // Collision detection
+    bool CheckHitboxCollision(const Character& other) const;
+    void TriggerGetHit();
+    bool IsHit() const { return m_isHit; }
+    
     // Animation
     void PlayAnimation(int animIndex, bool loop);
     int GetCurrentAnimation() const;

@@ -190,6 +190,15 @@ void GSPlay::Update(float deltaTime) {
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
     
+    // Check for hitbox-hurtbox collisions
+    if (m_player.CheckHitboxCollision(m_player2)) {
+        m_player2.TriggerGetHit();
+    }
+    
+    if (m_player2.CheckHitboxCollision(m_player)) {
+        m_player.TriggerGetHit();
+    }
+    
     // Update camera with auto zoom based on character positions
     Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
     if (camera && camera->IsAutoZoomEnabled()) {

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <memory>
+#include <cstdlib>
 
 const float Character::JUMP_FORCE = 3.0f;
 const float Character::GRAVITY = 8.0f;
@@ -585,14 +586,7 @@ bool Character::IsAnimationPlaying() const {
 }
 
 void Character::HandleRandomGetHit() {
-    CancelAllCombos();
-    
-    int randomHitAnimation = (rand() % 2) + 8; // 8 or 9
-    
-    m_isHit = true;
-    m_hitTimer = HIT_DURATION;
-    
-    PlayAnimation(randomHitAnimation, false);
+    TriggerGetHit();
 }
 
 // Hitbox management methods
@@ -657,5 +651,54 @@ void Character::DrawHurtbox(Camera* camera) {
     // Draw hurtbox object
     if (camera) {
         m_hurtboxObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+    }
+}
+
+// Collision detection methods
+bool Character::CheckHitboxCollision(const Character& other) const {
+    // Only check collision if this character has an active hitbox
+    if (!IsHitboxActive()) {
+        return false;
+    }
+    
+    // Calculate this character's hitbox bounds
+    float thisHitboxX = m_posX + m_hitboxOffsetX;
+    float thisHitboxY = m_posY + m_hitboxOffsetY;
+    float thisHitboxLeft = thisHitboxX - m_hitboxWidth * 0.5f;
+    float thisHitboxRight = thisHitboxX + m_hitboxWidth * 0.5f;
+    float thisHitboxTop = thisHitboxY + m_hitboxHeight * 0.5f;
+    float thisHitboxBottom = thisHitboxY - m_hitboxHeight * 0.5f;
+    
+    // Calculate other character's hurtbox bounds
+    float otherHurtboxX = other.m_posX + other.m_hurtboxOffsetX;
+    float otherHurtboxY = other.m_posY + other.m_hurtboxOffsetY;
+    float otherHurtboxLeft = otherHurtboxX - other.m_hurtboxWidth * 0.5f;
+    float otherHurtboxRight = otherHurtboxX + other.m_hurtboxWidth * 0.5f;
+    float otherHurtboxTop = otherHurtboxY + other.m_hurtboxHeight * 0.5f;
+    float otherHurtboxBottom = otherHurtboxY - other.m_hurtboxHeight * 0.5f;
+    
+    // Check for collision using AABB (Axis-Aligned Bounding Box)
+    bool collisionX = thisHitboxRight >= otherHurtboxLeft && thisHitboxLeft <= otherHurtboxRight;
+    bool collisionY = thisHitboxTop >= otherHurtboxBottom && thisHitboxBottom <= otherHurtboxTop;
+    
+    return collisionX && collisionY;
+}
+
+void Character::TriggerGetHit() {
+    // Only trigger if not already hit
+    if (!m_isHit) {
+        CancelAllCombos();
+        
+        // Randomly choose between GetHit animations (8 or 9)
+        int randomHitAnimation = (rand() % 2) + 8;
+        
+        m_isHit = true;
+        m_hitTimer = HIT_DURATION;
+        
+        PlayAnimation(randomHitAnimation, false);
+        
+        std::cout << "=== HIT DETECTED ===" << std::endl;
+        std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
+        std::cout << "===================" << std::endl;
     }
 } 
