@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 7
+# 2DTexture 8
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -183,6 +183,10 @@ ANINUM 36
 96 1 300
 * Animation 35: Hit By Rocket
 97 4 300
+
+ID 12
+FILE "../Resources/Fighter/UI/Health.tga"
+TILING GL_CLAMP_TO_EDGE
 
 
 # Shader 1

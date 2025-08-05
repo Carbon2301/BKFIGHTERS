@@ -29,9 +29,10 @@ void GSMenu::Init() {
     SceneManager* sceneManager = SceneManager::GetInstance();
     sceneManager->LoadSceneForState(StateType::MENU);
     
-    std::cout << "Use P for Play, Q for Question/Help, X for Exit" << std::endl;
+    std::cout << "Use mouse to click buttons" << std::endl;
     std::cout << "ESC to exit game" << std::endl;
 
+    //Tạo texture text động bằng SDL_ttf
     if (TTF_WasInit() == 0) TTF_Init();
     TTF_Font* font = TTF_OpenFont("../Resources/Font/Roboto-Regular.ttf", 32);
     if (!font) {
@@ -50,15 +51,17 @@ void GSMenu::Init() {
     SDL_FreeSurface(textSurface);
     TTF_CloseFont(font);
 
+    //Phát nhạc nền
     SoundManager::Instance().PlayMusicByID(0, -1);
 
+    //Tạo object vẽ text
     m_textObject = std::make_shared<Object>();
-    m_textObject->SetId(-100);
+    m_textObject->SetId(-100); // ID đặc biệt cho text động
     m_textObject->SetModel(0);
     m_textObject->SetShader(0);
     m_textObject->SetDynamicTexture(m_textTexture);
-    float x = 0.07f;
-    float y = 0.81f;
+    float x = -1.0f;
+    float y = 0.8f;
     m_textObject->Set2DPosition(x, y);
     m_textObject->SetSize(0.8f, 0.2f);
 }
@@ -72,6 +75,7 @@ void GSMenu::Update(float deltaTime) {
 
 void GSMenu::Draw() {
     SceneManager::GetInstance()->Draw();
+    // --- Vẽ text động ---
     if (m_textObject) {
         Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
         if (cam) {
@@ -84,36 +88,6 @@ void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (!bIsPressed) return;
     
     switch (key) {
-        case 'P':
-        case 'p':
-            std::cout << "=== Starting Game ===" << std::endl;
-            GameStateMachine::GetInstance()->PushState(StateType::PLAY);
-            break;
-            
-        case 'Q':
-        case 'q':
-            std::cout << "=== HELP ===" << std::endl;
-            std::cout << "Game Controls:" << std::endl;
-            std::cout << "- P: Play game" << std::endl;
-            std::cout << "- Q: Help/Question" << std::endl;
-            std::cout << "- X: Exit game" << std::endl;
-            std::cout << "- ESC: Exit game" << std::endl;
-            break;
-            
-        case 'X':
-        case 'x':
-            std::cout << "=== Closing Game ===" << std::endl;
-            std::cout << "Thanks for playing!" << std::endl;
-            break;
-            
-        case 13:
-        case ' ':
-            HandleButtonSelection();
-            break;
-            
-        case 27:
-            std::cout << "Exit game requested" << std::endl;
-            break;
     }
 }
 
@@ -164,10 +138,7 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                 } else if (id == BUTTON_ID_HELP) {
                     std::cout << "[Mouse] Help button clicked!" << std::endl;
                     std::cout << "Game Controls:" << std::endl;
-                    std::cout << "- P: Play game" << std::endl;
-                    std::cout << "- Q: Help/Question" << std::endl;
-                    std::cout << "- X: Exit game" << std::endl;
-                    std::cout << "- ESC: Exit game" << std::endl;
+                    std::cout << "Use mouse to click buttons" << std::endl;
                 } else if (id == BUTTON_ID_CLOSE) {
                     std::cout << "[Mouse] Close button clicked!" << std::endl;
                     std::cout << "Thanks for playing!" << std::endl;
@@ -180,15 +151,7 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
 }
 
 void GSMenu::HandleMouseMove(int x, int y) {
-}
-
-void GSMenu::HandleButtonSelection() {
-    std::cout << "=== Available Actions ===" << std::endl;
-    std::cout << "Game Controls:" << std::endl;
-    std::cout << "- P: Play game" << std::endl;
-    std::cout << "- Q: Help/Question" << std::endl;
-    std::cout << "- X: Exit game" << std::endl;
-    std::cout << "- ESC: Exit game" << std::endl;
+    // std::cout << "Mouse moved to (" << x << ", " << y << ")" << std::endl;
 }
 
 void GSMenu::Resume() {

@@ -51,6 +51,7 @@ private:
     float m_dieTimer;
     float m_knockdownTimer;
     bool m_knockdownComplete;
+    bool m_attackerFacingLeft;
     
     // Input configuration
     PlayerInputConfig m_inputConfig;
@@ -77,7 +78,7 @@ public:
     void HandleDie(float deltaTime);
     
     void SetPosition(float x, float y);
-    void TriggerDie();
+    void TriggerDie(bool attackerFacingLeft = false);
     Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
     float GetPosX() const { return m_posX; }
     float GetPosY() const { return m_posY; }
