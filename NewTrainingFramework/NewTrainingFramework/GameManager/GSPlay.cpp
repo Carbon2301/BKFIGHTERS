@@ -222,7 +222,6 @@ void GSPlay::Init() {
     std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
               << ", bottom=" << cam->GetBottom() << ", top=" << cam->GetTop() << std::endl;
     
-    // Initialize health bars to follow characters
     UpdateHealthBars();
 }
 
@@ -265,7 +264,6 @@ void GSPlay::Update(float deltaTime) {
         camera->UpdateCameraForCharacters(player1Pos, player2Pos, deltaTime);
     }
     
-    // Update health bars to follow characters
     UpdateHealthBars();
     
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
@@ -520,29 +518,45 @@ void GSPlay::DamagePlayer2() {
 void GSPlay::UpdateHealthBars() {
     SceneManager* sceneManager = SceneManager::GetInstance();
     
-    // Update Player 1 health bar (ID 2000)
     Object* healthBar1 = sceneManager->GetObject(2000);
     if (healthBar1) {
         Vector3 player1Pos = m_player.GetPosition();
-        float healthBarOffsetY = 0.4f;
-        healthBar1->SetPosition(player1Pos.x, player1Pos.y + healthBarOffsetY, 0.0f);
+        
+        Object* player1Obj = sceneManager->GetObject(1000);
+        float characterHeight = 0.24f;
+        if (player1Obj) {
+            characterHeight = player1Obj->GetScale().y;
+        }
+        //chỉnh độ cao
+        float healthBarOffsetY = characterHeight / 6.0f;
+        //chỉnh center
+        float healthBarOffsetX = -0.13f;
+        healthBar1->SetPosition(player1Pos.x + healthBarOffsetX, player1Pos.y + healthBarOffsetY, 0.0f);
         
         float healthRatio1 = m_player1Health / MAX_HEALTH;
         const Vector3& scaleRef = healthBar1->GetScale();
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
-        healthBar1->SetScale(healthRatio1, currentScale.y, currentScale.z);
+        //chỉnh độ dài ngắn
+        healthBar1->SetScale(healthRatio1 * 0.5f, currentScale.y, currentScale.z);
     }
     
-    // Update Player 2 health bar (ID 2001)
     Object* healthBar2 = sceneManager->GetObject(2001);
     if (healthBar2) {
         Vector3 player2Pos = m_player2.GetPosition();
-        float healthBarOffsetY = 0.4f;
-        healthBar2->SetPosition(player2Pos.x, player2Pos.y + healthBarOffsetY, 0.0f);
+        
+        Object* player2Obj = sceneManager->GetObject(1001);
+        float characterHeight = 0.24f;
+        if (player2Obj) {
+            characterHeight = player2Obj->GetScale().y;
+        }
+        
+        float healthBarOffsetY = characterHeight / 6.0f;
+        float healthBarOffsetX = -0.13f;
+        healthBar2->SetPosition(player2Pos.x + healthBarOffsetX, player2Pos.y + healthBarOffsetY, 0.0f);
         
         float healthRatio2 = m_player2Health / MAX_HEALTH;
         const Vector3& scaleRef = healthBar2->GetScale();
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
-        healthBar2->SetScale(healthRatio2, currentScale.y, currentScale.z);
+        healthBar2->SetScale(healthRatio2 * 0.5f, currentScale.y, currentScale.z);
     }
 } 
