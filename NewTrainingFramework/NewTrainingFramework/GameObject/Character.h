@@ -51,6 +51,7 @@ public:
     void HandleAxeCombo();
     void HandleKick();
     void HandleDie();
+    void TriggerDie();
     void CancelAllCombos();
     void HandleRandomGetHit();
     

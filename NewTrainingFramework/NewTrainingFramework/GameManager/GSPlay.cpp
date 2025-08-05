@@ -506,12 +506,28 @@ void GSPlay::Cleanup() {
 
 // Health system methods
 void GSPlay::DamagePlayer1() {
+    float previousHealth = m_player1Health;
     m_player1Health = (m_player1Health - HEALTH_DAMAGE > 0.0f) ? m_player1Health - HEALTH_DAMAGE : 0.0f;
+    
+    // Check if health just reached 0
+    if (previousHealth > 0.0f && m_player1Health <= 0.0f) {
+        m_player.TriggerDie();
+        std::cout << "Player 1 died! Health: " << m_player1Health << std::endl;
+    }
+    
     UpdateHealthBars();
 }
 
 void GSPlay::DamagePlayer2() {
+    float previousHealth = m_player2Health;
     m_player2Health = (m_player2Health - HEALTH_DAMAGE > 0.0f) ? m_player2Health - HEALTH_DAMAGE : 0.0f;
+    
+    // Check if health just reached 0
+    if (previousHealth > 0.0f && m_player2Health <= 0.0f) {
+        m_player2.TriggerDie();
+        std::cout << "Player 2 died! Health: " << m_player2Health << std::endl;
+    }
+    
     UpdateHealthBars();
 }
 

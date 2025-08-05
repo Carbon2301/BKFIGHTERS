@@ -187,6 +187,13 @@ void Character::HandleDie() {
     }
 }
 
+void Character::TriggerDie() {
+    if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
+        m_movement->TriggerDie();
+        std::cout << "Die triggered externally" << std::endl;
+    }
+}
+
 void Character::CancelAllCombos() {
     if (m_combat) {
         m_combat->CancelAllCombos();
