@@ -256,7 +256,7 @@ bool CharacterCombat::CheckHitboxCollision(const Character& attacker, const Char
     return collisionX && collisionY;
 }
 
-void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Character& attacker) {
+void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Character& attacker, Character* target) {
     if (!animation || m_isHit) {
         return;
     }
@@ -273,8 +273,14 @@ void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Charact
     
     animation->PlayAnimation(randomHitAnimation, false);
     
+    // Apply damage to target
+    if (target) {
+        target->TakeDamage(10.0f); // Mỗi cú đấm mất 10 máu
+    }
+    
     std::cout << "=== HIT DETECTED ===" << std::endl;
     std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
     std::cout << "Attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
+    std::cout << "Damage applied: 10 HP" << std::endl;
     std::cout << "===================" << std::endl;
 } 

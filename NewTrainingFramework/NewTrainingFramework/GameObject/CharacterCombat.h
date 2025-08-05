@@ -54,7 +54,7 @@ public:
     bool IsHitboxActive() const { return m_showHitbox && m_hitboxTimer > 0.0f; }
     
     bool CheckHitboxCollision(const Character& attacker, const Character& target) const;
-    void TriggerGetHit(CharacterAnimation* animation, const Character& attacker);
+    void TriggerGetHit(CharacterAnimation* animation, const Character& attacker, Character* target);
     bool IsHit() const { return m_isHit; }
     
     bool IsInCombo() const { return m_isInCombo; }

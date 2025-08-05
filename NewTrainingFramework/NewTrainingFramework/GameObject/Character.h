@@ -19,6 +19,12 @@ private:
     std::unique_ptr<CharacterHitbox> m_hitbox;
     std::unique_ptr<CharacterAnimation> m_animation;
 
+    // Health system
+    float m_health;
+    const float MAX_HEALTH = 100.0f;
+    const float DAMAGE_PER_HIT = 10.0f;
+    bool m_isDead;
+
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
 
@@ -101,5 +107,12 @@ public:
     // Kick getter
     bool IsKicking() const;
     
+    // Health system
+    float GetHealth() const { return m_health; }
+    float GetMaxHealth() const { return MAX_HEALTH; }
+    bool IsDead() const { return m_isDead; }
+    void TakeDamage(float damage);
+    void Heal(float amount);
+    void ResetHealth();
 
 }; 

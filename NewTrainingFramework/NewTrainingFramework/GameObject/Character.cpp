@@ -17,7 +17,8 @@ Character::Character()
     : m_movement(std::make_unique<CharacterMovement>(CharacterMovement::PLAYER1_INPUT)),
       m_combat(std::make_unique<CharacterCombat>()),
       m_hitbox(std::make_unique<CharacterHitbox>()),
-      m_animation(std::make_unique<CharacterAnimation>()) {
+      m_animation(std::make_unique<CharacterAnimation>()),
+      m_health(100.0f), m_isDead(false) {
 }
 
 Character::~Character() {
@@ -336,6 +337,40 @@ void Character::TriggerGetHit(const Character& attacker) {
     if (m_combat && m_animation) {
         // Set facing direction based on attacker
         SetFacingLeft(!attacker.IsFacingLeft());
-        m_combat->TriggerGetHit(m_animation.get(), attacker);
+        m_combat->TriggerGetHit(m_animation.get(), attacker, this);
     }
+} 
+
+// Health system methods
+void Character::TakeDamage(float damage) {
+    if (m_isDead) return;
+    
+    m_health -= damage;
+    if (m_health < 0.0f) {
+        m_health = 0.0f;
+    }
+    
+    std::cout << "=== DAMAGE TAKEN ===" << std::endl;
+    std::cout << "Health: " << m_health << "/" << MAX_HEALTH << std::endl;
+    
+    if (m_health <= 0.0f && !m_isDead) {
+        m_isDead = true;
+        TriggerDie();
+        std::cout << "Character died! Health: " << m_health << std::endl;
+    }
+    std::cout << "===================" << std::endl;
+}
+
+void Character::Heal(float amount) {
+    if (m_isDead) return;
+    
+    m_health += amount;
+    if (m_health > MAX_HEALTH) {
+        m_health = MAX_HEALTH;
+    }
+}
+
+void Character::ResetHealth() {
+    m_health = MAX_HEALTH;
+    m_isDead = false;
 } 

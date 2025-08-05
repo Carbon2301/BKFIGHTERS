@@ -138,6 +138,7 @@ void GSPlay::Init() {
     
     m_player.Initialize(m_animManager, 1000);
     m_player.SetInputConfig(CharacterMovement::PLAYER1_INPUT);
+    m_player.ResetHealth(); // Khởi tạo health cho Player 1
     
     // Setup hurtbox for Player 1
     m_player.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
@@ -158,6 +159,7 @@ void GSPlay::Init() {
     
     m_player2.Initialize(animManager2, 1001);
     m_player2.SetInputConfig(CharacterMovement::PLAYER2_INPUT);
+    m_player2.ResetHealth(); // Khởi tạo health cho Player 2
     
     // Setup hurtbox for Player 2
     m_player2.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
@@ -170,6 +172,7 @@ void GSPlay::Init() {
     std::cout << "- X: Exit game (from menu)" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
     std::cout << "- T: Damage both players (test health bars)" << std::endl;
+    std::cout << "- R: Reset health for both players" << std::endl;
     std::cout << "=== PLAYER 1 MOVEMENT CONTROLS ===" << std::endl;
     std::cout << "- A: Walk left (Animation 1: Walk)" << std::endl;
     std::cout << "- D: Walk right (Animation 1: Walk)" << std::endl;
@@ -216,6 +219,10 @@ void GSPlay::Init() {
     std::cout << "  * Press 3 three times: Axe3 (Animation 22: Axe3)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- 2: Kick (Animation 19: Kick)" << std::endl;
+    std::cout << "=== COMBAT SYSTEM ===" << std::endl;
+    std::cout << "- Each hit deals 10 damage" << std::endl;
+    std::cout << "- Characters die when health reaches 0" << std::endl;
+    std::cout << "- Use R to reset health" << std::endl;
 
     
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
@@ -263,6 +270,10 @@ void GSPlay::Update(float deltaTime) {
         Vector3 player2Pos = m_player2.GetPosition();
         camera->UpdateCameraForCharacters(player1Pos, player2Pos, deltaTime);
     }
+    
+    // Sync health from characters to health bars
+    m_player1Health = m_player.GetHealth();
+    m_player2Health = m_player2.GetHealth();
     
     UpdateHealthBars();
     
@@ -425,9 +436,23 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             DamagePlayer1();
             DamagePlayer2();
             std::cout << "=== DAMAGE APPLIED ===" << std::endl;
-            std::cout << "Player 1 Health: " << m_player1Health << "/" << MAX_HEALTH << std::endl;
-            std::cout << "Player 2 Health: " << m_player2Health << "/" << MAX_HEALTH << std::endl;
+            std::cout << "Player 1 Health: " << m_player.GetHealth() << "/" << m_player.GetMaxHealth() << std::endl;
+            std::cout << "Player 2 Health: " << m_player2.GetHealth() << "/" << m_player2.GetMaxHealth() << std::endl;
             std::cout << "=====================" << std::endl;
+            break;
+            
+        case 'R':
+        case 'r':
+            // Reset health cho cả 2 player khi nhấn R
+            m_player.ResetHealth();
+            m_player2.ResetHealth();
+            m_player1Health = m_player.GetHealth();
+            m_player2Health = m_player2.GetHealth();
+            UpdateHealthBars();
+            std::cout << "=== HEALTH RESET ===" << std::endl;
+            std::cout << "Player 1 Health: " << m_player.GetHealth() << "/" << m_player.GetMaxHealth() << std::endl;
+            std::cout << "Player 2 Health: " << m_player2.GetHealth() << "/" << m_player2.GetMaxHealth() << std::endl;
+            std::cout << "===================" << std::endl;
             break;
     }
 }
@@ -506,28 +531,14 @@ void GSPlay::Cleanup() {
 
 // Health system methods
 void GSPlay::DamagePlayer1() {
-    float previousHealth = m_player1Health;
-    m_player1Health = (m_player1Health - HEALTH_DAMAGE > 0.0f) ? m_player1Health - HEALTH_DAMAGE : 0.0f;
-    
-    // Check if health just reached 0
-    if (previousHealth > 0.0f && m_player1Health <= 0.0f) {
-        m_player.TriggerDie();
-        std::cout << "Player 1 died! Health: " << m_player1Health << std::endl;
-    }
-    
+    m_player.TakeDamage(HEALTH_DAMAGE);
+    m_player1Health = m_player.GetHealth();
     UpdateHealthBars();
 }
 
 void GSPlay::DamagePlayer2() {
-    float previousHealth = m_player2Health;
-    m_player2Health = (m_player2Health - HEALTH_DAMAGE > 0.0f) ? m_player2Health - HEALTH_DAMAGE : 0.0f;
-    
-    // Check if health just reached 0
-    if (previousHealth > 0.0f && m_player2Health <= 0.0f) {
-        m_player2.TriggerDie();
-        std::cout << "Player 2 died! Health: " << m_player2Health << std::endl;
-    }
-    
+    m_player2.TakeDamage(HEALTH_DAMAGE);
+    m_player2Health = m_player2.GetHealth();
     UpdateHealthBars();
 }
 
@@ -549,7 +560,7 @@ void GSPlay::UpdateHealthBars() {
         float healthBarOffsetX = -0.13f;
         healthBar1->SetPosition(player1Pos.x + healthBarOffsetX, player1Pos.y + healthBarOffsetY, 0.0f);
         
-        float healthRatio1 = m_player1Health / MAX_HEALTH;
+        float healthRatio1 = m_player.GetHealth() / m_player.GetMaxHealth();
         const Vector3& scaleRef = healthBar1->GetScale();
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         //chỉnh độ dài ngắn
@@ -570,7 +581,7 @@ void GSPlay::UpdateHealthBars() {
         float healthBarOffsetX = -0.13f;
         healthBar2->SetPosition(player2Pos.x + healthBarOffsetX, player2Pos.y + healthBarOffsetY, 0.0f);
         
-        float healthRatio2 = m_player2Health / MAX_HEALTH;
+        float healthRatio2 = m_player2.GetHealth() / m_player2.GetMaxHealth();
         const Vector3& scaleRef = healthBar2->GetScale();
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         healthBar2->SetScale(healthRatio2 * 0.5f, currentScale.y, currentScale.z);
