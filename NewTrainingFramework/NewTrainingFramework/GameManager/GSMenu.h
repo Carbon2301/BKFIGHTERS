@@ -35,8 +35,6 @@ public:
     void Cleanup() override;
 
 private:
-    void HandleButtonSelection();
-
     // --- Thêm biến quản lý text động ---
     std::shared_ptr<Object> m_textObject;
     std::shared_ptr<Texture2D> m_textTexture;

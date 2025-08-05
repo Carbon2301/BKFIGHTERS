@@ -359,16 +359,6 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
             std::cout << "Objects: " << m_objects.size() << std::endl;
             std::cout << "\n=== 2D Controls ===" << std::endl;
             std::cout << "R - Show scene info" << std::endl;
-            std::cout << "T - Toggle auto-rotation" << std::endl;
-            break;
-            
-        case 'T':
-        case 't':
-            // Toggle auto-rotation for all objects
-            for (auto& obj : m_objects) {
-                obj->ToggleAutoRotation();
-            }
-            std::cout << "Toggled auto-rotation for all objects" << std::endl;
             break;
     }
 }

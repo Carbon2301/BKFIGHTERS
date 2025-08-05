@@ -41,8 +41,6 @@ public:
     static bool IsShowHitboxHurtbox() { return s_showHitboxHurtbox; }
     
     // Health system methods
-    void DamagePlayer1();
-    void DamagePlayer2();
     void UpdateHealthBars();
     float GetPlayer1Health() const { return m_player1Health; }
     float GetPlayer2Health() const { return m_player2Health; }

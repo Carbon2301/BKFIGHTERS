@@ -33,7 +33,7 @@ GSPlay::~GSPlay() {
 
 void GSPlay::Init() {
     std::cout << "=== GAMEPLAY MODE ===" << std::endl;
-    std::cout << "Game started! Press ESC or M to return to menu" << std::endl;
+    std::cout << "Game started!" << std::endl;
     std::cout << "Press C to toggle hitbox/hurtbox display" << std::endl;
     std::cout << "Press Z to toggle camera auto-zoom" << std::endl;
     
@@ -166,12 +166,7 @@ void GSPlay::Init() {
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
-    std::cout << "- ESC or M: Return to menu" << std::endl;
-    std::cout << "- P: Quick play (from menu)" << std::endl;
-    std::cout << "- Q: Help/Question (from menu)" << std::endl;
-    std::cout << "- X: Exit game (from menu)" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
-    std::cout << "- T: Damage both players (test health bars)" << std::endl;
     std::cout << "- R: Reset health for both players" << std::endl;
     std::cout << "=== PLAYER 1 MOVEMENT CONTROLS ===" << std::endl;
     std::cout << "- A: Walk left (Animation 1: Walk)" << std::endl;
@@ -398,12 +393,6 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (!bIsPressed) return; // Chỉ xử lý khi nhấn phím, không xử lý khi thả phím
     
     switch (key) {
-        case 27: // ESC
-        case 'M':
-        case 'm':
-            GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
-            break;
-            
         case 'C':
         case 'c':
             s_showHitboxHurtbox = !s_showHitboxHurtbox;
@@ -428,17 +417,6 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                     }
                 }
             }
-            break;
-            
-        case 'T':
-        case 't':
-            // Giảm máu cả 2 player khi nhấn T
-            DamagePlayer1();
-            DamagePlayer2();
-            std::cout << "=== DAMAGE APPLIED ===" << std::endl;
-            std::cout << "Player 1 Health: " << m_player.GetHealth() << "/" << m_player.GetMaxHealth() << std::endl;
-            std::cout << "Player 2 Health: " << m_player2.GetHealth() << "/" << m_player2.GetMaxHealth() << std::endl;
-            std::cout << "=====================" << std::endl;
             break;
             
         case 'R':
@@ -530,18 +508,6 @@ void GSPlay::Cleanup() {
 } 
 
 // Health system methods
-void GSPlay::DamagePlayer1() {
-    m_player.TakeDamage(HEALTH_DAMAGE);
-    m_player1Health = m_player.GetHealth();
-    UpdateHealthBars();
-}
-
-void GSPlay::DamagePlayer2() {
-    m_player2.TakeDamage(HEALTH_DAMAGE);
-    m_player2Health = m_player2.GetHealth();
-    UpdateHealthBars();
-}
-
 void GSPlay::UpdateHealthBars() {
     SceneManager* sceneManager = SceneManager::GetInstance();
     

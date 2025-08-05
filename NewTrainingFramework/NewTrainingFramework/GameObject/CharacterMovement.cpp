@@ -8,8 +8,8 @@ const float CharacterMovement::GROUND_Y = 0.0f;
 const float CharacterMovement::MOVE_SPEED = 0.5f;
 
 // Static input configurations
-const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K', 'H');
-const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', '1', '3', '2', 'H');
+const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K', 0);
+const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', '1', '3', '2', 0);
 
 CharacterMovement::CharacterMovement() 
     : m_posX(0.0f), m_posY(0.0f), m_facingLeft(false), m_state(CharState::Idle),
