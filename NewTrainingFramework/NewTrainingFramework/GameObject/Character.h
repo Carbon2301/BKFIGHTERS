@@ -50,6 +50,7 @@ public:
     void HandlePunchCombo();
     void HandleAxeCombo();
     void HandleKick();
+    void HandleDie();
     void CancelAllCombos();
     void HandleRandomGetHit();
     

@@ -71,6 +71,10 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         return;
     }
     
+    if (movement->IsDying()) {
+        return;
+    }
+    
     if (combat->IsInCombo() && !m_animManager->IsPlaying()) {
         if (combat->IsComboCompleted()) {
             combat->CancelAllCombos();
@@ -104,7 +108,8 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         !combat->IsKicking() && 
         !movement->IsJumping() && 
         !movement->IsSitting() && 
-        !combat->IsHit()) {
+        !combat->IsHit() &&
+        !movement->IsDying()) {
         m_animManager->Play(0, true);
     }
 }
@@ -116,6 +121,20 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
+    
+    if (movement->IsDying()) {
+        float dieTimer = movement->GetDieTimer();
+        if (dieTimer < 0.8f) {
+            PlayAnimation(13, false);
+        }
+        else if (dieTimer < 2.8f) {
+            PlayAnimation(15, false);
+        }
+        else {
+            PlayAnimation(0, true);
+        }
+        return;
+    }
     
     // Only play movement animations if not in combat states
     if (!combat->IsInCombo() && !combat->IsInAxeCombo() && !combat->IsKicking() && !combat->IsHit()) {

@@ -78,9 +78,8 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         HandleKick();
     }
     
-    // Handle random GetHit animation with 'H' key
-    if (inputManager->IsKeyJustPressed('H')) {
-        HandleRandomGetHit();
+    if (inputManager->IsKeyJustPressed(inputConfig.dieKey)) {
+        HandleDie();
     }
 }
 
@@ -181,6 +180,13 @@ void Character::HandleKick() {
     }
 }
 
+void Character::HandleDie() {
+    if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
+        m_movement->TriggerDie();
+        std::cout << "Die triggered via input" << std::endl;
+    }
+}
+
 void Character::CancelAllCombos() {
     if (m_combat) {
         m_combat->CancelAllCombos();
@@ -250,11 +256,7 @@ bool Character::IsHitboxActive() const {
     return m_combat ? m_combat->IsHitboxActive() : false;
 }
 
-void Character::HandleRandomGetHit() {
-    if (m_combat && m_animation) {
-        m_combat->HandleRandomGetHit(m_animation.get(), m_movement.get());
-    }
-}
+
 
 // Hitbox management methods
 void Character::DrawHitbox(Camera* camera, bool forceShow) {
