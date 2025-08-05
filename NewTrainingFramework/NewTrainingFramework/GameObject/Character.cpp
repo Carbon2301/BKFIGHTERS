@@ -77,6 +77,10 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         HandleKick();
     }
+    
+    if (inputManager->IsKeyJustPressed(inputConfig.dieKey)) {
+        HandleDie();
+    }
 }
 
 void Character::Update(float deltaTime) {
@@ -173,6 +177,13 @@ void Character::HandleAxeCombo() {
 void Character::HandleKick() {
     if (m_combat && m_animation) {
         m_combat->HandleKick(m_animation.get(), m_movement.get());
+    }
+}
+
+void Character::HandleDie() {
+    if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
+        m_movement->TriggerDie();
+        std::cout << "Die triggered via input" << std::endl;
     }
 }
 
