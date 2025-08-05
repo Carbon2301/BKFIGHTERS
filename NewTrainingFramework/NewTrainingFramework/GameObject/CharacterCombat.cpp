@@ -275,7 +275,12 @@ void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Charact
     
     // Apply damage to target
     if (target) {
+        float currentHealth = target->GetHealth();
         target->TakeDamage(10.0f); // Mỗi cú đấm mất 10 máu
+        
+        if (currentHealth > 0.0f && target->GetHealth() <= 0.0f) {
+            target->TriggerDieFromAttack(attacker);
+        }
     }
     
     std::cout << "=== HIT DETECTED ===" << std::endl;

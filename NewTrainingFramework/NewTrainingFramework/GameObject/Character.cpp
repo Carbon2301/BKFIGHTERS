@@ -183,15 +183,29 @@ void Character::HandleKick() {
 
 void Character::HandleDie() {
     if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
-        m_movement->TriggerDie();
+        m_movement->TriggerDie(false);
         std::cout << "Die triggered via input" << std::endl;
     }
 }
 
 void Character::TriggerDie() {
     if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
-        m_movement->TriggerDie();
+        m_movement->TriggerDie(false);
         std::cout << "Die triggered externally" << std::endl;
+    }
+}
+
+void Character::TriggerDieFromAttack(const Character& attacker) {
+    if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
+        bool attackerFacingLeft = attacker.IsFacingLeft();
+        m_movement->TriggerDie(attackerFacingLeft);
+        std::cout << "Die triggered from attack, attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
+    }
+}
+
+void Character::HandleRandomGetHit() {
+    if (m_combat && m_animation) {
+        m_combat->HandleRandomGetHit(m_animation.get(), m_movement.get());
     }
 }
 
@@ -335,7 +349,6 @@ bool Character::CheckHitboxCollision(const Character& other) const {
 
 void Character::TriggerGetHit(const Character& attacker) {
     if (m_combat && m_animation) {
-        // Set facing direction based on attacker
         SetFacingLeft(!attacker.IsFacingLeft());
         m_combat->TriggerGetHit(m_animation.get(), attacker, this);
     }
@@ -355,8 +368,6 @@ void Character::TakeDamage(float damage) {
     
     if (m_health <= 0.0f && !m_isDead) {
         m_isDead = true;
-        TriggerDie();
-        std::cout << "Character died! Health: " << m_health << std::endl;
     }
     std::cout << "===================" << std::endl;
 }

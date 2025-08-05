@@ -58,6 +58,7 @@ public:
     void HandleKick();
     void HandleDie();
     void TriggerDie();
+    void TriggerDieFromAttack(const Character& attacker);
     void CancelAllCombos();
     void HandleRandomGetHit();
     

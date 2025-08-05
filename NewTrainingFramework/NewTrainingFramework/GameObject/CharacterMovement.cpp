@@ -15,14 +15,14 @@ CharacterMovement::CharacterMovement()
     : m_posX(0.0f), m_posY(0.0f), m_facingLeft(false), m_state(CharState::Idle),
       m_isJumping(false), m_jumpVelocity(0.0f), m_jumpStartY(0.0f), m_wasJumping(false),
       m_isSitting(false), m_isDying(false), m_isDead(false), m_dieTimer(0.0f), 
-      m_knockdownTimer(0.0f), m_knockdownComplete(false), m_inputConfig(PLAYER1_INPUT) {
+      m_knockdownTimer(0.0f), m_knockdownComplete(false), m_attackerFacingLeft(false), m_inputConfig(PLAYER1_INPUT) {
 }
 
 CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
     : m_posX(0.0f), m_posY(0.0f), m_facingLeft(false), m_state(CharState::Idle),
       m_isJumping(false), m_jumpVelocity(0.0f), m_jumpStartY(0.0f), m_wasJumping(false),
       m_isSitting(false), m_isDying(false), m_isDead(false), m_dieTimer(0.0f), 
-      m_knockdownTimer(0.0f), m_knockdownComplete(false), m_inputConfig(inputConfig) {
+      m_knockdownTimer(0.0f), m_knockdownComplete(false), m_attackerFacingLeft(false), m_inputConfig(inputConfig) {
 }
 
 CharacterMovement::~CharacterMovement() {
@@ -42,6 +42,7 @@ void CharacterMovement::Initialize(float startX, float startY, float groundY) {
     m_dieTimer = 0.0f;
     m_knockdownTimer = 0.0f;
     m_knockdownComplete = false;
+    m_attackerFacingLeft = false;
 }
 
 void CharacterMovement::Update(float deltaTime, const bool* keyStates) {
@@ -174,15 +175,16 @@ void CharacterMovement::SetPosition(float x, float y) {
     m_posY = y;
 }
 
-void CharacterMovement::TriggerDie() {
+void CharacterMovement::TriggerDie(bool attackerFacingLeft) {
     if (!m_isDying && !m_isDead) {
         m_isDying = true;
         m_isDead = false;
         m_dieTimer = 0.0f;
         m_knockdownTimer = 0.0f;
         m_knockdownComplete = false;
+        m_attackerFacingLeft = attackerFacingLeft;
         m_state = CharState::Die;
-        std::cout << "Character triggered die animation" << std::endl;
+        std::cout << "Character triggered die animation, attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
     }
 }
 
@@ -194,7 +196,9 @@ void CharacterMovement::HandleDie(float deltaTime) {
         
         float knockdownProgress = m_knockdownTimer / 0.8f;
         float arcHeight = 0.15f * sin(knockdownProgress * 3.14159f);
-        float backwardMovement = -0.8f * knockdownProgress;
+        
+        // Tính toán hướng bật ngược dựa trên hướng của người tấn công
+        float backwardMovement = m_attackerFacingLeft ? -0.8f * knockdownProgress : 0.8f * knockdownProgress;
         
         m_posY = m_groundY + arcHeight;
         m_posX += backwardMovement * deltaTime * 1.0f;
