@@ -116,7 +116,10 @@ void Character::CancelCombosOnOtherAction(const bool* keyStates) {
     }
     
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
-    bool isOtherAction = (keyStates[inputConfig.sitKey] || keyStates[inputConfig.rollKey] || keyStates[inputConfig.jumpKey]);
+    
+    bool isRollingLeft = (keyStates[inputConfig.rollLeftKey1] && keyStates[inputConfig.rollLeftKey2]);
+    bool isRollingRight = (keyStates[inputConfig.rollRightKey1] && keyStates[inputConfig.rollRightKey2]);
+    bool isOtherAction = (keyStates[inputConfig.sitKey] || keyStates[inputConfig.jumpKey] || isRollingLeft || isRollingRight);
     
     if (isOtherAction && m_combat->IsInCombo()) {
         m_combat->CancelAllCombos();

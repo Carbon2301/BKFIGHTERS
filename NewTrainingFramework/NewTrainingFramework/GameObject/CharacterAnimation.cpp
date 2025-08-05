@@ -71,6 +71,7 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         return;
     }
     
+    // Don't interrupt die animations
     if (movement->IsDying()) {
         return;
     }
@@ -124,6 +125,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     
     if (movement->IsDying()) {
         float dieTimer = movement->GetDieTimer();
+        
         if (dieTimer < 0.8f) {
             PlayAnimation(13, false);
         }
@@ -142,11 +144,8 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         
         if (movement->IsJumping()) {
             PlayAnimation(16, false);
-        } else if (keyStates[inputConfig.moveLeftKey] && keyStates[inputConfig.rollKey]) {
-            PlayAnimation(4, true);
-        } else if (keyStates[inputConfig.moveRightKey] && keyStates[inputConfig.rollKey]) {
-            PlayAnimation(4, true);
-        } else if (keyStates[inputConfig.rollKey]) {
+        } else if ((keyStates[inputConfig.rollLeftKey1] && keyStates[inputConfig.rollLeftKey2]) ||
+                   (keyStates[inputConfig.rollRightKey1] && keyStates[inputConfig.rollRightKey2])) {
             PlayAnimation(4, true);
         } else if (keyStates[inputConfig.moveRightKey]) {
             if (isShiftPressed) {
