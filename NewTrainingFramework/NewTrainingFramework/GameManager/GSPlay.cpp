@@ -221,6 +221,9 @@ void GSPlay::Init() {
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
     std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
               << ", bottom=" << cam->GetBottom() << ", top=" << cam->GetTop() << std::endl;
+    
+    // Initialize health bars to follow characters
+    UpdateHealthBars();
 }
 
 void GSPlay::Update(float deltaTime) {
@@ -261,6 +264,9 @@ void GSPlay::Update(float deltaTime) {
         Vector3 player2Pos = m_player2.GetPosition();
         camera->UpdateCameraForCharacters(player1Pos, player2Pos, deltaTime);
     }
+    
+    // Update health bars to follow characters
+    UpdateHealthBars();
     
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
     if (menuButton) {
@@ -517,18 +523,26 @@ void GSPlay::UpdateHealthBars() {
     // Update Player 1 health bar (ID 2000)
     Object* healthBar1 = sceneManager->GetObject(2000);
     if (healthBar1) {
+        Vector3 player1Pos = m_player.GetPosition();
+        float healthBarOffsetY = 0.4f;
+        healthBar1->SetPosition(player1Pos.x, player1Pos.y + healthBarOffsetY, 0.0f);
+        
         float healthRatio1 = m_player1Health / MAX_HEALTH;
         const Vector3& scaleRef = healthBar1->GetScale();
-        Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z); // Create new Vector3
+        Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         healthBar1->SetScale(healthRatio1, currentScale.y, currentScale.z);
     }
     
     // Update Player 2 health bar (ID 2001)
     Object* healthBar2 = sceneManager->GetObject(2001);
     if (healthBar2) {
+        Vector3 player2Pos = m_player2.GetPosition();
+        float healthBarOffsetY = 0.4f;
+        healthBar2->SetPosition(player2Pos.x, player2Pos.y + healthBarOffsetY, 0.0f);
+        
         float healthRatio2 = m_player2Health / MAX_HEALTH;
         const Vector3& scaleRef = healthBar2->GetScale();
-        Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z); // Create new Vector3
+        Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         healthBar2->SetScale(healthRatio2, currentScale.y, currentScale.z);
     }
 } 
