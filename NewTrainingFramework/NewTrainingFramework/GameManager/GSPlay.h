@@ -16,6 +16,12 @@ private:
     // Static variable to control hitbox/hurtbox visibility
     static bool s_showHitboxHurtbox;
     
+    // Health system variables
+    float m_player1Health;
+    float m_player2Health;
+    const float MAX_HEALTH = 100.0f;
+    const float HEALTH_DAMAGE = 10.0f; // Máu mất mỗi lần nhấn T
+    
 public:
     GSPlay();
     ~GSPlay();
@@ -33,4 +39,11 @@ public:
     
     // Static getter for hitbox/hurtbox visibility
     static bool IsShowHitboxHurtbox() { return s_showHitboxHurtbox; }
+    
+    // Health system methods
+    void DamagePlayer1();
+    void DamagePlayer2();
+    void UpdateHealthBars();
+    float GetPlayer1Health() const { return m_player1Health; }
+    float GetPlayer2Health() const { return m_player2Health; }
 }; 

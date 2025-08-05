@@ -12,7 +12,7 @@ TOP 1.0
 NEAR 0.1
 FAR 100.0
 
-#ObjectCount 4
+#ObjectCount 6
 
 # Gameplay background
 ID 300
@@ -48,3 +48,21 @@ SHADER_ID 0
 POS -0.8 -0.5 0.0
 ROTATION 0.0 0.0 0.0
 SCALE 0.8 0.8 0.8
+
+# Health Bar Player 1
+ID 2000
+MODEL_ID 0
+TEXTURE_ID 12
+SHADER_ID 0
+POS -1.5 0.0 0.0
+ROTATION 0.0 0.0 0.0
+SCALE 1.0 0.1 1.0
+
+# Health Bar Player 2
+ID 2001
+MODEL_ID 0
+TEXTURE_ID 12
+SHADER_ID 0
+POS 0.0 0.0 0.0
+ROTATION 0.0 0.0 0.0
+SCALE 1.0 0.1 1.0
