@@ -64,6 +64,15 @@ private:
     // Input configuration
     PlayerInputConfig m_inputConfig;
 
+    // Double-tap cho chạy nhanh
+    float m_lastLeftPressTime = -1.0f;
+    float m_lastRightPressTime = -1.0f;
+    bool m_isRunningLeft = false;
+    bool m_isRunningRight = false;
+    bool m_prevLeftKey = false;
+    bool m_prevRightKey = false;
+    static constexpr float DOUBLE_TAP_THRESHOLD = 0.2f; // 200ms
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;

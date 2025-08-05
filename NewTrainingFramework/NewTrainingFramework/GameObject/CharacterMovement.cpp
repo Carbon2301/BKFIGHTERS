@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CharacterMovement.h"
 #include <iostream>
+#include <SDL.h>
 
 const float CharacterMovement::JUMP_FORCE = 3.0f;
 const float CharacterMovement::GRAVITY = 8.0f;
@@ -72,14 +73,35 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
         return;
     }
     
-    bool isShiftPressed = keyStates[16];
-    bool isMoving = (keyStates[m_inputConfig.moveLeftKey] || keyStates[m_inputConfig.moveRightKey]);
-    
     bool isRollingLeft = (keyStates[m_inputConfig.rollLeftKey1] && keyStates[m_inputConfig.rollLeftKey2]);
     bool isRollingRight = (keyStates[m_inputConfig.rollRightKey1] && keyStates[m_inputConfig.rollRightKey2]);
     
     bool isOtherAction = (keyStates[m_inputConfig.sitKey] || keyStates[m_inputConfig.jumpKey] || isRollingLeft || isRollingRight);
     
+    float currentTime = SDL_GetTicks() / 1000.0f;
+
+    if (keyStates[m_inputConfig.moveLeftKey] && !m_prevLeftKey) {
+        if (currentTime - m_lastLeftPressTime < DOUBLE_TAP_THRESHOLD) {
+            m_isRunningLeft = true;
+        }
+        m_lastLeftPressTime = currentTime;
+    }
+    if (!keyStates[m_inputConfig.moveLeftKey]) {
+        m_isRunningLeft = false;
+    }
+    m_prevLeftKey = keyStates[m_inputConfig.moveLeftKey];
+
+    if (keyStates[m_inputConfig.moveRightKey] && !m_prevRightKey) {
+        if (currentTime - m_lastRightPressTime < DOUBLE_TAP_THRESHOLD) {
+            m_isRunningRight = true;
+        }
+        m_lastRightPressTime = currentTime;
+    }
+    if (!keyStates[m_inputConfig.moveRightKey]) {
+        m_isRunningRight = false;
+    }
+    m_prevRightKey = keyStates[m_inputConfig.moveRightKey];
+
     if (isRollingLeft) {
         m_state = CharState::MoveLeft;
         m_facingLeft = true;
@@ -91,8 +113,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
     } else if (keyStates[m_inputConfig.moveRightKey]) {
         m_state = CharState::MoveRight;
         m_facingLeft = false;
-        
-        if (isShiftPressed) {
+        if (m_isRunningRight) {
             m_posX += MOVE_SPEED * 2.0f * deltaTime;
         } else {
             m_posX += MOVE_SPEED * deltaTime;
@@ -100,8 +121,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
     } else if (keyStates[m_inputConfig.moveLeftKey]) {
         m_state = CharState::MoveLeft;
         m_facingLeft = true;
-        
-        if (isShiftPressed) {
+        if (m_isRunningLeft) {
             m_posX -= MOVE_SPEED * 2.0f * deltaTime;
         } else {
             m_posX -= MOVE_SPEED * deltaTime;
@@ -111,7 +131,6 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
         m_state = CharState::Idle;
     } else {
         m_isSitting = false;
-        
         if (!m_isJumping && !keyStates[m_inputConfig.moveLeftKey] && !keyStates[m_inputConfig.moveRightKey]) {
             m_state = CharState::Idle;
         }
@@ -140,12 +159,11 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
         
         bool isMovingLeft = keyStates[m_inputConfig.moveLeftKey];
         bool isMovingRight = keyStates[m_inputConfig.moveRightKey];
-        bool isShiftPressed = keyStates[16];
         
         if (isMovingLeft) {
             m_facingLeft = true;
             m_state = CharState::MoveLeft;
-            if (isShiftPressed) {
+            if (m_isRunningLeft) {
                 m_posX -= MOVE_SPEED * 1.5f * deltaTime;
             } else {
                 m_posX -= MOVE_SPEED * 0.8f * deltaTime;
@@ -153,7 +171,7 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
         } else if (isMovingRight) {
             m_facingLeft = false;
             m_state = CharState::MoveRight;
-            if (isShiftPressed) {
+            if (m_isRunningRight) {
                 m_posX += MOVE_SPEED * 1.5f * deltaTime;
             } else {
                 m_posX += MOVE_SPEED * 0.8f * deltaTime;

@@ -171,8 +171,8 @@ void GSPlay::Init() {
     std::cout << "=== PLAYER 1 MOVEMENT CONTROLS ===" << std::endl;
     std::cout << "- A: Walk left (Animation 1: Walk)" << std::endl;
     std::cout << "- D: Walk right (Animation 1: Walk)" << std::endl;
-    std::cout << "- Shift + A: Run left (Animation 2: Run)" << std::endl;
-    std::cout << "- Shift + D: Run right (Animation 2: Run)" << std::endl;
+    std::cout << "- Double-tap A: Run left (Animation 2: Run)" << std::endl;
+    std::cout << "- Double-tap D: Run right (Animation 2: Run)" << std::endl;
     std::cout << "- S: Sit down (Animation 3: Sit)" << std::endl;
     std::cout << "- W: Jump (Animation 16: Jump)" << std::endl;
     std::cout << "- A + S: Roll left (Animation 4: Roll)" << std::endl;
@@ -193,8 +193,8 @@ void GSPlay::Init() {
     std::cout << "=== PLAYER 2 MOVEMENT CONTROLS ===" << std::endl;
     std::cout << "- Left Arrow: Walk left (Animation 1: Walk)" << std::endl;
     std::cout << "- Right Arrow: Walk right (Animation 1: Walk)" << std::endl;
-    std::cout << "- Shift + Left Arrow: Run left (Animation 2: Run)" << std::endl;
-    std::cout << "- Shift + Right Arrow: Run right (Animation 2: Run)" << std::endl;
+    std::cout << "- Double-tap Left Arrow: Run left (Animation 2: Run)" << std::endl;
+    std::cout << "- Double-tap Right Arrow: Run right (Animation 2: Run)" << std::endl;
     std::cout << "- Down Arrow: Sit down (Animation 3: Sit)" << std::endl;
     std::cout << "- Up Arrow: Jump (Animation 16: Jump)" << std::endl;
     std::cout << "- Down Arrow + Left Arrow: Roll left (Animation 4: Roll)" << std::endl;
