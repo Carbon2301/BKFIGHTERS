@@ -20,12 +20,20 @@ struct PlayerInputConfig {
     int kickKey;
     int dieKey;
     
-    PlayerInputConfig() : moveLeftKey(0), moveRightKey(0), jumpKey(0), sitKey(0), 
-                         rollKey(0), punchKey(0), axeKey(0), kickKey(0), dieKey(0) {}
+    int rollLeftKey1;
+    int rollLeftKey2;
+    int rollRightKey1;
+    int rollRightKey2;
     
-    PlayerInputConfig(int left, int right, int jump, int sit, int roll, int punch, int axe, int kick, int die)
+    PlayerInputConfig() : moveLeftKey(0), moveRightKey(0), jumpKey(0), sitKey(0), 
+                         rollKey(0), punchKey(0), axeKey(0), kickKey(0), dieKey(0),
+                         rollLeftKey1(0), rollLeftKey2(0), rollRightKey1(0), rollRightKey2(0) {}
+    
+    PlayerInputConfig(int left, int right, int jump, int sit, int roll, int punch, int axe, int kick, int die,
+                     int rollLeft1, int rollLeft2, int rollRight1, int rollRight2)
         : moveLeftKey(left), moveRightKey(right), jumpKey(jump), sitKey(sit), 
-          rollKey(roll), punchKey(punch), axeKey(axe), kickKey(kick), dieKey(die) {}
+          rollKey(roll), punchKey(punch), axeKey(axe), kickKey(kick), dieKey(die),
+          rollLeftKey1(rollLeft1), rollLeftKey2(rollLeft2), rollRightKey1(rollRight1), rollRightKey2(rollRight2) {}
 };
 
 class CharacterMovement {

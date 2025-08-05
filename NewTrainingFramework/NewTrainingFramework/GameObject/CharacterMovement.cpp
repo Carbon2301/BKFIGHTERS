@@ -8,8 +8,8 @@ const float CharacterMovement::GROUND_Y = 0.0f;
 const float CharacterMovement::MOVE_SPEED = 0.5f;
 
 // Static input configurations
-const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K', 0);
-const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', '1', '3', '2', 0);
+const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K', 0, 'A', 'S', 'S', 'D');
+const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', '1', '3', '2', 0, 0x25, 0x28, 0x27, 0x28);
 
 CharacterMovement::CharacterMovement() 
     : m_posX(0.0f), m_posY(0.0f), m_facingLeft(false), m_state(CharState::Idle),
@@ -74,22 +74,20 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
     
     bool isShiftPressed = keyStates[16];
     bool isMoving = (keyStates[m_inputConfig.moveLeftKey] || keyStates[m_inputConfig.moveRightKey]);
-    bool isOtherAction = (keyStates[m_inputConfig.sitKey] || keyStates[m_inputConfig.rollKey] || keyStates[m_inputConfig.jumpKey]);
     
-    if (keyStates[m_inputConfig.moveLeftKey] && keyStates[m_inputConfig.rollKey]) {
+    bool isRollingLeft = (keyStates[m_inputConfig.rollLeftKey1] && keyStates[m_inputConfig.rollLeftKey2]);
+    bool isRollingRight = (keyStates[m_inputConfig.rollRightKey1] && keyStates[m_inputConfig.rollRightKey2]);
+    
+    bool isOtherAction = (keyStates[m_inputConfig.sitKey] || keyStates[m_inputConfig.jumpKey] || isRollingLeft || isRollingRight);
+    
+    if (isRollingLeft) {
         m_state = CharState::MoveLeft;
         m_facingLeft = true;
         m_posX -= MOVE_SPEED * 1.5f * deltaTime;
-    } else if (keyStates[m_inputConfig.moveRightKey] && keyStates[m_inputConfig.rollKey]) {
+    } else if (isRollingRight) {
         m_state = CharState::MoveRight;
         m_facingLeft = false;
         m_posX += MOVE_SPEED * 1.5f * deltaTime;
-    } else if (keyStates[m_inputConfig.rollKey]) {
-        if (m_facingLeft) {
-            m_posX -= MOVE_SPEED * 1.5f * deltaTime;
-        } else {
-            m_posX += MOVE_SPEED * 1.5f * deltaTime;
-        }
     } else if (keyStates[m_inputConfig.moveRightKey]) {
         m_state = CharState::MoveRight;
         m_facingLeft = false;
