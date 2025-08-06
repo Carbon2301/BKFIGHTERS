@@ -36,6 +36,12 @@ struct PlayerInputConfig {
           rollLeftKey1(rollLeft1), rollLeftKey2(rollLeft2), rollRightKey1(rollRight1), rollRightKey2(rollRight2) {}
 };
 
+// Platform structure for collision detection
+struct Platform {
+    float x, y, width, height;
+    Platform(float px, float py, float w, float h) : x(px), y(py), width(w), height(h) {}
+};
+
 class CharacterMovement {
 private:
     // Position and state
@@ -73,6 +79,13 @@ private:
     bool m_prevRightKey = false;
     static constexpr float DOUBLE_TAP_THRESHOLD = 0.2f; // 200ms
 
+    // Platform collision
+    std::vector<Platform> m_platforms;
+    float m_characterWidth;
+    float m_characterHeight;
+    bool m_isOnPlatform;
+    float m_currentPlatformY;
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;
@@ -86,12 +99,16 @@ public:
     
     void Initialize(float startX, float startY, float groundY);
     void SetInputConfig(const PlayerInputConfig& config) { m_inputConfig = config; }
+    const PlayerInputConfig& GetInputConfig() const { return m_inputConfig; }
     
     void Update(float deltaTime, const bool* keyStates);
+    void UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
     
     void HandleMovement(float deltaTime, const bool* keyStates);
     void HandleJump(float deltaTime, const bool* keyStates);
+    void HandleJumpWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
     void HandleLanding(const bool* keyStates);
+    void HandleLandingWithHurtbox(const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
     void HandleDie(float deltaTime);
     
     void SetPosition(float x, float y);
@@ -99,21 +116,25 @@ public:
     Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
     float GetPosX() const { return m_posX; }
     float GetPosY() const { return m_posY; }
-    
     bool IsFacingLeft() const { return m_facingLeft; }
-    void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
     CharState GetState() const { return m_state; }
     bool IsJumping() const { return m_isJumping; }
     bool IsSitting() const { return m_isSitting; }
     bool IsDying() const { return m_isDying; }
     bool IsDead() const { return m_isDead; }
-    bool IsKnockdownComplete() const { return m_knockdownComplete; }
     float GetDieTimer() const { return m_dieTimer; }
-    float GetKnockdownTimer() const { return m_knockdownTimer; }
-    bool JustLanded() const { return m_wasJumping && !m_isJumping; }
+    void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
     
-    const PlayerInputConfig& GetInputConfig() const { return m_inputConfig; }
-    
+    // Platform collision methods
+    void AddPlatform(float x, float y, float width, float height);
+    void ClearPlatforms();
+    void SetCharacterSize(float width, float height);
+    bool CheckPlatformCollision(float& newY);
+    bool CheckPlatformCollisionWithHurtbox(float& newY, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
+    bool IsOnPlatform() const { return m_isOnPlatform; }
+    float GetCurrentPlatformY() const { return m_currentPlatformY; }
+
+    // Static input configurations
     static const PlayerInputConfig PLAYER1_INPUT;
     static const PlayerInputConfig PLAYER2_INPUT;
 }; 

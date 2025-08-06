@@ -51,6 +51,7 @@ public:
     CharState GetState() const;
     bool IsJumping() const;
     bool IsSitting() const;
+    CharacterMovement* GetMovement() const { return m_movement.get(); }
     
     // Combat
     void HandlePunchCombo();
