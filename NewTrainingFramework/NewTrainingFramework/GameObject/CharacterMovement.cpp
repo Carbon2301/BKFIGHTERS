@@ -80,7 +80,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
     bool isRollingLeft = (keyStates[m_inputConfig.rollLeftKey1] && keyStates[m_inputConfig.rollLeftKey2]);
     bool isRollingRight = (keyStates[m_inputConfig.rollRightKey1] && keyStates[m_inputConfig.rollRightKey2]);
     
-    bool isOtherAction = (keyStates[m_inputConfig.sitKey] || keyStates[m_inputConfig.jumpKey] || isRollingLeft || isRollingRight);
+    bool isOtherAction = (keyStates[m_inputConfig.sitKey] || keyStates[m_inputConfig.jumpKey]);
     
     float currentTime = SDL_GetTicks() / 1000.0f;
 
@@ -106,7 +106,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
     }
     m_prevRightKey = keyStates[m_inputConfig.moveRightKey];
 
-    if (!m_isJumping && !isOtherAction) {
+    if (!m_isJumping) {
         if (isRollingLeft) {
             m_state = CharState::MoveLeft;
             m_facingLeft = true;
@@ -115,28 +115,30 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
             m_state = CharState::MoveRight;
             m_facingLeft = false;
             m_posX += MOVE_SPEED * 1.5f * deltaTime;
-        } else if (keyStates[m_inputConfig.moveLeftKey]) {
-            m_facingLeft = true;
-            m_state = CharState::MoveLeft;
-            if (m_isRunningLeft) {
-                m_posX -= MOVE_SPEED * 1.5f * deltaTime;
+        } else if (!isOtherAction) {
+            if (keyStates[m_inputConfig.moveLeftKey]) {
+                m_facingLeft = true;
+                m_state = CharState::MoveLeft;
+                if (m_isRunningLeft) {
+                    m_posX -= MOVE_SPEED * 1.5f * deltaTime;
+                } else {
+                    m_posX -= MOVE_SPEED * 0.8f * deltaTime;
+                }
+            } else if (keyStates[m_inputConfig.moveRightKey]) {
+                m_facingLeft = false;
+                m_state = CharState::MoveRight;
+                if (m_isRunningRight) {
+                    m_posX += MOVE_SPEED * 1.5f * deltaTime;
+                } else {
+                    m_posX += MOVE_SPEED * 0.8f * deltaTime;
+                }
+            } else if (keyStates[m_inputConfig.sitKey]) {
+                m_isSitting = true;
+                m_state = CharState::Idle;
             } else {
-                m_posX -= MOVE_SPEED * 0.8f * deltaTime;
+                m_isSitting = false;
+                m_state = CharState::Idle;
             }
-        } else if (keyStates[m_inputConfig.moveRightKey]) {
-            m_facingLeft = false;
-            m_state = CharState::MoveRight;
-            if (m_isRunningRight) {
-                m_posX += MOVE_SPEED * 1.5f * deltaTime;
-            } else {
-                m_posX += MOVE_SPEED * 0.8f * deltaTime;
-            }
-        } else if (keyStates[m_inputConfig.sitKey]) {
-            m_isSitting = true;
-            m_state = CharState::Idle;
-        } else {
-            m_isSitting = false;
-            m_state = CharState::Idle;
         }
     }
 }
