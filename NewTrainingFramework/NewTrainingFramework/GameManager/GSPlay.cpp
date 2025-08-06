@@ -25,6 +25,11 @@ static Character m_player2;
 static InputManager* m_inputManager = nullptr;
 
 bool GSPlay::s_showHitboxHurtbox = false;
+bool GSPlay::s_showPlatformBoxes = true;
+
+bool GSPlay_IsShowPlatformBoxes() {
+    return GSPlay::IsShowPlatformBoxes();
+}
 
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f) {
@@ -37,6 +42,7 @@ void GSPlay::Init() {
     std::cout << "=== GAMEPLAY MODE ===" << std::endl;
     std::cout << "Game started!" << std::endl;
     std::cout << "Press C to toggle hitbox/hurtbox display" << std::endl;
+    std::cout << "Press V to toggle platform boxes display" << std::endl;
     std::cout << "Press Z to toggle camera auto-zoom" << std::endl;
     
     glEnable(GL_BLEND);
@@ -472,6 +478,12 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             std::cout << "Player 1 Health: " << m_player.GetHealth() << "/" << m_player.GetMaxHealth() << std::endl;
             std::cout << "Player 2 Health: " << m_player2.GetHealth() << "/" << m_player2.GetMaxHealth() << std::endl;
             std::cout << "===================" << std::endl;
+            break;
+            
+        case 'V':
+        case 'v':
+            s_showPlatformBoxes = !s_showPlatformBoxes;
+            std::cout << "Platform boxes display: " << (s_showPlatformBoxes ? "ON" : "OFF") << std::endl;
             break;
     }
 }
