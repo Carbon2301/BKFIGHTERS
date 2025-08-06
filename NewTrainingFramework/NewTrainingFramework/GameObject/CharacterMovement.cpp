@@ -302,16 +302,16 @@ void CharacterMovement::SetCharacterSize(float width, float height) {
 }
 
 bool CharacterMovement::CheckPlatformCollisionWithHurtbox(float& newY, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
-    // Chỉ kiểm tra collision khi đang rơi xuống hoặc đứng yên
+    // Chỉ kiểm tra collision khi đang rơi xuống
     if (m_jumpVelocity > 0) {
         return false; // Đang nhảy lên, không cần check platform
     }
     
-    // Sử dụng hurtbox để tính toán collision bounds
     float hurtboxLeft = m_posX + hurtboxOffsetX - hurtboxWidth * 0.5f;
     float hurtboxRight = m_posX + hurtboxOffsetX + hurtboxWidth * 0.5f;
-    float hurtboxBottom = m_posY + hurtboxOffsetY - hurtboxHeight * 0.5f; // Đáy hurtbox
+    float hurtboxBottom = m_posY + hurtboxOffsetY - hurtboxHeight * 0.5f;
     float hurtboxTop = m_posY + hurtboxOffsetY + hurtboxHeight * 0.5f;
+    const float epsilon = 0.05f;
     
     for (const auto& platform : m_platforms) {
         float platformLeft = platform.x - platform.width * 0.5f;
@@ -319,19 +319,17 @@ bool CharacterMovement::CheckPlatformCollisionWithHurtbox(float& newY, float hur
         float platformBottom = platform.y - platform.height * 0.5f;
         float platformTop = platform.y + platform.height * 0.5f;
         
-        // Kiểm tra xem đáy hurtbox có chạm phần trên của platform không
-        if (hurtboxBottom <= platformTop + 0.01f && hurtboxTop > platformTop &&
+        // Chỉ cho phép va chạm khi đang rơi xuống và đáy hurtbox nằm trong khoảng nhỏ quanh đỉnh bục
+        if (m_jumpVelocity <= 0 &&
+            hurtboxBottom >= platformTop - epsilon &&
+            hurtboxBottom <= platformTop + epsilon &&
             hurtboxRight > platformLeft && hurtboxLeft < platformRight) {
-            
-            // Đặt character sao cho đáy hurtbox nằm trên platform
             newY = platformTop - hurtboxOffsetY + hurtboxHeight * 0.5f;
             m_isOnPlatform = true;
             m_currentPlatformY = platformTop;
-            
             return true;
         }
     }
-    
     m_isOnPlatform = false;
     return false;
 }
@@ -413,7 +411,7 @@ void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hu
 }
 
 bool CharacterMovement::CheckPlatformCollision(float& newY) {
-    // Chỉ kiểm tra collision khi đang rơi xuống hoặc đứng yên
+    // Chỉ kiểm tra collision khi đang rơi xuống
     if (m_jumpVelocity > 0) {
         return false; // Đang nhảy lên, không cần check platform
     }
@@ -422,6 +420,7 @@ bool CharacterMovement::CheckPlatformCollision(float& newY) {
     float characterRight = m_posX + m_characterWidth * 0.5f;
     float characterBottom = m_posY;
     float characterTop = m_posY + m_characterHeight;
+    const float epsilon = 0.05f; // cho phép một khoảng nhỏ
     
     for (const auto& platform : m_platforms) {
         float platformLeft = platform.x - platform.width * 0.5f;
@@ -429,9 +428,12 @@ bool CharacterMovement::CheckPlatformCollision(float& newY) {
         float platformBottom = platform.y - platform.height * 0.5f;
         float platformTop = platform.y + platform.height * 0.5f;
         
-        if (characterBottom <= platformTop + 0.01f && characterTop > platformTop &&
+        // Chỉ cho phép va chạm khi đang rơi xuống và đáy nhân vật nằm trong khoảng nhỏ quanh đỉnh bục
+        if (m_jumpVelocity <= 0 &&
+            characterBottom >= platformTop - epsilon &&
+            characterBottom <= platformTop + epsilon &&
             characterRight > platformLeft && characterLeft < platformRight) {
-                        newY = platformTop;
+            newY = platformTop;
             return true;
         }
     }
