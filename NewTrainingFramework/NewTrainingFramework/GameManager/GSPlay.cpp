@@ -15,6 +15,8 @@
 #include "../GameObject/CharacterMovement.h"
 #include "../GameObject/InputManager.h"
 #include "ResourceManager.h"
+#include <fstream>
+#include <sstream>
 
 #define MENU_BUTTON_ID 301
 
@@ -164,22 +166,39 @@ void GSPlay::Init() {
     // Setup hurtbox for Player 2
     m_player2.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
     
-    // Add platform collision for the white box (ID 400 from GSPlay.txt)
-    // Box position: -0.4, -0.5, 0.0 with scale 0.3, 0.4, 1.0
-    float boxX = -0.4f;
-    float boxY = -0.5f;
-    float boxWidth = 0.3f;
-    float boxHeight = 0.4f;
-    
-    // Add platform to both players
-    m_player.GetMovement()->AddPlatform(boxX, boxY, boxWidth, boxHeight);
-    m_player2.GetMovement()->AddPlatform(boxX, boxY, boxWidth, boxHeight);
+    // Tự động đọc tất cả platform từ file GSPlay.txt
+    m_player.GetMovement()->ClearPlatforms();
+    m_player2.GetMovement()->ClearPlatforms();
+    {
+        std::ifstream sceneFile("Resources/Scenes/GSPlay.txt");
+        if (sceneFile.is_open()) {
+            std::string line;
+            bool inPlatformBlock = false;
+            float boxX = 0, boxY = 0, boxWidth = 0, boxHeight = 0;
+            while (std::getline(sceneFile, line)) {
+                if (line.find("# Platform") != std::string::npos) {
+                    inPlatformBlock = true;
+                } else if (inPlatformBlock) {
+                    if (line.find("POS") == 0) {
+                        std::istringstream iss(line.substr(4));
+                        float z;
+                        iss >> boxX >> boxY >> z;
+                    } else if (line.find("SCALE") == 0) {
+                        std::istringstream iss(line.substr(6));
+                        float scaleZ;
+                        iss >> boxWidth >> boxHeight >> scaleZ;
+                        m_player.GetMovement()->AddPlatform(boxX, boxY, boxWidth, boxHeight);
+                        m_player2.GetMovement()->AddPlatform(boxX, boxY, boxWidth, boxHeight);
+                        inPlatformBlock = false;
+                    }
+                }
+            }
+        }
+    }
     
     // Set character size for collision detection
     m_player.GetMovement()->SetCharacterSize(0.16f, 0.24f);
     m_player2.GetMovement()->SetCharacterSize(0.16f, 0.24f);
-    
-    std::cout << "Platform added at position (" << boxX << ", " << boxY << ") with size (" << boxWidth << ", " << boxHeight << ")" << std::endl;
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
