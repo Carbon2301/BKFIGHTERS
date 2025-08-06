@@ -58,7 +58,10 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     CancelCombosOnOtherAction(keyStates);
     
-    m_movement->Update(deltaTime, keyStates);
+    // Use hurtbox-based collision detection
+    m_movement->UpdateWithHurtbox(deltaTime, keyStates, 
+                                  GetHurtboxWidth(), GetHurtboxHeight(), 
+                                  GetHurtboxOffsetX(), GetHurtboxOffsetY());
     
     // Handle movement animations
     if (m_animation) {

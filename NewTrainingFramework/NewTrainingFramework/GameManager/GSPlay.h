@@ -16,6 +16,9 @@ private:
     // Static variable to control hitbox/hurtbox visibility
     static bool s_showHitboxHurtbox;
     
+    // Static variable to control platform box visibility
+    static bool s_showPlatformBoxes;
+    
     // Health system variables
     float m_player1Health;
     float m_player2Health;
@@ -39,6 +42,9 @@ public:
     
     // Static getter for hitbox/hurtbox visibility
     static bool IsShowHitboxHurtbox() { return s_showHitboxHurtbox; }
+    
+    // Static getter for platform box visibility
+    static bool IsShowPlatformBoxes() { return s_showPlatformBoxes; }
     
     // Health system methods
     void UpdateHealthBars();

@@ -4,6 +4,8 @@
 #include <fstream>
 #include <iostream>
 
+bool GSPlay_IsShowPlatformBoxes();
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -338,8 +340,16 @@ void SceneManager::Draw() {
     // Draw all objects except character objects (ID 1000, 1001)
     // Character objects will be drawn by Character class
     for (auto& obj : m_objects) {
-        if (obj->GetId() != 1000 && obj->GetId() != 1001) {
-            obj->Draw(viewMatrix, projectionMatrix);
+        int objId = obj->GetId();
+        if (objId != 1000 && objId != 1001) {
+            // Check if this is a platform box (ID 400, 401, 402) and if platform boxes should be hidden
+            if ((objId == 400 || objId == 401 || objId == 402)) {
+                if (GSPlay_IsShowPlatformBoxes()) {
+                    obj->Draw(viewMatrix, projectionMatrix);
+                }
+            } else {
+                obj->Draw(viewMatrix, projectionMatrix);
+            }
         }
     }
 }

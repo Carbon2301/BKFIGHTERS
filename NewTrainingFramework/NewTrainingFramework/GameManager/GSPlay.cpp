@@ -15,6 +15,8 @@
 #include "../GameObject/CharacterMovement.h"
 #include "../GameObject/InputManager.h"
 #include "ResourceManager.h"
+#include <fstream>
+#include <sstream>
 
 #define MENU_BUTTON_ID 301
 
@@ -23,6 +25,11 @@ static Character m_player2;
 static InputManager* m_inputManager = nullptr;
 
 bool GSPlay::s_showHitboxHurtbox = false;
+bool GSPlay::s_showPlatformBoxes = true;
+
+bool GSPlay_IsShowPlatformBoxes() {
+    return GSPlay::IsShowPlatformBoxes();
+}
 
 GSPlay::GSPlay() 
     : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f) {
@@ -35,6 +42,7 @@ void GSPlay::Init() {
     std::cout << "=== GAMEPLAY MODE ===" << std::endl;
     std::cout << "Game started!" << std::endl;
     std::cout << "Press C to toggle hitbox/hurtbox display" << std::endl;
+    std::cout << "Press V to toggle platform boxes display" << std::endl;
     std::cout << "Press Z to toggle camera auto-zoom" << std::endl;
     
     glEnable(GL_BLEND);
@@ -164,6 +172,40 @@ void GSPlay::Init() {
     // Setup hurtbox for Player 2
     m_player2.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
     
+    // Tự động đọc tất cả platform từ file GSPlay.txt
+    m_player.GetMovement()->ClearPlatforms();
+    m_player2.GetMovement()->ClearPlatforms();
+    {
+        std::ifstream sceneFile("Resources/Scenes/GSPlay.txt");
+        if (sceneFile.is_open()) {
+            std::string line;
+            bool inPlatformBlock = false;
+            float boxX = 0, boxY = 0, boxWidth = 0, boxHeight = 0;
+            while (std::getline(sceneFile, line)) {
+                if (line.find("# Platform") != std::string::npos) {
+                    inPlatformBlock = true;
+                } else if (inPlatformBlock) {
+                    if (line.find("POS") == 0) {
+                        std::istringstream iss(line.substr(4));
+                        float z;
+                        iss >> boxX >> boxY >> z;
+                    } else if (line.find("SCALE") == 0) {
+                        std::istringstream iss(line.substr(6));
+                        float scaleZ;
+                        iss >> boxWidth >> boxHeight >> scaleZ;
+                        m_player.GetMovement()->AddPlatform(boxX, boxY, boxWidth, boxHeight);
+                        m_player2.GetMovement()->AddPlatform(boxX, boxY, boxWidth, boxHeight);
+                        inPlatformBlock = false;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Set character size for collision detection
+    m_player.GetMovement()->SetCharacterSize(0.16f, 0.24f);
+    m_player2.GetMovement()->SetCharacterSize(0.16f, 0.24f);
+    
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
@@ -175,6 +217,7 @@ void GSPlay::Init() {
     std::cout << "- Double-tap D: Run right (Animation 2: Run)" << std::endl;
     std::cout << "- S: Sit down (Animation 3: Sit)" << std::endl;
     std::cout << "- W: Jump (Animation 16: Jump)" << std::endl;
+
     std::cout << "- A + S: Roll left (Animation 4: Roll)" << std::endl;
     std::cout << "- S + D: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
@@ -197,6 +240,7 @@ void GSPlay::Init() {
     std::cout << "- Double-tap Right Arrow: Run right (Animation 2: Run)" << std::endl;
     std::cout << "- Down Arrow: Sit down (Animation 3: Sit)" << std::endl;
     std::cout << "- Up Arrow: Jump (Animation 16: Jump)" << std::endl;
+
     std::cout << "- Down Arrow + Left Arrow: Roll left (Animation 4: Roll)" << std::endl;
     std::cout << "- Down Arrow + Right Arrow: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
@@ -212,6 +256,10 @@ void GSPlay::Init() {
     std::cout << "  * Press 3 three times: Axe3 (Animation 22: Axe3)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- 2: Kick (Animation 19: Kick)" << std::endl;
+    std::cout << "=== PLATFORM SYSTEM ===" << std::endl;
+    std::cout << "- White box acts as a platform" << std::endl;
+    std::cout << "- Jump onto the box to land on it" << std::endl;
+    std::cout << "- Move off the platform to fall down" << std::endl;
     std::cout << "=== COMBAT SYSTEM ===" << std::endl;
     std::cout << "- Each hit deals 10 damage" << std::endl;
     std::cout << "- Characters die when health reaches 0" << std::endl;
@@ -222,6 +270,7 @@ void GSPlay::Init() {
     std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
               << ", bottom=" << cam->GetBottom() << ", top=" << cam->GetTop() << std::endl;
     
+
     UpdateHealthBars();
 }
 
@@ -304,12 +353,12 @@ void GSPlay::Draw() {
         lastAnim != m_player.GetCurrentAnimation() ||
         (isMoving && !wasMoving)) {
             
-        std::cout << "=== PLAYER 1 STATUS ===" << std::endl;
-        std::cout << "Position: (" << m_player.GetPosition().x << ", " << m_player.GetPosition().y << ")" << std::endl;
-        std::cout << "State: " << (int)m_player.GetState() << std::endl;
-        std::cout << "Animation: " << m_player.GetCurrentAnimation() << std::endl;
-        std::cout << "Facing: " << (m_player.IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
-        std::cout << "Movement: " << (isMoving ? "ACTIVE" : "IDLE") << std::endl;
+        //std::cout << "=== PLAYER 1 STATUS ===" << std::endl;
+        //std::cout << "Position: (" << m_player.GetPosition().x << ", " << m_player.GetPosition().y << ")" << std::endl;
+        //std::cout << "State: " << (int)m_player.GetState() << std::endl;
+        //std::cout << "Animation: " << m_player.GetCurrentAnimation() << std::endl;
+        //std::cout << "Facing: " << (m_player.IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
+        //std::cout << "Movement: " << (isMoving ? "ACTIVE" : "IDLE") << std::endl;
         
         if (m_player.IsInCombo()) {
             if (m_player.GetComboCount() > 0) {
@@ -345,12 +394,12 @@ void GSPlay::Draw() {
         lastAnim2 != m_player2.GetCurrentAnimation() ||
         (isMoving2 && !wasMoving2)) {
             
-        std::cout << "=== PLAYER 2 STATUS ===" << std::endl;
-        std::cout << "Position: (" << m_player2.GetPosition().x << ", " << m_player2.GetPosition().y << ")" << std::endl;
-        std::cout << "State: " << (int)m_player2.GetState() << std::endl;
-        std::cout << "Animation: " << m_player2.GetCurrentAnimation() << std::endl;
-        std::cout << "Facing: " << (m_player2.IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
-        std::cout << "Movement: " << (isMoving2 ? "ACTIVE" : "IDLE") << std::endl;
+        //std::cout << "=== PLAYER 2 STATUS ===" << std::endl;
+        //std::cout << "Position: (" << m_player2.GetPosition().x << ", " << m_player2.GetPosition().y << ")" << std::endl;
+        //std::cout << "State: " << (int)m_player2.GetState() << std::endl;
+        //std::cout << "Animation: " << m_player2.GetCurrentAnimation() << std::endl;
+        //std::cout << "Facing: " << (m_player2.IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
+        //std::cout << "Movement: " << (isMoving2 ? "ACTIVE" : "IDLE") << std::endl;
         
         if (m_player2.IsInCombo()) {
             if (m_player2.GetComboCount() > 0) {
@@ -429,6 +478,12 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             std::cout << "Player 1 Health: " << m_player.GetHealth() << "/" << m_player.GetMaxHealth() << std::endl;
             std::cout << "Player 2 Health: " << m_player2.GetHealth() << "/" << m_player2.GetMaxHealth() << std::endl;
             std::cout << "===================" << std::endl;
+            break;
+            
+        case 'V':
+        case 'v':
+            s_showPlatformBoxes = !s_showPlatformBoxes;
+            std::cout << "Platform boxes display: " << (s_showPlatformBoxes ? "ON" : "OFF") << std::endl;
             break;
     }
 }
