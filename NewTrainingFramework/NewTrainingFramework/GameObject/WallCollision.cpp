@@ -5,6 +5,8 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 
 WallCollision::WallCollision() {
 }
@@ -39,10 +41,52 @@ void WallCollision::ClearWalls() {
 
 void WallCollision::LoadWallsFromScene() {
     ClearWalls();
-    
-    AddWallFromObject(501);
-    
-    AddWallFromObject(502);
+
+    std::ifstream file("Resources/Scenes/GSPlay.txt");
+    if (!file.is_open()) {
+        std::cerr << "Cannot open GSPlay.txt" << std::endl;
+        return;
+    }
+
+    std::string line;
+    int objectId = -1;
+    float posX = 0, posY = 0;
+    float scaleX = 1, scaleY = 1;
+    bool inWallBlock = false;
+
+    while (std::getline(file, line)) {
+        if (line.find("# Wall") != std::string::npos) {
+            inWallBlock = true;
+            objectId = -1;
+            posX = posY = 0;
+            scaleX = scaleY = 1;
+        } else if (inWallBlock) {
+            if (line.find("ID") == 0) {
+                std::istringstream iss(line);
+                std::string dummy;
+                iss >> dummy >> objectId;
+            } else if (line.find("POS") == 0) {
+                std::istringstream iss(line);
+                std::string dummy;
+                float z;
+                iss >> dummy >> posX >> posY >> z;
+            } else if (line.find("SCALE") == 0) {
+                std::istringstream iss(line);
+                std::string dummy;
+                float z;
+                iss >> dummy >> scaleX >> scaleY >> z;
+            } else if (line.empty() || line[0] == '#') {
+                // End of wall block, add wall if valid
+                if (objectId != -1) {
+                    AddWall(posX, posY, scaleX, scaleY, objectId);
+                }
+                inWallBlock = false;
+            }
+        }
+    }
+    if (inWallBlock && objectId != -1) {
+        AddWall(posX, posY, scaleX, scaleY, objectId);
+    }
 }
 
 bool WallCollision::CheckAABBCollision(float aLeft, float aRight, float aBottom, float aTop,
