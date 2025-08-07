@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include "../../Utilities/Math.h"
+#include "WallCollision.h"
 
 enum class CharState {
     Idle,
@@ -85,6 +86,9 @@ private:
     float m_characterHeight;
     bool m_isOnPlatform;
     float m_currentPlatformY;
+    
+    // Wall collision
+    std::unique_ptr<WallCollision> m_wallCollision;
 
     // Constants
     static const float JUMP_FORCE;
@@ -133,6 +137,10 @@ public:
     bool CheckPlatformCollisionWithHurtbox(float& newY, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
     bool IsOnPlatform() const { return m_isOnPlatform; }
     float GetCurrentPlatformY() const { return m_currentPlatformY; }
+    
+    // Wall collision methods
+    void InitializeWallCollision();
+    WallCollision* GetWallCollision() const { return m_wallCollision.get(); }
 
     // Static input configurations
     static const PlayerInputConfig PLAYER1_INPUT;

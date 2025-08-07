@@ -29,7 +29,7 @@ Camera::Camera()
 Camera::Camera(const Vector3& position, const Vector3& target, const Vector3& up)
     : m_position(position.x, position.y, position.z)
     , m_target(target.x, target.y, target.z)
-    , m_up(0.0f, 1.0f, 0.0f)  // Force 2D up vector
+    , m_up(0.0f, 1.0f, 0.0f)
     , m_left(-1.0f), m_right(1.0f), m_bottom(-1.0f), m_top(1.0f)
     , m_nearPlane(0.1f), m_farPlane(100.0f)
     , m_baseLeft(-1.0f), m_baseRight(1.0f), m_baseBottom(-1.0f), m_baseTop(1.0f)
@@ -72,7 +72,6 @@ void Camera::SetLookAt(const Vector3& position, const Vector3& target, const Vec
     m_target.x = target.x;
     m_target.y = target.y;
     m_target.z = target.z;
-    // Force 2D up vector (ignore input up vector)
     m_up.x = 0.0f;
     m_up.y = 1.0f;
     m_up.z = 0.0f;
@@ -94,7 +93,6 @@ void Camera::SetPosition2D(float x, float y) {
     float deltaY = y - m_position.y;
     m_position.x = x;
     m_position.y = y;
-    // Move target to maintain relative position
     m_target.x += deltaX;
     m_target.y += deltaY;
     m_viewNeedsUpdate = true;
@@ -109,7 +107,6 @@ void Camera::SetOrthographic(float left, float right, float bottom, float top, f
     m_nearPlane = nearPlane;
     m_farPlane = farPlane;
     
-    // Store base values for zoom calculations
     m_baseLeft = left;
     m_baseRight = right;
     m_baseBottom = bottom;
@@ -129,7 +126,6 @@ void Camera::SetZoomRange(float minZoom, float maxZoom) {
     m_minZoom = minZoom;
     m_maxZoom = maxZoom;
     
-    // Clamp current zoom to new range
     if (m_currentZoom < m_minZoom) m_currentZoom = m_minZoom;
     if (m_currentZoom > m_maxZoom) m_currentZoom = m_maxZoom;
     if (m_targetZoom < m_minZoom) m_targetZoom = m_minZoom;
@@ -139,17 +135,14 @@ void Camera::SetZoomRange(float minZoom, float maxZoom) {
 void Camera::UpdateZoom(float deltaTime) {
     if (!m_autoZoomEnabled) return;
     
-    // Smooth zoom interpolation
     float zoomDiff = m_targetZoom - m_currentZoom;
     float absZoomDiff = (zoomDiff < 0) ? -zoomDiff : zoomDiff;
     if (absZoomDiff > 0.001f) {
         m_currentZoom += zoomDiff * m_zoomSpeed * deltaTime;
         
-        // Clamp to zoom range
         if (m_currentZoom < m_minZoom) m_currentZoom = m_minZoom;
         if (m_currentZoom > m_maxZoom) m_currentZoom = m_maxZoom;
         
-        // Update orthographic projection with new zoom
         m_left = m_baseLeft / m_currentZoom;
         m_right = m_baseRight / m_currentZoom;
         m_bottom = m_baseBottom / m_currentZoom;
@@ -193,14 +186,12 @@ void Camera::UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3&
     if (targetZoom < m_minZoom) targetZoom = m_minZoom;
     if (targetZoom > m_maxZoom) targetZoom = m_maxZoom;
     
-    // Set target zoom and update
     SetTargetZoom(targetZoom);
     UpdateZoom(deltaTime);
     
     float centerX = (minX + maxX) * 0.5f;
     float centerY = (minY + maxY) * 0.5f;
     
-    // Smooth camera movement to center point
     Vector3 targetPosition(centerX, centerY, m_position.z);
     Vector3 currentPos = m_position;
     
@@ -211,7 +202,6 @@ void Camera::UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3&
     newPosition.y = currentPos.y + (targetPosition.y - currentPos.y) * moveSpeedY * deltaTime;
     newPosition.z = currentPos.z;
     
-    // Update camera position and target
     SetPosition2D(newPosition.x, newPosition.y);
 }
 

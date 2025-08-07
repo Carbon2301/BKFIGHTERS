@@ -71,7 +71,6 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         return;
     }
     
-    // Don't interrupt die animations
     if (movement->IsDying()) {
         return;
     }
@@ -83,7 +82,6 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         } else if (combat->GetComboTimer() <= 0.0f) {
             combat->CancelAllCombos();
             m_animManager->Play(0, true);
-            std::cout << "Combo timeout - returning to idle" << std::endl;
         }
     }
     
@@ -94,7 +92,6 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         } else if (combat->GetAxeComboTimer() <= 0.0f) {
             combat->CancelAllCombos();
             m_animManager->Play(0, true);
-            std::cout << "Axe combo timeout - returning to idle" << std::endl;
         }
     }
     
@@ -138,9 +135,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         return;
     }
     
-    // Only play movement animations if not in combat states
     if (!combat->IsInCombo() && !combat->IsInAxeCombo() && !combat->IsKicking() && !combat->IsHit()) {
-        // Priority order: Jump > Roll > Movement > Sit > Idle
         
         if (movement->IsJumping()) {
             PlayAnimation(16, false);

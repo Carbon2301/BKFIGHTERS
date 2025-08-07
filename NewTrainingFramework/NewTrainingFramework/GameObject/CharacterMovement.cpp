@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CharacterMovement.h"
+#include "WallCollision.h"
 #include <iostream>
 #include <SDL.h>
 
@@ -8,7 +9,6 @@ const float CharacterMovement::GRAVITY = 2.5f;
 const float CharacterMovement::GROUND_Y = 0.0f;
 const float CharacterMovement::MOVE_SPEED = 0.25f;
 
-// Static input configurations
 const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K', 0, 'A', 'S', 'S', 'D');
 const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', '1', '3', '2', 0, 0x25, 0x28, 0x27, 0x28);
 
@@ -17,7 +17,8 @@ CharacterMovement::CharacterMovement()
       m_isJumping(false), m_jumpVelocity(0.0f), m_jumpStartY(0.0f), m_wasJumping(false),
       m_isSitting(false), m_isDying(false), m_isDead(false), m_dieTimer(0.0f), 
       m_knockdownTimer(0.0f), m_knockdownComplete(false), m_attackerFacingLeft(false), m_inputConfig(PLAYER1_INPUT),
-      m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f) {
+      m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f),
+      m_wallCollision(std::make_unique<WallCollision>()) {
 }
 
 CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
@@ -25,7 +26,8 @@ CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
       m_isJumping(false), m_jumpVelocity(0.0f), m_jumpStartY(0.0f), m_wasJumping(false),
       m_isSitting(false), m_isDying(false), m_isDead(false), m_dieTimer(0.0f), 
       m_knockdownTimer(0.0f), m_knockdownComplete(false), m_attackerFacingLeft(false), m_inputConfig(inputConfig),
-      m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f) {
+      m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f),
+      m_wallCollision(std::make_unique<WallCollision>()) {
 }
 
 CharacterMovement::~CharacterMovement() {
@@ -52,13 +54,11 @@ void CharacterMovement::Initialize(float startX, float startY, float groundY) {
 
 void CharacterMovement::Update(float deltaTime, const bool* keyStates) {
     if (!keyStates) {
-        std::cout << "Warning: keyStates is null in CharacterMovement::Update" << std::endl;
         return;
     }
     
     m_wasJumping = m_isJumping;
     
-    // Handle die state
     if (m_isDying) {
         HandleDie(deltaTime);
     } else {
@@ -73,7 +73,6 @@ void CharacterMovement::Update(float deltaTime, const bool* keyStates) {
 
 void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
     if (!keyStates) {
-        std::cout << "Warning: keyStates is null in HandleMovement" << std::endl;
         return;
     }
     
@@ -145,11 +144,9 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
 
 void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
     if (!keyStates) {
-        std::cout << "Warning: keyStates is null in HandleJump" << std::endl;
         return;
     }
     
-    // Handle jump
     if (keyStates[m_inputConfig.jumpKey]) {
         if (!m_isJumping && (m_posY <= m_groundY + 0.01f || m_isOnPlatform)) {
             m_isSitting = false;
@@ -158,7 +155,6 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_jumpVelocity = JUMP_FORCE;
             m_jumpStartY = m_posY;
             m_isOnPlatform = false;
-            std::cout << "Character jumped from " << (m_posY <= m_groundY + 0.01f ? "ground" : "platform") << std::endl;
         }
     }
     
@@ -189,7 +185,6 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             }
         }
         
-        // Check platform collision
         float newY = m_posY;
         if (CheckPlatformCollision(newY)) {
             m_posY = newY;
@@ -197,28 +192,22 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_jumpVelocity = 0.0f;
             m_isOnPlatform = true;
             m_currentPlatformY = newY;
-            std::cout << "Character landed on platform at Y: " << newY << std::endl;
         }
-        // Check ground collision
         else if (m_posY <= m_groundY) {
             m_posY = m_groundY;
             m_isJumping = false;
             m_jumpVelocity = 0.0f;
             m_isOnPlatform = false;
             m_currentPlatformY = m_groundY;
-            std::cout << "Character landed on ground" << std::endl;
         }
     }
     
-    // Check if character fell off platform when not jumping
     if (!m_isJumping && m_isOnPlatform) {
         float newY = m_posY;
         if (!CheckPlatformCollision(newY)) {
-            // Character fell off platform, start falling
             m_isOnPlatform = false;
             m_isJumping = true;
-            m_jumpVelocity = 0.0f; // Start falling
-            std::cout << "Character fell off platform, starting to fall" << std::endl;
+            m_jumpVelocity = 0.0f;
         }
     }
 }
@@ -237,7 +226,6 @@ void CharacterMovement::TriggerDie(bool attackerFacingLeft) {
         m_knockdownComplete = false;
         m_attackerFacingLeft = attackerFacingLeft;
         m_state = CharState::Die;
-        std::cout << "Character triggered die animation, attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
     }
 }
 
@@ -250,7 +238,6 @@ void CharacterMovement::HandleDie(float deltaTime) {
         float knockdownProgress = m_knockdownTimer / 0.8f;
         float arcHeight = 0.15f * sin(knockdownProgress * 3.14159f);
         
-        // Tính toán hướng bật ngược dựa trên hướng của người tấn công
         float backwardMovement = m_attackerFacingLeft ? -0.8f * knockdownProgress : 0.8f * knockdownProgress;
         
         m_posY = m_groundY + arcHeight;
@@ -259,7 +246,6 @@ void CharacterMovement::HandleDie(float deltaTime) {
         if (m_knockdownTimer >= 0.8f) {
             m_knockdownComplete = true;
             m_posY = m_groundY;
-            std::cout << "Knockdown complete, switching to Lie animation" << std::endl;
         }
     }
     else if (m_knockdownComplete && m_dieTimer < 2.8f) {
@@ -269,7 +255,6 @@ void CharacterMovement::HandleDie(float deltaTime) {
         m_isDying = false;
         m_isDead = false;
         m_state = CharState::Idle;
-        std::cout << "Die sequence complete, returning to idle" << std::endl;
     }
 }
 
@@ -289,7 +274,6 @@ void CharacterMovement::HandleLanding(const bool* keyStates) {
     }
 } 
 
-// Platform collision methods
 void CharacterMovement::AddPlatform(float x, float y, float width, float height) {
     m_platforms.emplace_back(x, y, width, height);
 }
@@ -304,9 +288,8 @@ void CharacterMovement::SetCharacterSize(float width, float height) {
 }
 
 bool CharacterMovement::CheckPlatformCollisionWithHurtbox(float& newY, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
-    // Chỉ kiểm tra collision khi đang rơi xuống
     if (m_jumpVelocity > 0) {
-        return false; // Đang nhảy lên, không cần check platform
+        return false;
     }
     
     float hurtboxLeft = m_posX + hurtboxOffsetX - hurtboxWidth * 0.5f;
@@ -321,7 +304,6 @@ bool CharacterMovement::CheckPlatformCollisionWithHurtbox(float& newY, float hur
         float platformBottom = platform.y - platform.height * 0.5f;
         float platformTop = platform.y + platform.height * 0.5f;
         
-        // Chỉ cho phép va chạm khi đang rơi xuống và đáy hurtbox nằm trong khoảng nhỏ quanh đỉnh bục
         if (m_jumpVelocity <= 0 &&
             hurtboxBottom >= platformTop - epsilon &&
             hurtboxBottom <= platformTop + epsilon &&
@@ -344,23 +326,59 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
         return;
     }
     
+    Vector3 currentPos(m_posX, m_posY, 0.0f);
+    
     HandleMovement(deltaTime, keyStates);
     HandleJumpWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
     HandleLandingWithHurtbox(keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+    
+    if (m_wallCollision) {
+        Vector3 newPos(m_posX, m_posY, 0.0f);
+        Vector3 resolvedPos = m_wallCollision->ResolveWallCollision(currentPos, newPos,
+                                                                   hurtboxWidth, hurtboxHeight,
+                                                                   hurtboxOffsetX, hurtboxOffsetY);
+        
+        if (resolvedPos.x != newPos.x || resolvedPos.y != newPos.y) {
+            m_posX = resolvedPos.x;
+            m_posY = resolvedPos.y;
+            
+            if (resolvedPos.y != newPos.y && resolvedPos.y > newPos.y) {
+                m_isJumping = false;
+                m_jumpVelocity = 0.0f;
+                if (!keyStates[m_inputConfig.moveLeftKey] && !keyStates[m_inputConfig.moveRightKey]) {
+                    m_state = CharState::Idle;
+                }
+            }
+            
+            if (resolvedPos.x != newPos.x) {
+                if (!keyStates[m_inputConfig.moveLeftKey] && !keyStates[m_inputConfig.moveRightKey]) {
+                    m_state = CharState::Idle;
+                }
+            }
+        }
+    }
 }
 
 void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
     const PlayerInputConfig& inputConfig = GetInputConfig();
     
-    if (!m_isJumping && (m_posY <= m_groundY + 0.01f || m_isOnPlatform)) {
+    bool onGround = (m_posY <= m_groundY + 0.01f);
+    bool onWallSupport = false;
+    
+    if (m_wallCollision) {
+        Vector3 testPos(m_posX, m_posY - 0.01f, 0.0f);
+        onWallSupport = m_wallCollision->CheckWallCollision(testPos, hurtboxWidth, hurtboxHeight, 
+                                                          hurtboxOffsetX, hurtboxOffsetY);
+    }
+    
+    if (!m_isJumping && (onGround || m_isOnPlatform || onWallSupport)) {
         if (keyStates[inputConfig.jumpKey]) {
             m_isJumping = true;
             m_jumpVelocity = JUMP_FORCE;
             m_jumpStartY = m_posY;
             m_wasJumping = false;
             m_state = CharState::Idle;
-            
-            std::cout << "Character jumped from " << (m_posY <= m_groundY + 0.01f ? "ground" : "platform") << std::endl;
+            m_isOnPlatform = false;
         }
     }
     
@@ -371,11 +389,13 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
         if (keyStates[inputConfig.moveLeftKey]) {
             m_posX -= MOVE_SPEED * 1.5f * deltaTime;
             m_facingLeft = true;
+            m_state = CharState::MoveLeft;
         }
         
         if (keyStates[inputConfig.moveRightKey]) {
             m_posX += MOVE_SPEED * 1.5f * deltaTime;
             m_facingLeft = false;
+            m_state = CharState::MoveRight;
         }
         
         float newY = m_posY;
@@ -384,15 +404,23 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
             m_isJumping = false;
             m_jumpVelocity = 0.0f;
             m_wasJumping = true;
+            m_isOnPlatform = true;
+            m_currentPlatformY = newY;
             
-            std::cout << "Character landed on platform at Y: " << m_posY << std::endl;
+            if (!keyStates[inputConfig.moveLeftKey] && !keyStates[inputConfig.moveRightKey]) {
+                m_state = CharState::Idle;
+            }
         } else if (m_posY <= m_groundY) {
             m_posY = m_groundY;
             m_isJumping = false;
             m_jumpVelocity = 0.0f;
             m_wasJumping = true;
+            m_isOnPlatform = false;
+            m_currentPlatformY = m_groundY;
             
-            std::cout << "Character landed on ground" << std::endl;
+            if (!keyStates[inputConfig.moveLeftKey] && !keyStates[inputConfig.moveRightKey]) {
+                m_state = CharState::Idle;
+            }
         }
     }
 }
@@ -400,29 +428,36 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
 void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
     if (!m_isJumping) {
         float newY = m_posY;
-        if (!CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY)) {
+        bool onPlatform = CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+        
+        bool onWall = false;
+        if (m_wallCollision) {
+            Vector3 testPos(m_posX, m_posY - 0.01f, 0.0f);
+            onWall = m_wallCollision->CheckWallCollision(testPos, hurtboxWidth, hurtboxHeight, 
+                                                        hurtboxOffsetX, hurtboxOffsetY);
+        }
+        
+        if (!onPlatform && !onWall) {
             if (m_posY > m_groundY + 0.01f && !m_isOnPlatform) {
                 m_isJumping = true;
                 m_jumpVelocity = 0.0f;
-                std::cout << "Character started falling" << std::endl;
             }
-        } else {
+        } else if (onPlatform) {
             m_posY = newY;
         }
     }
 }
 
 bool CharacterMovement::CheckPlatformCollision(float& newY) {
-    // Chỉ kiểm tra collision khi đang rơi xuống
     if (m_jumpVelocity > 0) {
-        return false; // Đang nhảy lên, không cần check platform
+        return false;
     }
     
     float characterLeft = m_posX - m_characterWidth * 0.5f;
     float characterRight = m_posX + m_characterWidth * 0.5f;
     float characterBottom = m_posY;
     float characterTop = m_posY + m_characterHeight;
-    const float epsilon = 0.05f; // cho phép một khoảng nhỏ
+    const float epsilon = 0.05f;
     
     for (const auto& platform : m_platforms) {
         float platformLeft = platform.x - platform.width * 0.5f;
@@ -430,7 +465,6 @@ bool CharacterMovement::CheckPlatformCollision(float& newY) {
         float platformBottom = platform.y - platform.height * 0.5f;
         float platformTop = platform.y + platform.height * 0.5f;
         
-        // Chỉ cho phép va chạm khi đang rơi xuống và đáy nhân vật nằm trong khoảng nhỏ quanh đỉnh bục
         if (m_jumpVelocity <= 0 &&
             characterBottom >= platformTop - epsilon &&
             characterBottom <= platformTop + epsilon &&
@@ -441,4 +475,10 @@ bool CharacterMovement::CheckPlatformCollision(float& newY) {
     }
     
     return false;
+}
+
+void CharacterMovement::InitializeWallCollision() {
+    if (m_wallCollision) {
+        m_wallCollision->LoadWallsFromScene();
+    }
 } 
