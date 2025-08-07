@@ -28,6 +28,13 @@ private:
     const float MAX_HEALTH = 100.0f;
     const float HEALTH_DAMAGE = 10.0f; // Máu mất mỗi lần nhấn T
     
+    // Cloud movement system
+    float m_cloudSpeed;
+    const float CLOUD_MOVE_SPEED = 0.5f; // Tốc độ di chuyển mây (units per second)
+    const float CLOUD_SPACING = 1.74f; // Khoảng cách giữa các mây
+    const float CLOUD_LEFT_BOUNDARY = -6.0f; // Vị trí mây biến mất (bên trái màn hình)
+    const int TOTAL_CLOUDS = 10; // Tổng số mây
+    
 public:
     GSPlay();
     ~GSPlay();
@@ -56,4 +63,7 @@ public:
     void UpdateHealthBars();
     float GetPlayer1Health() const { return m_player1Health; }
     float GetPlayer2Health() const { return m_player2Health; }
+    
+    // Cloud movement system
+    void UpdateCloudMovement(float deltaTime);
 }; 

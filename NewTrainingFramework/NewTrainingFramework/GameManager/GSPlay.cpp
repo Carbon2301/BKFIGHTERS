@@ -33,7 +33,7 @@ bool GSPlay_IsShowPlatformBoxes() {
 }
 
 GSPlay::GSPlay() 
-    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f) {
+    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f), m_cloudSpeed(0.5f) {
 }
 
 GSPlay::~GSPlay() {
@@ -271,6 +271,9 @@ void GSPlay::Update(float deltaTime) {
     if (menuButton) {
         menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
     }
+    
+    // Update cloud movement
+    UpdateCloudMovement(deltaTime);
 }
 
 void GSPlay::Draw() {
@@ -489,7 +492,7 @@ void GSPlay::UpdateHealthBars() {
     
     Object* healthBar1 = sceneManager->GetObject(2000);
     if (healthBar1) {
-        Vector3 player1Pos = m_player.GetPosition();
+        const Vector3& player1Pos = m_player.GetPosition();
         
         Object* player1Obj = sceneManager->GetObject(1000);
         float characterHeight = 0.24f;
@@ -511,7 +514,7 @@ void GSPlay::UpdateHealthBars() {
     
     Object* healthBar2 = sceneManager->GetObject(2001);
     if (healthBar2) {
-        Vector3 player2Pos = m_player2.GetPosition();
+        const Vector3& player2Pos = m_player2.GetPosition();
         
         Object* player2Obj = sceneManager->GetObject(1001);
         float characterHeight = 0.24f;
@@ -527,5 +530,43 @@ void GSPlay::UpdateHealthBars() {
         const Vector3& scaleRef = healthBar2->GetScale();
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         healthBar2->SetScale(healthRatio2 * 0.18f, currentScale.y, currentScale.z);
+    }
+}
+
+void GSPlay::UpdateCloudMovement(float deltaTime) {
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    
+    int cloudIds[] = {51, 52, 53, 54, 55, 56, 57, 58, 59, 60};
+    
+    for (int cloudId : cloudIds) {
+        Object* cloud = sceneManager->GetObject(cloudId);
+        if (cloud) {
+            const Vector3& currentPos = cloud->GetPosition();
+            float newX = currentPos.x - CLOUD_MOVE_SPEED * deltaTime;
+            cloud->SetPosition(newX, currentPos.y, currentPos.z);
+        }
+    }
+    
+    for (int cloudId : cloudIds) {
+        Object* cloud = sceneManager->GetObject(cloudId);
+        if (cloud) {
+            const Vector3& currentPos = cloud->GetPosition();
+            
+            if (currentPos.x <= CLOUD_LEFT_BOUNDARY) {
+                float rightmostX = -1000.0f;
+                for (int otherCloudId : cloudIds) {
+                    Object* otherCloud = sceneManager->GetObject(otherCloudId);
+                    if (otherCloud) {
+                        const Vector3& otherPos = otherCloud->GetPosition();
+                        if (otherPos.x > rightmostX) {
+                            rightmostX = otherPos.x;
+                        }
+                    }
+                }
+                
+                float newX = rightmostX + CLOUD_SPACING;
+                cloud->SetPosition(newX, currentPos.y, currentPos.z);
+            }
+        }
     }
 } 
