@@ -7,7 +7,7 @@
 
 GLfloat Vector2::Length()
 {
-	return sqrt(x*x + y*y);
+	return (GLfloat)sqrt(x*x + y*y);
 }
 
 Vector2 & Vector2::Normalize()
@@ -101,7 +101,7 @@ GLfloat Vector2::Dot(Vector2 & vector)
 
 GLfloat Vector3::Length()
 {
-	return sqrt(x*x + y*y + z*z);
+	return (GLfloat)sqrt(x*x + y*y + z*z);
 }
 
 Vector3 & Vector3::Normalize()
@@ -181,6 +181,15 @@ Vector3 & Vector3::operator = (Vector3 & vector)
 	return *this;
 }
 
+Vector3 & Vector3::operator = (const Vector3 & vector)
+{
+	x = vector.x;
+	y = vector.y;
+	z = vector.z;
+	
+	return *this;
+}
+
 GLfloat Vector3::operator [] (unsigned int idx)
 {
 	return (&x)[idx];
@@ -201,11 +210,23 @@ Vector3 Vector3::Cross(Vector3 & vector)
 	return Vector3(y * vector.z -  z * vector.y, z * vector.x - x * vector.z, x * vector.y - y * vector.x);
 }
 
+// Utility functions for Vector3
+Vector3 Vector3::Lerp(const Vector3& a, const Vector3& b, float t) {
+	return Vector3(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+}
+
+GLfloat Vector3::Distance(const Vector3& a, const Vector3& b) {
+	float dx = a.x - b.x;
+	float dy = a.y - b.y;
+	float dz = a.z - b.z;
+	return (GLfloat)sqrt(dx * dx + dy * dy + dz * dz);
+}
+
 //Vector4
 
 GLfloat Vector4::Length()
 {
-	return sqrt(x*x + y*y + z*z + w*w);
+	return (GLfloat)sqrt(x*x + y*y + z*z + w*w);
 }
 
 Vector4 & Vector4::Normalize()

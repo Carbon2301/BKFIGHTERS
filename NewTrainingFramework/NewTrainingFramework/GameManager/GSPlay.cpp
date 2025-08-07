@@ -162,6 +162,18 @@ void GSPlay::Init() {
     m_player.GetMovement()->SetCharacterSize(0.16f, 0.24f);
     m_player2.GetMovement()->SetCharacterSize(0.16f, 0.24f);
     
+    // Setup lift platform (Object ID 30)
+    Object* liftPlatform = sceneManager->GetObject(30);
+    if (liftPlatform) {
+        liftPlatform->SetLiftPlatform(true, 
+            0.49f, -0.862f, 0.0f,  // Start position
+            0.49f, 0.33f, 0.0f,   // End position
+            0.2f, 1.0f);          // Speed: 0.2 units/sec, Pause time: 1.0 second
+        std::cout << "Lift platform (ID 30) configured successfully" << std::endl;
+    } else {
+        std::cout << "Warning: Lift platform (ID 30) not found in scene" << std::endl;
+    }
+    
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;

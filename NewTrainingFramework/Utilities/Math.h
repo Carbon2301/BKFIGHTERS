@@ -61,9 +61,14 @@ public:
 	Vector3 operator / (GLfloat k);
 	Vector3 & operator /= (GLfloat k);
 	Vector3 & operator = (Vector3 & vector);
+	Vector3 & operator = (const Vector3 & vector);
 	Vector3 Modulate(Vector3 & vector);
 	GLfloat Dot(Vector3 & vector);
 	Vector3 Cross(Vector3 & vector);
+
+	// Utility functions
+	static Vector3 Lerp(const Vector3& a, const Vector3& b, float t);
+	static GLfloat Distance(const Vector3& a, const Vector3& b);
 
 	//access to elements
 	GLfloat operator [] (unsigned int idx);
