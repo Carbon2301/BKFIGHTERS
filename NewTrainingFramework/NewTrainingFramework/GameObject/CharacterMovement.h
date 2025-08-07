@@ -75,6 +75,13 @@ private:
     bool m_prevRightKey = false;
     static constexpr float DOUBLE_TAP_THRESHOLD = 0.2f; // 200ms
 
+    // Double-tap xuống platform
+    float m_lastDownPressTime = -1.0f;
+    bool m_prevDownKey = false;
+    bool m_isFallingThroughPlatform = false;
+    float m_fallThroughTimer = 0.0f;
+    static constexpr float FALL_THROUGH_DURATION = 0.5f; // 500ms để rơi xuyên platform
+    
     // Platform collision
     std::unique_ptr<PlatformCollision> m_platformCollision;
     float m_characterWidth;
