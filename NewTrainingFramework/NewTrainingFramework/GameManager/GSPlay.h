@@ -13,13 +13,8 @@ private:
     static const int ANIM_OBJECT_ID = 1000;
     std::shared_ptr<AnimationManager> m_animManager;
     
-    // Static variable to control hitbox/hurtbox visibility
     static bool s_showHitboxHurtbox;
-    
-    // Static variable to control platform box visibility
     static bool s_showPlatformBoxes;
-    
-    // Static variable to control wall box visibility
     static bool s_showWallBoxes;
     
     // Health system variables
@@ -66,4 +61,7 @@ public:
     
     // Cloud movement system
     void UpdateCloudMovement(float deltaTime);
+    
+    // Fan rotation system
+    void UpdateFanRotation(float deltaTime);
 }; 

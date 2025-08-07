@@ -274,6 +274,9 @@ void GSPlay::Update(float deltaTime) {
     
     // Update cloud movement
     UpdateCloudMovement(deltaTime);
+    
+    // Update fan rotation
+    UpdateFanRotation(deltaTime);
 }
 
 void GSPlay::Draw() {
@@ -567,6 +570,27 @@ void GSPlay::UpdateCloudMovement(float deltaTime) {
                 float newX = rightmostX + CLOUD_SPACING;
                 cloud->SetPosition(newX, currentPos.y, currentPos.z);
             }
+        }
+    }
+}
+
+void GSPlay::UpdateFanRotation(float deltaTime) {
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    
+    int fanIds[] = {800, 801, 802, 803};
+    const float FAN_ROTATION_SPEED = 90.0f;
+    
+    for (int fanId : fanIds) {
+        Object* fan = sceneManager->GetObject(fanId);
+        if (fan) {
+            const Vector3& currentRotation = fan->GetRotation();
+            float newZRotation = currentRotation.z + FAN_ROTATION_SPEED * deltaTime;
+            
+            if (newZRotation >= 360.0f) {
+                newZRotation -= 360.0f;
+            }
+            
+            fan->SetRotation(currentRotation.x, currentRotation.y, newZRotation);
         }
     }
 } 
