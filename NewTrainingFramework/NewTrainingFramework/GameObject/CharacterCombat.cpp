@@ -78,10 +78,10 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         animation->PlayAnimation(10, false);
         
         // Show hitbox for punch 1
-        float hitboxWidth = 0.07f;
-        float hitboxHeight = 0.07f;
-        float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.08f : 0.08f;
-        float hitboxOffsetY = -0.05f;
+        float hitboxWidth = 0.03f;
+        float hitboxHeight = 0.03f;
+        float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.04f : 0.04f;
+        float hitboxOffsetY = -0.02f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         
         std::cout << "=== COMBO START ===" << std::endl;
@@ -95,19 +95,19 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
             animation->PlayAnimation(11, false);
             
             // Show hitbox for punch 2
-            float hitboxWidth = 0.07f;
-            float hitboxHeight = 0.07f;
-            float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.08f : 0.08f;
-            float hitboxOffsetY = -0.05f;
+            float hitboxWidth = 0.03f;
+            float hitboxHeight = 0.03f;
+            float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.04f : 0.04f;
+            float hitboxOffsetY = -0.02f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         } else if (m_comboCount == 3) {
             animation->PlayAnimation(12, false);
             
             // Show hitbox for punch 3
-            float hitboxWidth = 0.07f;
-            float hitboxHeight = 0.07f;
-            float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.1f : 0.1f;
-            float hitboxOffsetY = -0.05f;
+            float hitboxWidth = 0.03f;
+            float hitboxHeight = 0.03f;
+            float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.05f : 0.05f;
+            float hitboxOffsetY = -0.02f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
             
             m_comboCompleted = true;
@@ -122,10 +122,10 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         animation->PlayAnimation(10, false);
         
         // Show hitbox for punch 1
-        float hitboxWidth = 0.07f;
-        float hitboxHeight = 0.07f;
-        float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.13f : 0.13f;
-        float hitboxOffsetY = -0.05f;
+        float hitboxWidth = 0.03f;
+        float hitboxHeight = 0.03f;
+        float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.04f : 0.04f;
+        float hitboxOffsetY = -0.02f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
     }
 }

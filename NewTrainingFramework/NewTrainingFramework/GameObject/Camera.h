@@ -18,6 +18,12 @@ private:
     float m_targetZoom;
     bool m_autoZoomEnabled;
     
+    // Character bounding box parameters
+    float m_characterWidth;
+    float m_characterHeight;
+    float m_paddingX;
+    float m_paddingY;
+    
     // Initial state variables
     Vector3 m_initialPosition;
     Vector3 m_initialTarget;
@@ -61,6 +67,9 @@ public:
     
     // Dynamic camera positioning based on character positions
     void UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3& player2Pos, float deltaTime);
+    
+    void SetCharacterDimensions(float width, float height);
+    void SetCameraPadding(float paddingX, float paddingY);
     
     const Matrix& GetViewMatrix();
     const Matrix& GetProjectionMatrix();

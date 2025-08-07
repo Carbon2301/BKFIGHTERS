@@ -99,7 +99,7 @@ bool Texture2D::LoadFromSDLSurface(void* surfacePtr) {
     glBindTexture(GL_TEXTURE_2D, m_textureId);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, converted->pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     SDL_FreeSurface(converted);
@@ -140,4 +140,25 @@ bool Texture2D::CreateColorTexture(int width, int height, unsigned char r, unsig
     
     std::cout << "Created color texture: " << width << "x" << height << " RGBA(" << (int)r << "," << (int)g << "," << (int)b << "," << (int)a << ")" << std::endl;
     return true;
+}
+
+void Texture2D::SetFiltering(GLenum minFilter, GLenum magFilter) {
+    if (m_textureId) {
+        glBindTexture(GL_TEXTURE_2D, m_textureId);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
+void Texture2D::SetSharpFiltering() {
+    SetFiltering(GL_NEAREST, GL_NEAREST);
+}
+
+void Texture2D::SetSmoothFiltering() {
+    SetFiltering(GL_LINEAR, GL_LINEAR);
+}
+
+void Texture2D::SetMixedFiltering() {
+    SetFiltering(GL_LINEAR, GL_NEAREST);
 } 

@@ -33,4 +33,9 @@ public:
     
     // Create a simple colored texture
     bool CreateColorTexture(int width, int height, unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
+    
+    void SetFiltering(GLenum minFilter, GLenum magFilter);
+    void SetSharpFiltering();
+    void SetSmoothFiltering(); 
+    void SetMixedFiltering();
 }; 

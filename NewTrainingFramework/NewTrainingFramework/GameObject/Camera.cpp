@@ -13,12 +13,14 @@ Camera::Camera()
     , m_left(-1.0f), m_right(1.0f), m_bottom(-1.0f), m_top(1.0f)
     , m_nearPlane(0.1f), m_farPlane(100.0f)
     , m_baseLeft(-1.0f), m_baseRight(1.0f), m_baseBottom(-1.0f), m_baseTop(1.0f)
-    , m_minZoom(0.3f), m_maxZoom(2.0f)
-    , m_currentZoom(1.0f), m_zoomSpeed(2.0f), m_targetZoom(1.0f)
+    , m_minZoom(1.0f), m_maxZoom(3.5f)
+    , m_currentZoom(1.8f), m_zoomSpeed(2.0f), m_targetZoom(2.0f)
     , m_autoZoomEnabled(false)
+    , m_characterWidth(0.5f), m_characterHeight(1.0f)
+    , m_paddingX(0.3f), m_paddingY(0.2f)
     , m_initialPosition(0.0f, 0.0f, 1.0f)
     , m_initialTarget(0.0f, 0.0f, 0.0f)
-    , m_initialZoom(1.0f)
+    , m_initialZoom(1.8f)
     , m_viewNeedsUpdate(true)
     , m_projectionNeedsUpdate(true)
     , m_vpMatrixNeedsUpdate(true) {
@@ -31,12 +33,14 @@ Camera::Camera(const Vector3& position, const Vector3& target, const Vector3& up
     , m_left(-1.0f), m_right(1.0f), m_bottom(-1.0f), m_top(1.0f)
     , m_nearPlane(0.1f), m_farPlane(100.0f)
     , m_baseLeft(-1.0f), m_baseRight(1.0f), m_baseBottom(-1.0f), m_baseTop(1.0f)
-    , m_minZoom(0.3f), m_maxZoom(2.0f)
-    , m_currentZoom(1.0f), m_zoomSpeed(2.0f), m_targetZoom(1.0f)
+    , m_minZoom(1.0f), m_maxZoom(3.5f)
+    , m_currentZoom(1.8f), m_zoomSpeed(2.0f), m_targetZoom(1.8f)
     , m_autoZoomEnabled(false)
+    , m_characterWidth(0.5f), m_characterHeight(1.0f)
+    , m_paddingX(0.3f), m_paddingY(0.2f)
     , m_initialPosition(position.x, position.y, position.z)
     , m_initialTarget(target.x, target.y, target.z)
-    , m_initialZoom(1.0f)
+    , m_initialZoom(1.8f) 
     , m_viewNeedsUpdate(true)
     , m_projectionNeedsUpdate(true)
     , m_vpMatrixNeedsUpdate(true) {
@@ -137,7 +141,8 @@ void Camera::UpdateZoom(float deltaTime) {
     
     // Smooth zoom interpolation
     float zoomDiff = m_targetZoom - m_currentZoom;
-    if (std::abs(zoomDiff) > 0.001f) {
+    float absZoomDiff = (zoomDiff < 0) ? -zoomDiff : zoomDiff;
+    if (absZoomDiff > 0.001f) {
         m_currentZoom += zoomDiff * m_zoomSpeed * deltaTime;
         
         // Clamp to zoom range
@@ -164,45 +169,43 @@ void Camera::SetTargetZoom(float targetZoom) {
 void Camera::UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3& player2Pos, float deltaTime) {
     if (!m_autoZoomEnabled) return;
     
-    // Calculate distance between players
-    float distance = std::abs(player1Pos.x - player2Pos.x);
+    float minX = (player1Pos.x < player2Pos.x) ? player1Pos.x : player2Pos.x;
+    float maxX = (player1Pos.x > player2Pos.x) ? player1Pos.x : player2Pos.x;
+    float minY = (player1Pos.y < player2Pos.y) ? player1Pos.y : player2Pos.y;
+    float maxY = (player1Pos.y > player2Pos.y) ? player1Pos.y : player2Pos.y;
     
-    // Calculate target zoom based on distance with smoother curve
-    // Closer players = higher zoom (smaller view), farther players = lower zoom (larger view)
-    float targetZoom;
+    minX -= (m_characterWidth * 0.5f + m_paddingX);
+    maxX += (m_characterWidth * 0.5f + m_paddingX);
+    minY -= (m_characterHeight * 0.5f + m_paddingY);
+    maxY += (m_characterHeight * 0.5f + m_paddingY);
     
-    if (distance < 0.5f) {
-        // Very close - maximum zoom
-        targetZoom = m_maxZoom;
-    } else if (distance > 10.0f) {
-        // Very far - minimum zoom
-        targetZoom = m_minZoom;
-    } else {
-        // Smooth interpolation with easing curve for more natural feel
-        float normalizedDistance = (distance - 0.5f) / 9.5f; // 0.5 to 10.0 range
-        // Use ease-out curve for smoother zoom transition
-        float easedDistance = 1.0f - (1.0f - normalizedDistance) * (1.0f - normalizedDistance);
-        targetZoom = m_maxZoom - (easedDistance * (m_maxZoom - m_minZoom));
-    }
+    float requiredWidth = maxX - minX;
+    float requiredHeight = maxY - minY;
+    
+    float baseViewWidth = m_baseRight - m_baseLeft;
+    float baseViewHeight = m_baseTop - m_baseBottom;
+    
+    float zoomForWidth = baseViewWidth / requiredWidth;
+    float zoomForHeight = baseViewHeight / requiredHeight;
+    
+    float targetZoom = (zoomForWidth < zoomForHeight) ? zoomForWidth : zoomForHeight;
+    
+    if (targetZoom < m_minZoom) targetZoom = m_minZoom;
+    if (targetZoom > m_maxZoom) targetZoom = m_maxZoom;
     
     // Set target zoom and update
     SetTargetZoom(targetZoom);
     UpdateZoom(deltaTime);
     
-    // Calculate center point between players for camera position
-    float centerX = (player1Pos.x + player2Pos.x) * 0.5f;
-    float centerY = (player1Pos.y + player2Pos.y) * 0.5f;
-    
-    // Add slight vertical offset to keep characters in better view
-    centerY += 0.2f;
+    float centerX = (minX + maxX) * 0.5f;
+    float centerY = (minY + maxY) * 0.5f;
     
     // Smooth camera movement to center point
     Vector3 targetPosition(centerX, centerY, m_position.z);
     Vector3 currentPos = m_position;
     
-    // Smooth interpolation for camera position with different speeds for X and Y
-    float moveSpeedX = 4.0f; // Faster horizontal movement
-    float moveSpeedY = 2.5f; // Slower vertical movement for stability
+    float moveSpeedX = 3.0f;
+    float moveSpeedY = 3.0f;
     Vector3 newPosition;
     newPosition.x = currentPos.x + (targetPosition.x - currentPos.x) * moveSpeedX * deltaTime;
     newPosition.y = currentPos.y + (targetPosition.y - currentPos.y) * moveSpeedY * deltaTime;
@@ -210,6 +213,16 @@ void Camera::UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3&
     
     // Update camera position and target
     SetPosition2D(newPosition.x, newPosition.y);
+}
+
+void Camera::SetCharacterDimensions(float width, float height) {
+    m_characterWidth = width;
+    m_characterHeight = height;
+}
+
+void Camera::SetCameraPadding(float paddingX, float paddingY) {
+    m_paddingX = paddingX;
+    m_paddingY = paddingY;
 }
 
 void Camera::ResetToInitialState() {

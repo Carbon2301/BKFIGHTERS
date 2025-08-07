@@ -107,7 +107,7 @@ bool Model::LoadTexture(const char* filename) {
         0, format, GL_UNSIGNED_BYTE, textureData);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     std::cout << "Loaded texture: " << filename << " (" << width << "x" << height << ")" << std::endl;

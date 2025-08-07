@@ -3,10 +3,10 @@
 #include <iostream>
 #include <SDL.h>
 
-const float CharacterMovement::JUMP_FORCE = 3.0f;
-const float CharacterMovement::GRAVITY = 8.0f;
+const float CharacterMovement::JUMP_FORCE = 0.9f;
+const float CharacterMovement::GRAVITY = 2.5f;
 const float CharacterMovement::GROUND_Y = 0.0f;
-const float CharacterMovement::MOVE_SPEED = 0.5f;
+const float CharacterMovement::MOVE_SPEED = 0.25f;
 
 // Static input configurations
 const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K', 0, 'A', 'S', 'S', 'D');

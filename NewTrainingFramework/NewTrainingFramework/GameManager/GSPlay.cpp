@@ -149,7 +149,7 @@ void GSPlay::Init() {
     m_player.ResetHealth(); // Khởi tạo health cho Player 1
     
     // Setup hurtbox for Player 1
-    m_player.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
+    m_player.SetHurtbox(0.088f, 0.13f, -0.0088f, -0.038f); // Width, Height, OffsetX, OffsetY
     
     auto animManager2 = std::make_shared<AnimationManager>();
     
@@ -170,7 +170,7 @@ void GSPlay::Init() {
     m_player2.ResetHealth(); // Khởi tạo health cho Player 2
     
     // Setup hurtbox for Player 2
-    m_player2.SetHurtbox(0.16f, 0.24f, -0.01f, -0.08f); // Width, Height, OffsetX, OffsetY
+    m_player2.SetHurtbox(0.088f, 0.13f, -0.0088f, -0.038f); // Width, Height, OffsetX, OffsetY
     
     // Tự động đọc tất cả platform từ file GSPlay.txt
     m_player.GetMovement()->ClearPlatforms();
@@ -582,14 +582,14 @@ void GSPlay::UpdateHealthBars() {
         //chỉnh độ cao
         float healthBarOffsetY = characterHeight / 6.0f;
         //chỉnh center
-        float healthBarOffsetX = -0.13f;
+        float healthBarOffsetX = -0.05f;
         healthBar1->SetPosition(player1Pos.x + healthBarOffsetX, player1Pos.y + healthBarOffsetY, 0.0f);
         
         float healthRatio1 = m_player.GetHealth() / m_player.GetMaxHealth();
         const Vector3& scaleRef = healthBar1->GetScale();
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         //chỉnh độ dài ngắn
-        healthBar1->SetScale(healthRatio1 * 0.5f, currentScale.y, currentScale.z);
+        healthBar1->SetScale(healthRatio1 * 0.18f, currentScale.y, currentScale.z);
     }
     
     Object* healthBar2 = sceneManager->GetObject(2001);
@@ -603,12 +603,12 @@ void GSPlay::UpdateHealthBars() {
         }
         
         float healthBarOffsetY = characterHeight / 6.0f;
-        float healthBarOffsetX = -0.13f;
+        float healthBarOffsetX = -0.05f;
         healthBar2->SetPosition(player2Pos.x + healthBarOffsetX, player2Pos.y + healthBarOffsetY, 0.0f);
         
         float healthRatio2 = m_player2.GetHealth() / m_player2.GetMaxHealth();
         const Vector3& scaleRef = healthBar2->GetScale();
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
-        healthBar2->SetScale(healthRatio2 * 0.5f, currentScale.y, currentScale.z);
+        healthBar2->SetScale(healthRatio2 * 0.18f, currentScale.y, currentScale.z);
     }
 } 

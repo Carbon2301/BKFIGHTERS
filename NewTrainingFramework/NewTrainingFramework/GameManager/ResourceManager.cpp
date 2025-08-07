@@ -252,6 +252,16 @@ bool ResourceManager::LoadTexture(int id, const std::string& filepath, const std
         return false;
     }
     
+    if (id == 0 || id == 1) {
+        texture->SetMixedFiltering();
+    } else if (id >= 10 && id <= 11) {
+        texture->SetSharpFiltering();
+    } else if (id == 12) {
+        texture->SetMixedFiltering();
+    } else {
+        texture->SetMixedFiltering();
+    }
+    
     TextureData textureData;
     textureData.id = id;
     textureData.filepath = filepath;
