@@ -6,6 +6,7 @@ PlatformCollision::~PlatformCollision() {}
 
 void PlatformCollision::AddPlatform(float x, float y, float width, float height) {
     m_platforms.emplace_back(x, y, width, height);
+    std::cout << "[PlatformCollision] Add platform: Pos:(" << x << ", " << y << ") Size:(" << width << ", " << height << ")" << std::endl;
 }
 
 void PlatformCollision::ClearPlatforms() {
@@ -56,6 +57,7 @@ bool PlatformCollision::CheckPlatformCollisionWithHurtbox(float& newY, float pos
             hurtboxBottom <= platformTop + epsilon &&
             hurtboxRight > platformLeft && hurtboxLeft < platformRight) {
             newY = platformTop - hurtboxOffsetY + hurtboxHeight * 0.5f;
+            std::cout << "[PlatformCollision] Collided with platform (hurtbox): Pos:(" << platform.x << ", " << platform.y << ") Size:(" << platform.width << ", " << platform.height << ")" << std::endl;
             return true;
         }
     }

@@ -56,6 +56,11 @@ void WallCollision::LoadWallsFromScene() {
 
     while (std::getline(file, line)) {
         if (line.find("# Wall") != std::string::npos) {
+            // Nếu đang trong block tường trước đó, thêm tường vào danh sách
+            if (inWallBlock && objectId != -1) {
+                AddWall(posX, posY, scaleX, scaleY, objectId);
+            }
+            // Bắt đầu block tường mới
             inWallBlock = true;
             objectId = -1;
             posX = posY = 0;
@@ -84,8 +89,15 @@ void WallCollision::LoadWallsFromScene() {
             }
         }
     }
+    // Thêm tường cuối cùng nếu còn
     if (inWallBlock && objectId != -1) {
         AddWall(posX, posY, scaleX, scaleY, objectId);
+    }
+    
+    // Log danh sách tường sau khi load
+    std::cout << "[WallCollision] Loaded walls: " << m_walls.size() << std::endl;
+    for (const auto& wall : m_walls) {
+        std::cout << "  Wall ID: " << wall.objectId << ", Pos: (" << wall.x << ", " << wall.y << ") Size: (" << wall.width << ", " << wall.height << ")" << std::endl;
     }
 }
 
@@ -204,6 +216,7 @@ Vector3 WallCollision::ResolveWallCollision(const Vector3& currentPos, const Vec
                                wall.GetLeft(), wall.GetRight(), wall.GetBottom(), wall.GetTop())) {
             continue;
         }
+        std::cout << "[WallCollision] Resolve collision with wall ID: " << wall.objectId << std::endl;
         
         float penetrationLeft = hurtboxRight - wall.GetLeft();
         float penetrationRight = wall.GetRight() - hurtboxLeft;
