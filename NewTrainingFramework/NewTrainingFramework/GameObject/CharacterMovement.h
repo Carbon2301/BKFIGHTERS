@@ -2,6 +2,7 @@
 #include <memory>
 #include "../../Utilities/Math.h"
 #include "WallCollision.h"
+#include "PlatformCollision.h"
 
 enum class CharState {
     Idle,
@@ -35,12 +36,6 @@ struct PlayerInputConfig {
         : moveLeftKey(left), moveRightKey(right), jumpKey(jump), sitKey(sit), 
           rollKey(roll), punchKey(punch), axeKey(axe), kickKey(kick), dieKey(die),
           rollLeftKey1(rollLeft1), rollLeftKey2(rollLeft2), rollRightKey1(rollRight1), rollRightKey2(rollRight2) {}
-};
-
-// Platform structure for collision detection
-struct Platform {
-    float x, y, width, height;
-    Platform(float px, float py, float w, float h) : x(px), y(py), width(w), height(h) {}
 };
 
 class CharacterMovement {
@@ -81,7 +76,7 @@ private:
     static constexpr float DOUBLE_TAP_THRESHOLD = 0.2f; // 200ms
 
     // Platform collision
-    std::vector<Platform> m_platforms;
+    std::unique_ptr<PlatformCollision> m_platformCollision;
     float m_characterWidth;
     float m_characterHeight;
     bool m_isOnPlatform;
@@ -137,6 +132,7 @@ public:
     bool CheckPlatformCollisionWithHurtbox(float& newY, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
     bool IsOnPlatform() const { return m_isOnPlatform; }
     float GetCurrentPlatformY() const { return m_currentPlatformY; }
+    PlatformCollision* GetPlatformCollision() const { return m_platformCollision.get(); }
     
     // Wall collision methods
     void InitializeWallCollision();

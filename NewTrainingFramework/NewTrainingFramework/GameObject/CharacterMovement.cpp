@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CharacterMovement.h"
 #include "WallCollision.h"
+#include "PlatformCollision.h"
 #include <iostream>
 #include <SDL.h>
 
@@ -18,7 +19,8 @@ CharacterMovement::CharacterMovement()
       m_isSitting(false), m_isDying(false), m_isDead(false), m_dieTimer(0.0f), 
       m_knockdownTimer(0.0f), m_knockdownComplete(false), m_attackerFacingLeft(false), m_inputConfig(PLAYER1_INPUT),
       m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f),
-      m_wallCollision(std::make_unique<WallCollision>()) {
+      m_wallCollision(std::make_unique<WallCollision>()),
+      m_platformCollision(std::make_unique<PlatformCollision>()) {
 }
 
 CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
@@ -27,7 +29,8 @@ CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
       m_isSitting(false), m_isDying(false), m_isDead(false), m_dieTimer(0.0f), 
       m_knockdownTimer(0.0f), m_knockdownComplete(false), m_attackerFacingLeft(false), m_inputConfig(inputConfig),
       m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f),
-      m_wallCollision(std::make_unique<WallCollision>()) {
+      m_wallCollision(std::make_unique<WallCollision>()),
+      m_platformCollision(std::make_unique<PlatformCollision>()) {
 }
 
 CharacterMovement::~CharacterMovement() {
@@ -275,11 +278,15 @@ void CharacterMovement::HandleLanding(const bool* keyStates) {
 } 
 
 void CharacterMovement::AddPlatform(float x, float y, float width, float height) {
-    m_platforms.emplace_back(x, y, width, height);
+    if (m_platformCollision) {
+        m_platformCollision->AddPlatform(x, y, width, height);
+    }
 }
 
 void CharacterMovement::ClearPlatforms() {
-    m_platforms.clear();
+    if (m_platformCollision) {
+        m_platformCollision->ClearPlatforms();
+    }
 }
 
 void CharacterMovement::SetCharacterSize(float width, float height) {
@@ -287,35 +294,14 @@ void CharacterMovement::SetCharacterSize(float width, float height) {
     m_characterHeight = height;
 }
 
+bool CharacterMovement::CheckPlatformCollision(float& newY) {
+    if (!m_platformCollision) return false;
+    return m_platformCollision->CheckPlatformCollision(newY, m_posX, m_posY, m_jumpVelocity, m_characterWidth, m_characterHeight);
+}
+
 bool CharacterMovement::CheckPlatformCollisionWithHurtbox(float& newY, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
-    if (m_jumpVelocity > 0) {
-        return false;
-    }
-    
-    float hurtboxLeft = m_posX + hurtboxOffsetX - hurtboxWidth * 0.5f;
-    float hurtboxRight = m_posX + hurtboxOffsetX + hurtboxWidth * 0.5f;
-    float hurtboxBottom = m_posY + hurtboxOffsetY - hurtboxHeight * 0.5f;
-    float hurtboxTop = m_posY + hurtboxOffsetY + hurtboxHeight * 0.5f;
-    const float epsilon = 0.05f;
-    
-    for (const auto& platform : m_platforms) {
-        float platformLeft = platform.x - platform.width * 0.5f;
-        float platformRight = platform.x + platform.width * 0.5f;
-        float platformBottom = platform.y - platform.height * 0.5f;
-        float platformTop = platform.y + platform.height * 0.5f;
-        
-        if (m_jumpVelocity <= 0 &&
-            hurtboxBottom >= platformTop - epsilon &&
-            hurtboxBottom <= platformTop + epsilon &&
-            hurtboxRight > platformLeft && hurtboxLeft < platformRight) {
-            newY = platformTop - hurtboxOffsetY + hurtboxHeight * 0.5f;
-            m_isOnPlatform = true;
-            m_currentPlatformY = platformTop;
-            return true;
-        }
-    }
-    m_isOnPlatform = false;
-    return false;
+    if (!m_platformCollision) return false;
+    return m_platformCollision->CheckPlatformCollisionWithHurtbox(newY, m_posX, m_posY, m_jumpVelocity, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
 }
 
 void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
@@ -429,52 +415,23 @@ void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hu
     if (!m_isJumping) {
         float newY = m_posY;
         bool onPlatform = CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
-        
         bool onWall = false;
         if (m_wallCollision) {
             Vector3 testPos(m_posX, m_posY - 0.01f, 0.0f);
             onWall = m_wallCollision->CheckWallCollision(testPos, hurtboxWidth, hurtboxHeight, 
                                                         hurtboxOffsetX, hurtboxOffsetY);
         }
-        
         if (!onPlatform && !onWall) {
-            if (m_posY > m_groundY + 0.01f && !m_isOnPlatform) {
+            m_isOnPlatform = false;
+            if (m_posY > m_groundY + 0.01f) {
                 m_isJumping = true;
                 m_jumpVelocity = 0.0f;
             }
         } else if (onPlatform) {
             m_posY = newY;
+            m_isOnPlatform = true;
         }
     }
-}
-
-bool CharacterMovement::CheckPlatformCollision(float& newY) {
-    if (m_jumpVelocity > 0) {
-        return false;
-    }
-    
-    float characterLeft = m_posX - m_characterWidth * 0.5f;
-    float characterRight = m_posX + m_characterWidth * 0.5f;
-    float characterBottom = m_posY;
-    float characterTop = m_posY + m_characterHeight;
-    const float epsilon = 0.05f;
-    
-    for (const auto& platform : m_platforms) {
-        float platformLeft = platform.x - platform.width * 0.5f;
-        float platformRight = platform.x + platform.width * 0.5f;
-        float platformBottom = platform.y - platform.height * 0.5f;
-        float platformTop = platform.y + platform.height * 0.5f;
-        
-        if (m_jumpVelocity <= 0 &&
-            characterBottom >= platformTop - epsilon &&
-            characterBottom <= platformTop + epsilon &&
-            characterRight > platformLeft && characterLeft < platformRight) {
-            newY = platformTop;
-            return true;
-        }
-    }
-    
-    return false;
 }
 
 void CharacterMovement::InitializeWallCollision() {
