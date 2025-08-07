@@ -25,7 +25,7 @@ GameStateMachine* g_gameStateMachine = nullptr;
 
 int Init(ESContext* esContext)
 {
-	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+	glClearColor(0.05f, 0.15f, 0.5f, 1.0f); // Slightly lighter dark blue background
 
 	std::cout << "\n=== 2D Game Engine with State Machine ===" << std::endl;
 	std::cout << "Initializing New Training Framework Engine..." << std::endl;

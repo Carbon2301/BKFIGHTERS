@@ -30,7 +30,7 @@ private:
     
     // Cloud movement system
     float m_cloudSpeed;
-    const float CLOUD_MOVE_SPEED = 0.5f; // Tốc độ di chuyển mây (units per second)
+    const float CLOUD_MOVE_SPEED = 0.2f; // Tốc độ di chuyển mây (units per second) - đã giảm từ 0.5f xuống 0.2f
     const float CLOUD_SPACING = 1.74f; // Khoảng cách giữa các mây
     const float CLOUD_LEFT_BOUNDARY = -6.0f; // Vị trí mây biến mất (bên trái màn hình)
     const int TOTAL_CLOUDS = 10; // Tổng số mây
