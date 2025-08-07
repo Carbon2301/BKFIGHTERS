@@ -14,7 +14,6 @@ public:
     Texture2D();
     ~Texture2D();
     
-    // Load texture from file
     bool LoadFromFile(const std::string& filepath, const std::string& tiling = "GL_REPEAT");
 
     void Bind(int textureUnit = 0) const;
@@ -28,10 +27,8 @@ public:
 
     void Cleanup();
 
-    // Tạo texture từ SDL_Surface (dùng cho text động)
-    bool LoadFromSDLSurface(void* surface); // void* để tránh include SDL_ttf ở header
+    bool LoadFromSDLSurface(void* surface);
     
-    // Create a simple colored texture
     bool CreateColorTexture(int width, int height, unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
     
     void SetFiltering(GLenum minFilter, GLenum magFilter);

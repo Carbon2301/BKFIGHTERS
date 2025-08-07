@@ -19,6 +19,9 @@ private:
     // Static variable to control platform box visibility
     static bool s_showPlatformBoxes;
     
+    // Static variable to control wall box visibility
+    static bool s_showWallBoxes;
+    
     // Health system variables
     float m_player1Health;
     float m_player2Health;
@@ -45,6 +48,9 @@ public:
     
     // Static getter for platform box visibility
     static bool IsShowPlatformBoxes() { return s_showPlatformBoxes; }
+    
+    // Static getter for wall box visibility
+    static bool IsShowWallBoxes() { return s_showWallBoxes; }
     
     // Health system methods
     void UpdateHealthBars();

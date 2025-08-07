@@ -29,7 +29,6 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
         m_animation->Initialize(animManager, objectId);
     }
     
-    // Initialize movement with position from scene object
     Object* originalObj = SceneManager::GetInstance()->GetObject(objectId);
     if (originalObj) {
         const Vector3& originalPos = originalObj->GetPosition();
@@ -38,32 +37,31 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
         m_movement->Initialize(0.0f, 0.0f, 0.0f);
     }
     
-    // Initialize hitbox system
     if (m_hitbox) {
         m_hitbox->Initialize(this, objectId);
+    }
+    
+    if (m_movement) {
+        m_movement->InitializeWallCollision();
     }
 }
 
 void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (!inputManager) {
-        std::cout << "Warning: InputManager is null in ProcessInput" << std::endl;
         return;
     }
     
     const bool* keyStates = inputManager->GetKeyStates();
     if (!keyStates) {
-        std::cout << "Warning: keyStates is null in ProcessInput" << std::endl;
         return;
     }
     
     CancelCombosOnOtherAction(keyStates);
     
-    // Use hurtbox-based collision detection
     m_movement->UpdateWithHurtbox(deltaTime, keyStates, 
                                   GetHurtboxWidth(), GetHurtboxHeight(), 
                                   GetHurtboxOffsetX(), GetHurtboxOffsetY());
     
-    // Handle movement animations
     if (m_animation) {
         m_animation->HandleMovementAnimations(keyStates, m_movement.get(), m_combat.get());
     }
@@ -88,7 +86,6 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
 }
 
 void Character::Update(float deltaTime) {
-    // Update animation system
     if (m_animation) {
         m_animation->Update(deltaTime, m_movement.get(), m_combat.get());
     }
@@ -99,12 +96,10 @@ void Character::Update(float deltaTime) {
 }
 
 void Character::Draw(Camera* camera) {
-    // Draw character animation
     if (m_animation) {
         m_animation->Draw(camera, m_movement.get());
     }
     
-    // Draw hitbox
     if (m_hitbox) {
         m_hitbox->DrawHitboxAndHurtbox(camera);
     }
@@ -114,7 +109,6 @@ void Character::Draw(Camera* camera) {
 
 void Character::CancelCombosOnOtherAction(const bool* keyStates) {
     if (!keyStates) {
-        std::cout << "Warning: keyStates is null in CancelCombosOnOtherAction" << std::endl;
         return;
     }
     
@@ -190,14 +184,12 @@ void Character::HandleKick() {
 void Character::HandleDie() {
     if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
         m_movement->TriggerDie(false);
-        std::cout << "Die triggered via input" << std::endl;
     }
 }
 
 void Character::TriggerDie() {
     if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
         m_movement->TriggerDie(false);
-        std::cout << "Die triggered externally" << std::endl;
     }
 }
 
@@ -205,7 +197,6 @@ void Character::TriggerDieFromAttack(const Character& attacker) {
     if (m_movement && !m_movement->IsDying() && !m_movement->IsDead()) {
         bool attackerFacingLeft = attacker.IsFacingLeft();
         m_movement->TriggerDie(attackerFacingLeft);
-        std::cout << "Die triggered from attack, attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
     }
 }
 
@@ -235,7 +226,6 @@ bool Character::IsAnimationPlaying() const {
     return m_animation ? m_animation->IsAnimationPlaying() : false;
 }
 
-// Combat getters
 bool Character::IsInCombo() const {
     return m_combat ? m_combat->IsInCombo() : false;
 }
@@ -252,7 +242,6 @@ bool Character::IsComboCompleted() const {
     return m_combat ? m_combat->IsComboCompleted() : false;
 }
 
-// Axe combo getters
 bool Character::IsInAxeCombo() const {
     return m_combat ? m_combat->IsInAxeCombo() : false;
 }
@@ -269,24 +258,20 @@ bool Character::IsAxeComboCompleted() const {
     return m_combat ? m_combat->IsAxeComboCompleted() : false;
 }
 
-// Kick getter
 bool Character::IsKicking() const {
     return m_combat ? m_combat->IsKicking() : false;
 }
 
-// Hit getter
 bool Character::IsHit() const {
     return m_combat ? m_combat->IsHit() : false;
 }
 
-// Hitbox getter
 bool Character::IsHitboxActive() const {
     return m_combat ? m_combat->IsHitboxActive() : false;
 }
 
 
 
-// Hitbox management methods
 void Character::DrawHitbox(Camera* camera, bool forceShow) {
     if (m_hitbox) {
         m_hitbox->DrawHitbox(camera, forceShow);
@@ -311,7 +296,6 @@ void Character::DrawHurtbox(Camera* camera, bool forceShow) {
     }
 }
 
-// Hurtbox getters
 float Character::GetHurtboxWidth() const {
     return m_hitbox ? m_hitbox->GetHurtboxWidth() : 0.0f;
 }
@@ -328,7 +312,6 @@ float Character::GetHurtboxOffsetY() const {
     return m_hitbox ? m_hitbox->GetHurtboxOffsetY() : 0.0f;
 }
 
-// Hitbox getters
 float Character::GetHitboxWidth() const {
     return m_combat ? m_combat->GetHitboxWidth() : 0.0f;
 }
@@ -345,7 +328,6 @@ float Character::GetHitboxOffsetY() const {
     return m_combat ? m_combat->GetHitboxOffsetY() : 0.0f;
 }
 
-// Collision detection methods
 bool Character::CheckHitboxCollision(const Character& other) const {
     if (!m_combat) {
         return false;
@@ -360,7 +342,6 @@ void Character::TriggerGetHit(const Character& attacker) {
     }
 } 
 
-// Health system methods
 void Character::TakeDamage(float damage) {
     if (m_isDead) return;
     
@@ -369,13 +350,9 @@ void Character::TakeDamage(float damage) {
         m_health = 0.0f;
     }
     
-    std::cout << "=== DAMAGE TAKEN ===" << std::endl;
-    std::cout << "Health: " << m_health << "/" << MAX_HEALTH << std::endl;
-    
     if (m_health <= 0.0f && !m_isDead) {
         m_isDead = true;
     }
-    std::cout << "===================" << std::endl;
 }
 
 void Character::Heal(float amount) {

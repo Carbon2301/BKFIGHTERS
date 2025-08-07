@@ -26,6 +26,7 @@ static InputManager* m_inputManager = nullptr;
 
 bool GSPlay::s_showHitboxHurtbox = false;
 bool GSPlay::s_showPlatformBoxes = true;
+bool GSPlay::s_showWallBoxes = true;
 
 bool GSPlay_IsShowPlatformBoxes() {
     return GSPlay::IsShowPlatformBoxes();
@@ -48,27 +49,17 @@ void GSPlay::Init() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    // Debug: Check if Health texture is loaded
     ResourceManager* resourceManager = ResourceManager::GetInstance();
     std::shared_ptr<Texture2D> healthTexture = resourceManager->GetTexture(12);
     if (healthTexture) {
-        std::cout << "SUCCESS: Health texture (ID 12) loaded successfully!" << std::endl;
-        std::cout << "  - Size: " << healthTexture->GetWidth() << "x" << healthTexture->GetHeight() << std::endl;
-        std::cout << "  - Channels: " << healthTexture->GetChannels() << std::endl;
-        std::cout << "  - Filepath: " << healthTexture->GetFilepath() << std::endl;
     } else {
-        std::cout << "ERROR: Health texture (ID 12) failed to load!" << std::endl;
-        // Try to load it manually
         if (resourceManager->LoadTexture(12, "../Resources/Fighter/UI/Health.tga", "GL_CLAMP_TO_EDGE")) {
-            std::cout << "SUCCESS: Manually loaded Health texture!" << std::endl;
         } else {
-            std::cout << "ERROR: Failed to manually load Health texture!" << std::endl;
         }
     }
     
     SceneManager* sceneManager = SceneManager::GetInstance();
     if (!sceneManager->LoadSceneForState(StateType::PLAY)) {
-        std::cout << "Failed to load play scene!" << std::endl;
         sceneManager->Clear();
         
         Camera* camera = sceneManager->CreateCamera();
@@ -77,10 +68,9 @@ void GSPlay::Init() {
             camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
             camera->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
             
-            // Enable auto zoom for dynamic camera
             camera->EnableAutoZoom(true);
-            camera->SetZoomRange(0.4f, 1.8f); // Min zoom (far view) to max zoom (close view)
-            camera->SetZoomSpeed(3.0f); // Smooth zoom speed
+            camera->SetZoomRange(0.4f, 1.8f);
+            camera->SetZoomSpeed(3.0f);
             
             sceneManager->SetActiveCamera(0);
         }
@@ -90,42 +80,15 @@ void GSPlay::Init() {
             float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
             camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
             
-            // Enable auto zoom for dynamic camera
             camera->EnableAutoZoom(true);
-            camera->SetZoomRange(0.4f, 1.8f); // Min zoom (far view) to max zoom (close view)
-            camera->SetZoomSpeed(3.0f); // Smooth zoom speed
+            camera->SetZoomRange(0.4f, 1.8f);
+            camera->SetZoomSpeed(3.0f);
         }
     }    
     
-    // Debug: Check if health bar objects are created
     Object* healthBar1 = sceneManager->GetObject(2000);
     Object* healthBar2 = sceneManager->GetObject(2001);
-    if (healthBar1) {
-        std::cout << "SUCCESS: Health bar 1 (ID 2000) created!" << std::endl;
-        std::cout << "  - Position: (" << healthBar1->GetPosition().x << ", " << healthBar1->GetPosition().y << ", " << healthBar1->GetPosition().z << ")" << std::endl;
-        std::cout << "  - Scale: (" << healthBar1->GetScale().x << ", " << healthBar1->GetScale().y << ", " << healthBar1->GetScale().z << ")" << std::endl;
-        std::cout << "  - Texture IDs: ";
-        for (int texId : healthBar1->GetTextureIds()) {
-            std::cout << texId << " ";
-        }
-        std::cout << std::endl;
-    } else {
-        std::cout << "ERROR: Health bar 1 (ID 2000) not found!" << std::endl;
-    }
-    
-    if (healthBar2) {
-        std::cout << "SUCCESS: Health bar 2 (ID 2001) created!" << std::endl;
-        std::cout << "  - Position: (" << healthBar2->GetPosition().x << ", " << healthBar2->GetPosition().y << ", " << healthBar2->GetPosition().z << ")" << std::endl;
-        std::cout << "  - Scale: (" << healthBar2->GetScale().x << ", " << healthBar2->GetScale().y << ", " << healthBar2->GetScale().z << ")" << std::endl;
-        std::cout << "  - Texture IDs: ";
-        for (int texId : healthBar2->GetTextureIds()) {
-            std::cout << texId << " ";
-        }
-        std::cout << std::endl;
-    } else {
-        std::cout << "ERROR: Health bar 2 (ID 2001) not found!" << std::endl;
-    }
-    
+
     m_gameTime = 0.0f;
 
     m_inputManager = InputManager::GetInstance();
@@ -139,17 +102,14 @@ void GSPlay::Init() {
             animations.push_back({anim.startFrame, anim.numFrames, anim.duration, 0.0f});
         }
         m_animManager->Initialize(textureData->spriteWidth, textureData->spriteHeight, animations);
-        std::cout << "Animation system initialized for Player 1 with " << animations.size() << " animations" << std::endl;
     } else {
-        std::cout << "Warning: No animation data found for texture ID 10" << std::endl;
     }
     
     m_player.Initialize(m_animManager, 1000);
     m_player.SetInputConfig(CharacterMovement::PLAYER1_INPUT);
-    m_player.ResetHealth(); // Khởi tạo health cho Player 1
+    m_player.ResetHealth();
     
-    // Setup hurtbox for Player 1
-    m_player.SetHurtbox(0.088f, 0.13f, -0.0088f, -0.038f); // Width, Height, OffsetX, OffsetY
+    m_player.SetHurtbox(0.088f, 0.13f, -0.0088f, -0.038f);
     
     auto animManager2 = std::make_shared<AnimationManager>();
     
@@ -160,19 +120,16 @@ void GSPlay::Init() {
             animations2.push_back({anim.startFrame, anim.numFrames, anim.duration, 0.0f});
         }
         animManager2->Initialize(textureData2->spriteWidth, textureData2->spriteHeight, animations2);
-        std::cout << "Animation system initialized for Player 2 with " << animations2.size() << " animations" << std::endl;
     } else {
-        std::cout << "Warning: No animation data found for texture ID 11" << std::endl;
     }
     
     m_player2.Initialize(animManager2, 1001);
     m_player2.SetInputConfig(CharacterMovement::PLAYER2_INPUT);
-    m_player2.ResetHealth(); // Khởi tạo health cho Player 2
+    m_player2.ResetHealth();
     
     // Setup hurtbox for Player 2
     m_player2.SetHurtbox(0.088f, 0.13f, -0.0088f, -0.038f); // Width, Height, OffsetX, OffsetY
     
-    // Tự động đọc tất cả platform từ file GSPlay.txt
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
     {
@@ -202,7 +159,6 @@ void GSPlay::Init() {
         }
     }
     
-    // Set character size for collision detection
     m_player.GetMovement()->SetCharacterSize(0.16f, 0.24f);
     m_player2.GetMovement()->SetCharacterSize(0.16f, 0.24f);
     
@@ -280,23 +236,17 @@ void GSPlay::Update(float deltaTime) {
     SceneManager::GetInstance()->Update(deltaTime);
     
     if (m_inputManager) {
-        // Unified input processing - Character handles all input logic
         m_player.ProcessInput(deltaTime, m_inputManager);
         m_player2.ProcessInput(deltaTime, m_inputManager);
         
-        // Update input manager (reset key press events)
         m_inputManager->Update();
     } else {
-        std::cout << "Warning: m_inputManager is null in GSPlay::Update" << std::endl;
-        // Initialize input manager if it's null
         m_inputManager = InputManager::GetInstance();
     }
     
-    // Update characters
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
     
-    // Check for hitbox-hurtbox collisions
     if (m_player.CheckHitboxCollision(m_player2)) {
         m_player2.TriggerGetHit(m_player);
     }
@@ -305,7 +255,6 @@ void GSPlay::Update(float deltaTime) {
         m_player.TriggerGetHit(m_player2);
     }
     
-    // Update camera with auto zoom based on character positions
     Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
     if (camera && camera->IsAutoZoomEnabled()) {
         Vector3 player1Pos = m_player.GetPosition();
@@ -313,7 +262,6 @@ void GSPlay::Update(float deltaTime) {
         camera->UpdateCameraForCharacters(player1Pos, player2Pos, deltaTime);
     }
     
-    // Sync health from characters to health bars
     m_player1Health = m_player.GetHealth();
     m_player2Health = m_player2.GetHealth();
     
@@ -343,7 +291,6 @@ void GSPlay::Draw() {
         
     const bool* keyStates = m_inputManager ? m_inputManager->GetKeyStates() : nullptr;
     if (!keyStates) {
-        std::cout << "Warning: keyStates is null in GSPlay::Draw" << std::endl;
         return;
     }
     bool isMoving = keyStates ? (keyStates['A'] || keyStates['D']) : false;
@@ -353,13 +300,6 @@ void GSPlay::Draw() {
         lastAnim != m_player.GetCurrentAnimation() ||
         (isMoving && !wasMoving)) {
             
-        //std::cout << "=== PLAYER 1 STATUS ===" << std::endl;
-        //std::cout << "Position: (" << m_player.GetPosition().x << ", " << m_player.GetPosition().y << ")" << std::endl;
-        //std::cout << "State: " << (int)m_player.GetState() << std::endl;
-        //std::cout << "Animation: " << m_player.GetCurrentAnimation() << std::endl;
-        //std::cout << "Facing: " << (m_player.IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
-        //std::cout << "Movement: " << (isMoving ? "ACTIVE" : "IDLE") << std::endl;
-        
         if (m_player.IsInCombo()) {
             if (m_player.GetComboCount() > 0) {
                 std::cout << "Combo: " << m_player.GetComboCount() << "/3 (Timer: " << m_player.GetComboTimer() << "s)";
@@ -394,13 +334,6 @@ void GSPlay::Draw() {
         lastAnim2 != m_player2.GetCurrentAnimation() ||
         (isMoving2 && !wasMoving2)) {
             
-        //std::cout << "=== PLAYER 2 STATUS ===" << std::endl;
-        //std::cout << "Position: (" << m_player2.GetPosition().x << ", " << m_player2.GetPosition().y << ")" << std::endl;
-        //std::cout << "State: " << (int)m_player2.GetState() << std::endl;
-        //std::cout << "Animation: " << m_player2.GetCurrentAnimation() << std::endl;
-        //std::cout << "Facing: " << (m_player2.IsFacingLeft() ? "LEFT" : "RIGHT") << std::endl;
-        //std::cout << "Movement: " << (isMoving2 ? "ACTIVE" : "IDLE") << std::endl;
-        
         if (m_player2.IsInCombo()) {
             if (m_player2.GetComboCount() > 0) {
                 std::cout << "Combo: " << m_player2.GetComboCount() << "/3 (Timer: " << m_player2.GetComboTimer() << "s)";
@@ -437,13 +370,12 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         m_inputManager->UpdateKeyState(key, bIsPressed);
     }
     
-    if (!bIsPressed) return; // Chỉ xử lý khi nhấn phím, không xử lý khi thả phím
+    if (!bIsPressed) return;
     
     switch (key) {
         case 'C':
         case 'c':
             s_showHitboxHurtbox = !s_showHitboxHurtbox;
-            std::cout << "Hitbox/Hurtbox display: " << (s_showHitboxHurtbox ? "ON" : "OFF") << std::endl;
             break;
             
         case 'Z':
@@ -455,12 +387,8 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                     camera->EnableAutoZoom(!currentState);
                     
                     if (!currentState) {
-                        // Turning ON auto zoom
-                        std::cout << "Camera auto-zoom: ON" << std::endl;
                     } else {
-                        // Turning OFF auto zoom - reset to initial state
                         camera->ResetToInitialState();
-                        std::cout << "Camera auto-zoom: OFF (reset to initial state)" << std::endl;
                     }
                 }
             }
@@ -468,22 +396,17 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             
         case 'R':
         case 'r':
-            // Reset health cho cả 2 player khi nhấn R
             m_player.ResetHealth();
             m_player2.ResetHealth();
             m_player1Health = m_player.GetHealth();
             m_player2Health = m_player2.GetHealth();
             UpdateHealthBars();
-            std::cout << "=== HEALTH RESET ===" << std::endl;
-            std::cout << "Player 1 Health: " << m_player.GetHealth() << "/" << m_player.GetMaxHealth() << std::endl;
-            std::cout << "Player 2 Health: " << m_player2.GetHealth() << "/" << m_player2.GetMaxHealth() << std::endl;
-            std::cout << "===================" << std::endl;
             break;
             
         case 'V':
         case 'v':
             s_showPlatformBoxes = !s_showPlatformBoxes;
-            std::cout << "Platform boxes display: " << (s_showPlatformBoxes ? "ON" : "OFF") << std::endl;
+            s_showWallBoxes = !s_showWallBoxes;
             break;
     }
 }
@@ -544,18 +467,12 @@ void GSPlay::HandleMouseMove(int x, int y) {
 }
 
 void GSPlay::Resume() {
-    std::cout << "GSPlay: Resume (Back to Game)" << std::endl;
-    std::cout << "Welcome back to the game!" << std::endl;
 }
 
 void GSPlay::Pause() {
-    std::cout << "GSPlay: Pause (Game Paused)" << std::endl;
-    std::cout << "Game is now paused..." << std::endl;
 }
 
 void GSPlay::Exit() {
-    std::cout << "GSPlay: Exit" << std::endl;
-    std::cout << "Leaving gameplay mode..." << std::endl;
 }
 
 void GSPlay::Cleanup() {

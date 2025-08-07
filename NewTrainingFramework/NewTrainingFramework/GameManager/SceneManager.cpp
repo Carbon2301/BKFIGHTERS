@@ -3,6 +3,7 @@
 #include "../Core/Globals.h"
 #include <fstream>
 #include <iostream>
+#include "GSPlay.h"
 
 bool GSPlay_IsShowPlatformBoxes();
 
@@ -342,12 +343,19 @@ void SceneManager::Draw() {
     for (auto& obj : m_objects) {
         int objId = obj->GetId();
         if (objId != 1000 && objId != 1001) {
-            // Check if this is a platform box (ID 400, 401, 402) and if platform boxes should be hidden
+            // Platform boxes (400, 401, 402)
             if ((objId == 400 || objId == 401 || objId == 402)) {
                 if (GSPlay_IsShowPlatformBoxes()) {
                     obj->Draw(viewMatrix, projectionMatrix);
                 }
-            } else {
+            }
+            // Wall boxes (501, 502, ...)
+            else if ((objId == 501 || objId == 502)) {
+                if (GSPlay::IsShowWallBoxes()) {
+                    obj->Draw(viewMatrix, projectionMatrix);
+                }
+            }
+            else {
                 obj->Draw(viewMatrix, projectionMatrix);
             }
         }

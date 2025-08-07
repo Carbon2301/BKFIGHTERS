@@ -14,7 +14,6 @@ Model::~Model() {
 bool Model::LoadFromNFG(const char* filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::cout << "Không thể mở file NFG: " << filename << std::endl;
         return false;
     }
 
@@ -24,16 +23,13 @@ bool Model::LoadFromNFG(const char* filename) {
     std::string line;
     int numVertices = 0;
 
-    //Đọc số lượng vertices
     while (std::getline(file, line)) {
         if (line.find("NrVertices:") != std::string::npos) {
             sscanf(line.c_str(), "NrVertices: %d", &numVertices);
-            std::cout << "Loading " << numVertices << " vertices..." << std::endl;
             break;
         }
     }
 
-    //từng vertex
     while ((int)vertices.size() < numVertices && std::getline(file, line)) {
         if (line.find("pos:") == std::string::npos) continue;
 
@@ -55,22 +51,16 @@ bool Model::LoadFromNFG(const char* filename) {
 
             vertices.push_back(vertex);
         }
-        else {
-            std::cout << "Failed to parse vertex line: " << line << std::endl;
-        }
     }
 
-    //Đọc số lượng indices
     int numIndices = 0;
     while (std::getline(file, line)) {
         if (line.find("NrIndices:") != std::string::npos) {
             sscanf(line.c_str(), "NrIndices: %d", &numIndices);
-            std::cout << "Loading " << numIndices << " indices..." << std::endl;
             break;
         }
     }
 
-    //Đọc từng dòng indices
     while ((int)indices.size() < numIndices && std::getline(file, line)) {
         int i0, i1, i2;
         if (sscanf(line.c_str(), "%*d. %d, %d, %d", &i0, &i1, &i2) == 3) {
@@ -78,14 +68,10 @@ bool Model::LoadFromNFG(const char* filename) {
             indices.push_back((GLushort)i1);
             indices.push_back((GLushort)i2);
         }
-        else {
-            std::cout << "Failed to parse index line: " << line << std::endl;
-        }
     }
 
     file.close();
 
-    std::cout << "Loaded NFG model: " << vertices.size() << " vertices, " << indices.size() << " indices" << std::endl;
     return !vertices.empty() && !indices.empty();
 }
 
@@ -94,7 +80,6 @@ bool Model::LoadTexture(const char* filename) {
     char* textureData = LoadTGA(filename, &width, &height, &bpp);
 
     if (!textureData) {
-        std::cout << "Không thể load texture: " << filename << std::endl;
         return false;
     }
 
@@ -110,33 +95,27 @@ bool Model::LoadTexture(const char* filename) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    std::cout << "Loaded texture: " << filename << " (" << width << "x" << height << ")" << std::endl;
     delete[] textureData;
     return true;
 }
 
 void Model::CreateBuffers() {
     if (vertices.empty() || indices.empty()) {
-        std::cout << "No vertex or index data!" << std::endl;
         return;
     }
 
     vertexCount = (int)vertices.size();
     indexCount = (int)indices.size();
 
-    // Create VBO
     glGenBuffers(1, &vboId);
     glBindBuffer(GL_ARRAY_BUFFER, vboId);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    // Create IBO
     glGenBuffers(1, &iboId);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboId);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    std::cout << "Created buffers: " << vertexCount << " vertices, " << indexCount << " indices" << std::endl;
 }
 
 void Model::Draw() {
@@ -148,22 +127,17 @@ void Model::Draw() {
     glBindBuffer(GL_ARRAY_BUFFER, vboId);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboId);
 
-    // Position
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-    // Color (normal as color)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(Vector3)));
 
-    // UV
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(Vector3) * 2));
 
-    // Draw
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);
 
-    // Cleanup
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);

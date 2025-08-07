@@ -113,6 +113,7 @@
     <ClCompile Include="GameObject\CharacterCombat.cpp" />
     <ClCompile Include="GameObject\CharacterHitbox.cpp" />
     <ClCompile Include="GameObject\CharacterMovement.cpp" />
+    <ClCompile Include="GameObject\WallCollision.cpp" />
     <ClCompile Include="GameObject\InputManager.cpp" />
     <ClCompile Include="GameObject\Shaders.cpp" />
     <ClCompile Include="Core\stdafx.cpp">
@@ -141,6 +142,7 @@
     <ClInclude Include="GameObject\CharacterCombat.h" />
     <ClInclude Include="GameObject\CharacterHitbox.h" />
     <ClInclude Include="GameObject\CharacterMovement.h" />
+    <ClInclude Include="GameObject\WallCollision.h" />
     <ClInclude Include="GameObject\InputManager.h" />
     <ClInclude Include="GameObject\Shaders.h" />
     <ClInclude Include="Core\stdafx.h" />
