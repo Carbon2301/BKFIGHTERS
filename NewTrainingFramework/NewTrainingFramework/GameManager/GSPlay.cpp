@@ -489,11 +489,17 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
 }
 
 static float MousePixelToWorldX(int x, Camera* cam) {
+    if (x < 0) x = 0;
+    if (x >= Globals::screenWidth) x = Globals::screenWidth - 1;
+    
     float left = cam->GetLeft();
     float right = cam->GetRight();
     return left + (right - left) * ((float)x / Globals::screenWidth);
 }
 static float MousePixelToWorldY(int y, Camera* cam) {
+    if (y < 0) y = 0;
+    if (y >= Globals::screenHeight) y = Globals::screenHeight - 1;
+    
     float top = cam->GetTop();
     float bottom = cam->GetBottom();
     return bottom + (top - bottom) * (1.0f - (float)y / Globals::screenHeight);

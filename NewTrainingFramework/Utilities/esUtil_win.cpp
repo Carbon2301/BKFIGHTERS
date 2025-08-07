@@ -71,9 +71,10 @@ LRESULT WINAPI ESWindowProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );
             POINT point;
             GetCursorPos(&point);
+            ScreenToClient(hWnd, &point);
             
             if ( esContext && esContext->mouseFunc )
-               esContext->mouseFunc ( esContext, point.x - WDpoint.x, point.y - WDpoint.y, true );
+               esContext->mouseFunc ( esContext, point.x, point.y, true );
          }
          break;
 
@@ -82,9 +83,10 @@ LRESULT WINAPI ESWindowProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );
             POINT point;
             GetCursorPos(&point);
+            ScreenToClient(hWnd, &point);
             
             if ( esContext && esContext->mouseFunc )
-               esContext->mouseFunc ( esContext, point.x - WDpoint.x, point.y - WDpoint.y, false );
+               esContext->mouseFunc ( esContext, point.x, point.y, false );
          }
          break;
 
@@ -93,9 +95,10 @@ LRESULT WINAPI ESWindowProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             ESContext *esContext = (ESContext*)(LONG_PTR) GetWindowLongPtr ( hWnd, GWL_USERDATA );
             POINT point;
             GetCursorPos(&point);
+            ScreenToClient(hWnd, &point);
             
             if ( esContext && esContext->mouseMoveFunc )
-               esContext->mouseMoveFunc ( esContext, point.x - WDpoint.x, point.y - WDpoint.y );
+               esContext->mouseMoveFunc ( esContext, point.x, point.y );
          }
          break;
 
