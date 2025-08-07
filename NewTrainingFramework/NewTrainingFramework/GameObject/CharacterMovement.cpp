@@ -357,6 +357,31 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
                                                           hurtboxOffsetX, hurtboxOffsetY);
     }
     
+    float currentTime = SDL_GetTicks() / 1000.0f;
+    int downKey = inputConfig.sitKey;
+    bool isDownPressed = keyStates[downKey];
+    
+    if (isDownPressed && !m_prevDownKey) {
+        if (currentTime - m_lastDownPressTime < DOUBLE_TAP_THRESHOLD) {
+            if (m_isOnPlatform && !m_isJumping) {
+                m_isOnPlatform = false;
+                m_isJumping = true;
+                m_jumpVelocity = 0.0f;
+                m_isFallingThroughPlatform = true;
+                m_fallThroughTimer = 0.0f;
+            }
+        }
+        m_lastDownPressTime = currentTime;
+    }
+    m_prevDownKey = isDownPressed;
+    
+    if (m_isFallingThroughPlatform) {
+        float newY = m_posY;
+        if (!CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY)) {
+            m_isFallingThroughPlatform = false;
+        }
+    }
+    
     if (!m_isJumping && (onGround || m_isOnPlatform || onWallSupport)) {
         if (keyStates[inputConfig.jumpKey]) {
             m_isJumping = true;
@@ -385,7 +410,7 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
         }
         
         float newY = m_posY;
-        if (CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY)) {
+        if (!m_isFallingThroughPlatform && CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY)) {
             m_posY = newY;
             m_isJumping = false;
             m_jumpVelocity = 0.0f;
@@ -403,6 +428,7 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
             m_wasJumping = true;
             m_isOnPlatform = false;
             m_currentPlatformY = m_groundY;
+            m_isFallingThroughPlatform = false; // Reset trạng thái khi chạm đất
             
             if (!keyStates[inputConfig.moveLeftKey] && !keyStates[inputConfig.moveRightKey]) {
                 m_state = CharState::Idle;
@@ -414,7 +440,7 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
 void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
     if (!m_isJumping) {
         float newY = m_posY;
-        bool onPlatform = CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+        bool onPlatform = !m_isFallingThroughPlatform && CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
         bool onWall = false;
         if (m_wallCollision) {
             Vector3 testPos(m_posX, m_posY - 0.01f, 0.0f);

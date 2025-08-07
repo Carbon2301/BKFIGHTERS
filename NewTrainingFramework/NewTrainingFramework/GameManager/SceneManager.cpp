@@ -403,5 +403,4 @@ void SceneManager::PrintSceneInfo() {
         std::cout << "  - Target: (" << cam->GetTarget().x << ", " << cam->GetTarget().y << ", " << cam->GetTarget().z << ")" << std::endl;
     }
     
-    std::cout << "==============================\n" << std::endl;
 } 

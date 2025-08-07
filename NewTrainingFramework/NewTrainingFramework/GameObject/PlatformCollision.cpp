@@ -20,7 +20,7 @@ bool PlatformCollision::CheckPlatformCollision(float& newY, float posX, float po
     float characterRight = posX + characterWidth * 0.5f;
     float characterBottom = posY;
     float characterTop = posY + characterHeight;
-    const float epsilon = 0.05f;
+    const float epsilon = 0.005f;
     for (const auto& platform : m_platforms) {
         float platformLeft = platform.x - platform.width * 0.5f;
         float platformRight = platform.x + platform.width * 0.5f;
@@ -45,7 +45,7 @@ bool PlatformCollision::CheckPlatformCollisionWithHurtbox(float& newY, float pos
     float hurtboxRight = posX + hurtboxOffsetX + hurtboxWidth * 0.5f;
     float hurtboxBottom = posY + hurtboxOffsetY - hurtboxHeight * 0.5f;
     float hurtboxTop = posY + hurtboxOffsetY + hurtboxHeight * 0.5f;
-    const float epsilon = 0.05f;
+    const float epsilon = 0.005f;
     for (const auto& platform : m_platforms) {
         float platformLeft = platform.x - platform.width * 0.5f;
         float platformRight = platform.x + platform.width * 0.5f;
