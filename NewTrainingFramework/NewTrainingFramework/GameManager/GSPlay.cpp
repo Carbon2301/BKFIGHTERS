@@ -132,6 +132,8 @@ void GSPlay::Init() {
     
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
+    m_player.GetMovement()->ClearMovingPlatforms();
+    m_player2.GetMovement()->ClearMovingPlatforms();
     {
         std::ifstream sceneFile("Resources/Scenes/GSPlay.txt");
         if (sceneFile.is_open()) {
@@ -170,6 +172,9 @@ void GSPlay::Init() {
             0.49f, 0.33f, 0.0f,   // End position
             0.2f, 1.0f);          // Speed: 0.2 units/sec, Pause time: 1.0 second
         std::cout << "Lift platform (ID 30) configured successfully" << std::endl;
+
+        m_player.GetMovement()->AddMovingPlatformById(30);
+        m_player2.GetMovement()->AddMovingPlatformById(30);
     } else {
         std::cout << "Warning: Lift platform (ID 30) not found in scene" << std::endl;
     }
@@ -340,9 +345,7 @@ void GSPlay::Draw() {
             }
         } else if (m_player.GetCurrentAnimation() == 19) {
             std::cout << "Action: KICK [Animation 19]" << std::endl;
-        }
-        std::cout << "=========================" << std::endl;
-            
+        }            
         lastPosX = m_player.GetPosition().x;
         lastAnim = m_player.GetCurrentAnimation();
         wasMoving = isMoving;
@@ -375,7 +378,6 @@ void GSPlay::Draw() {
         } else if (m_player2.GetCurrentAnimation() == 19) {
             std::cout << "Action: KICK [Animation 19]" << std::endl;
         }
-        std::cout << "=========================" << std::endl;
             
         lastPosX2 = m_player2.GetPosition().x;
         lastAnim2 = m_player2.GetCurrentAnimation();

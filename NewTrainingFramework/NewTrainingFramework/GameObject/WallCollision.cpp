@@ -215,9 +215,7 @@ Vector3 WallCollision::ResolveWallCollision(const Vector3& currentPos, const Vec
         if (!CheckAABBCollision(hurtboxLeft, hurtboxRight, hurtboxBottom, hurtboxTop,
                                wall.GetLeft(), wall.GetRight(), wall.GetBottom(), wall.GetTop())) {
             continue;
-        }
-        std::cout << "[WallCollision] Resolve collision with wall ID: " << wall.objectId << std::endl;
-        
+        }        
         float penetrationLeft = hurtboxRight - wall.GetLeft();
         float penetrationRight = wall.GetRight() - hurtboxLeft;
         float penetrationTop = hurtboxTop - wall.GetBottom();
