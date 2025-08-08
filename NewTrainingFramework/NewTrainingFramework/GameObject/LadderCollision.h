@@ -2,11 +2,10 @@
 #include "../../Utilities/Math.h"
 #include <vector>
 
-// Struct đại diện cho một ladder
 struct Ladder {
-    float x, y;           // Tâm ladder
-    float width, height;  // Kích thước ladder
-    int objectId;         // ID của object ladder trong scene
+    float x, y;
+    float width, height;
+    int objectId;
 
     Ladder(float px, float py, float w, float h, int id)
         : x(px), y(py), width(w), height(h), objectId(id) {}
@@ -28,11 +27,8 @@ public:
     void AddLadder(float x, float y, float width, float height, int objectId);
     void ClearLadders();
 
-    // Load tất cả ladder từ scene (đọc các block "# Ladder")
     void LoadLaddersFromScene();
 
-    // Kiểm tra overlap giữa hurtbox và bất kỳ ladder nào.
-    // Nếu true, trả về tâm X của ladder và đỉnh/trũng để caller có thể clamp nếu cần.
     bool CheckLadderOverlapWithHurtbox(float posX, float posY,
                                        float hurtboxWidth, float hurtboxHeight,
                                        float hurtboxOffsetX, float hurtboxOffsetY,

@@ -34,7 +34,6 @@ void LadderCollision::LoadLaddersFromScene() {
 
     while (std::getline(file, line)) {
         if (line.find("# Ladder") != std::string::npos) {
-            // Kết thúc block trước nếu còn
             if (inLadderBlock && objectId != -1) {
                 AddLadder(posX, posY, scaleX, scaleY, objectId);
             }

@@ -342,7 +342,7 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
     
     Vector3 currentPos(m_posX, m_posY, 0.0f);
     
-    // Nếu đang trên ladder, ưu tiên xử lý ladder trước (vô hiệu hóa gravity/jump/move ngang)
+    // Ưu tiên xử lý ladder trước
     bool handledLadder = HandleLadderWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
     if (!handledLadder) {
         HandleMovement(deltaTime, keyStates);
