@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 16
+# 2DTexture 19
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -222,6 +222,18 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 21
 FILE "../Resources/Textures/black_box.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 22
+FILE "../Resources/Fighter/UI/HUD_red_box.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 23
+FILE "../Resources/Fighter/UI/P1.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 24
+FILE "../Resources/Fighter/UI/P2.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1

@@ -556,6 +556,23 @@ void GSPlay::UpdateHealthBars() {
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         healthBar2->SetScale(healthRatio2 * 0.18f, currentScale.y, currentScale.z);
     }
+
+    // Update HUD health bars (fixed position)
+    Object* hudHealth1 = sceneManager->GetObject(914);
+    if (hudHealth1) {
+        float healthRatio1 = m_player.GetHealth() / m_player.GetMaxHealth();
+        const Vector3& hudScale1 = hudHealth1->GetScale();
+        // Base width defined in scene file: 0.94
+        hudHealth1->SetScale(healthRatio1 * 0.94f, hudScale1.y, hudScale1.z);
+    }
+
+    Object* hudHealth2 = sceneManager->GetObject(915);
+    if (hudHealth2) {
+        float healthRatio2 = m_player2.GetHealth() / m_player2.GetMaxHealth();
+        const Vector3& hudScale2 = hudHealth2->GetScale();
+        // Base width defined in scene file: 0.94
+        hudHealth2->SetScale(healthRatio2 * 0.94f, hudScale2.y, hudScale2.z);
+    }
 }
 
 void GSPlay::UpdateCloudMovement(float deltaTime) {
