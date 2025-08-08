@@ -398,16 +398,21 @@ void GSPlay::Draw() {
 void GSPlay::UpdateHudWeapons() {
     SceneManager* scene = SceneManager::GetInstance();
     if (Object* hudWeapon1 = scene->GetObject(918)) {
-        if (m_player.GetWeapon() != Character::WeaponType::None) {
+        auto w = m_player.GetWeapon();
+        if (w != Character::WeaponType::None) {
             hudWeapon1->SetScale(m_hudWeapon1BaseScale);
-            // Optional: swap texture ID by weapon type if needed in future
+            int texId = (w == Character::WeaponType::Axe) ? HUD_TEX_AXE : (w == Character::WeaponType::Sword) ? HUD_TEX_SWORD : HUD_TEX_PIPE;
+            hudWeapon1->SetTexture(texId, 0);
         } else {
             hudWeapon1->SetScale(0.0f, 0.0f, m_hudWeapon1BaseScale.z);
         }
     }
     if (Object* hudWeapon2 = scene->GetObject(919)) {
-        if (m_player2.GetWeapon() != Character::WeaponType::None) {
+        auto w = m_player2.GetWeapon();
+        if (w != Character::WeaponType::None) {
             hudWeapon2->SetScale(m_hudWeapon2BaseScale);
+            int texId = (w == Character::WeaponType::Axe) ? HUD_TEX_AXE : (w == Character::WeaponType::Sword) ? HUD_TEX_SWORD : HUD_TEX_PIPE;
+            hudWeapon2->SetTexture(texId, 0);
         } else {
             hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
         }

@@ -72,6 +72,9 @@ private:
     static const int AXE_OBJECT_ID = 1100;
     static const int SWORD_OBJECT_ID = 1101;
     static const int PIPE_OBJECT_ID  = 1102;
+    static const int HUD_TEX_AXE   = 30;
+    static const int HUD_TEX_SWORD = 31;
+    static const int HUD_TEX_PIPE  = 32;
     bool m_isAxeAvailable = false;
     bool m_isSwordAvailable = false;
     bool m_isPipeAvailable  = false;
