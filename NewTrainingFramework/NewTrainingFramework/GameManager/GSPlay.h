@@ -4,6 +4,7 @@
 #include "../GameObject/AnimationManager.h"
 #include "../GameObject/Character.h"
 #include "../GameObject/InputManager.h"
+#include "../../Utilities/Math.h"
 
 class GSPlay : public GameStateBase {
 private:
@@ -70,4 +71,9 @@ private:
     void HandleItemPickup();
     static const int AXE_OBJECT_ID = 1100;
     bool m_isAxeAvailable = false;
+    
+    // HUD weapons
+    void UpdateHudWeapons();
+    Vector3 m_hudWeapon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudWeapon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
 }; 

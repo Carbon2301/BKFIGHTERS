@@ -188,6 +188,16 @@ void GSPlay::Init() {
     // Mark axe availability if present in scene
     m_isAxeAvailable = (sceneManager->GetObject(AXE_OBJECT_ID) != nullptr);
 
+    // Initialize HUD weapons: cache base scales and hide by default
+    if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
+        m_hudWeapon1BaseScale = hudWeapon1->GetScale();
+        hudWeapon1->SetScale(0.0f, 0.0f, m_hudWeapon1BaseScale.z);
+    }
+    if (Object* hudWeapon2 = sceneManager->GetObject(919)) {
+        m_hudWeapon2BaseScale = hudWeapon2->GetScale();
+        hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
+    }
+
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
@@ -238,6 +248,7 @@ void GSPlay::Init() {
     
 
     UpdateHealthBars();
+    UpdateHudWeapons();
 }
 
 void GSPlay::Update(float deltaTime) {
@@ -256,6 +267,7 @@ void GSPlay::Update(float deltaTime) {
     
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
+    UpdateHudWeapons();
     
     if (m_player.CheckHitboxCollision(m_player2)) {
         m_player2.TriggerGetHit(m_player);
@@ -378,6 +390,26 @@ void GSPlay::Draw() {
         lastPosX2 = m_player2.GetPosition().x;
         lastAnim2 = m_player2.GetCurrentAnimation();
         wasMoving2 = isMoving2;
+    }
+}
+
+void GSPlay::UpdateHudWeapons() {
+    SceneManager* scene = SceneManager::GetInstance();
+    if (Object* hudWeapon1 = scene->GetObject(918)) {
+        if (m_player.HasAxe()) {
+            // Show axe icon
+            hudWeapon1->SetScale(m_hudWeapon1BaseScale);
+        } else {
+            // Hide
+            hudWeapon1->SetScale(0.0f, 0.0f, m_hudWeapon1BaseScale.z);
+        }
+    }
+    if (Object* hudWeapon2 = scene->GetObject(919)) {
+        if (m_player2.HasAxe()) {
+            hudWeapon2->SetScale(m_hudWeapon2BaseScale);
+        } else {
+            hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
+        }
     }
 }
 
