@@ -350,7 +350,7 @@ void SceneManager::Draw() {
                 }
             }
             // Wall boxes
-            else if ((objId == 400 || objId == 401 || objId == 402 || objId == 403 || objId == 404 || objId == 405 || objId == 406 || objId == 407 || objId == 408 || objId == 409 || objId == 410 || objId == 411 || objId == 412 || objId == 413 || objId == 414 || objId == 415 || objId == 416 || objId == 417 || objId == 418)) {
+            else if ((objId == 400 || objId == 401 || objId == 402 || objId == 403 || objId == 404 || objId == 405 || objId == 406 || objId == 407 || objId == 408 || objId == 409 || objId == 410 || objId == 411 || objId == 412 || objId == 413 || objId == 414 || objId == 415 || objId == 416 || objId == 417 || objId == 418 || objId == 419 || objId == 420)) {
                 if (GSPlay::IsShowWallBoxes()) {
                     obj->Draw(viewMatrix, projectionMatrix);
                 }

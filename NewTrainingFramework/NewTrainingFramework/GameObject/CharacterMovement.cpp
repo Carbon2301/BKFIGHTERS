@@ -7,6 +7,7 @@
 #include "SceneManager.h"
 #include "Object.h"
 #include "LadderCollision.h"
+#include "TeleportCollision.h"
 
 const float CharacterMovement::JUMP_FORCE = 0.9f;
 const float CharacterMovement::GRAVITY = 2.5f;
@@ -26,7 +27,8 @@ CharacterMovement::CharacterMovement()
       m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f),
       m_wallCollision(std::make_unique<WallCollision>()),
       m_platformCollision(std::make_unique<PlatformCollision>()),
-      m_ladderCollision(std::make_unique<LadderCollision>()) {
+      m_ladderCollision(std::make_unique<LadderCollision>()),
+      m_teleportCollision(std::make_unique<TeleportCollision>()) {
 }
 
 CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
@@ -37,7 +39,8 @@ CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
       m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f),
       m_wallCollision(std::make_unique<WallCollision>()),
       m_platformCollision(std::make_unique<PlatformCollision>()),
-      m_ladderCollision(std::make_unique<LadderCollision>()) {
+      m_ladderCollision(std::make_unique<LadderCollision>()),
+      m_teleportCollision(std::make_unique<TeleportCollision>()) {
 }
 
 CharacterMovement::~CharacterMovement() {
@@ -116,6 +119,15 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
     m_prevRightKey = keyStates[m_inputConfig.moveRightKey];
 
     if (!m_isJumping) {
+        bool leftKeyHeld = keyStates[m_inputConfig.moveLeftKey];
+        bool rightKeyHeld = keyStates[m_inputConfig.moveRightKey];
+        bool useInvert = m_invertHorizontal && (leftKeyHeld || rightKeyHeld);
+        int moveLeftKey = useInvert ? m_inputConfig.moveRightKey : m_inputConfig.moveLeftKey;
+        int moveRightKey = useInvert ? m_inputConfig.moveLeftKey : m_inputConfig.moveRightKey;
+
+        if (m_invertHorizontal && !leftKeyHeld && !rightKeyHeld) {
+            m_invertHorizontal = false;
+        }
         if (isRollingLeft) {
             m_state = CharState::MoveLeft;
             m_facingLeft = true;
@@ -125,7 +137,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
             m_facingLeft = false;
             m_posX += MOVE_SPEED * 1.5f * deltaTime;
         } else if (!isOtherAction) {
-            if (keyStates[m_inputConfig.moveLeftKey]) {
+            if (keyStates[moveLeftKey]) {
                 m_facingLeft = true;
                 m_state = CharState::MoveLeft;
                 if (m_isRunningLeft) {
@@ -133,7 +145,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
                 } else {
                     m_posX -= MOVE_SPEED * 0.8f * deltaTime;
                 }
-            } else if (keyStates[m_inputConfig.moveRightKey]) {
+            } else if (keyStates[moveRightKey]) {
                 m_facingLeft = false;
                 m_state = CharState::MoveRight;
                 if (m_isRunningRight) {
@@ -350,6 +362,41 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
     }
     HandleLandingWithHurtbox(keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
     
+    // Teleport detection
+    if (m_teleportCollision) {
+        const float TELEPORT_LOCK_DURATION = 0.25f;
+        if (m_teleportLockTimer > 0.0f) {
+            m_teleportLockTimer -= deltaTime;
+            if (m_teleportLockTimer < 0.0f) m_teleportLockTimer = 0.0f;
+        }
+
+        const bool movingRight = keyStates[m_inputConfig.moveRightKey];
+        Vector3 newPos(m_posX, m_posY, 0.0f);
+        int fromId = -1, toId = -1;
+        if (m_teleportLockTimer <= 0.0f &&
+            m_teleportCollision->DetectEnterFromLeft(currentPos, newPos,
+                                                    hurtboxWidth, hurtboxHeight,
+                                                    hurtboxOffsetX, hurtboxOffsetY,
+                                                    movingRight, fromId, toId)) {
+            Vector3 exitPos;
+            if (m_teleportCollision->ComputeExitPosition(toId, m_posY,
+                                                         hurtboxWidth, hurtboxHeight,
+                                                         hurtboxOffsetX, hurtboxOffsetY,
+                                                         exitPos)) {
+                m_posX = exitPos.x;
+                m_posY = exitPos.y;
+                m_teleportLockTimer = TELEPORT_LOCK_DURATION;
+                m_lastTeleportFromId = fromId;
+                if (movingRight) {
+                    m_invertHorizontal = true;
+                }
+                if (!m_isJumping) {
+                    m_state = CharState::Idle;
+                }
+            }
+        }
+    }
+
     if (m_wallCollision) {
         Vector3 newPos(m_posX, m_posY, 0.0f);
         Vector3 resolvedPos = m_wallCollision->ResolveWallCollision(currentPos, newPos,
@@ -480,7 +527,6 @@ bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* key
         const float eps = 0.0005f;
         if (hurtboxBottom <= m_ladderBottom + eps) {
             m_isOnLadder = false;
-            // bật trạng thái rơi; đặt vận tốc rơi hiện tại bằng 0 để bắt đầu rơi mượt
             m_isJumping = true;
             m_jumpVelocity = 0.0f;
             return false;
@@ -674,5 +720,13 @@ void CharacterMovement::InitializeWallCollision() {
 void CharacterMovement::InitializeLadderCollision() {
     if (m_ladderCollision) {
         m_ladderCollision->LoadLaddersFromScene();
+    }
+}
+
+void CharacterMovement::InitializeTeleportCollision() {
+    if (m_teleportCollision) {
+        m_teleportCollision->LoadTeleportsFromScene();
+        m_teleportLockTimer = 0.0f;
+        m_lastTeleportFromId = -1;
     }
 }

@@ -116,6 +116,7 @@
     <ClCompile Include="GameObject\WallCollision.cpp" />
     <ClCompile Include="GameObject\InputManager.cpp" />
     <ClCompile Include="GameObject\Shaders.cpp" />
+    <ClCompile Include="GameObject\TeleportCollision.cpp" />
     <ClCompile Include="Core\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -146,6 +147,7 @@
     <ClInclude Include="GameObject\CharacterMovement.h" />
     <ClInclude Include="GameObject\WallCollision.h" />
     <ClInclude Include="GameObject\LadderCollision.h" />
+    <ClInclude Include="GameObject\TeleportCollision.h" />
     <ClInclude Include="GameObject\InputManager.h" />
     <ClInclude Include="GameObject\Shaders.h" />
     <ClInclude Include="Core\stdafx.h" />
