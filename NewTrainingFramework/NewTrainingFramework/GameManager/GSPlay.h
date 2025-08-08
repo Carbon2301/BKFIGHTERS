@@ -17,6 +17,7 @@ private:
     static bool s_showPlatformBoxes;
     static bool s_showWallBoxes;
     static bool s_showLadderBoxes;
+    static bool s_showTeleportBoxes;
     
     // Health system variables
     float m_player1Health;
@@ -50,6 +51,7 @@ public:
     static bool IsShowPlatformBoxes() { return s_showPlatformBoxes; }
     static bool IsShowWallBoxes() { return s_showWallBoxes; }
     static bool IsShowLadderBoxes() { return s_showLadderBoxes; }
+    static bool IsShowTeleportBoxes() { return s_showTeleportBoxes; }
     
     // Health system methods
     void UpdateHealthBars();

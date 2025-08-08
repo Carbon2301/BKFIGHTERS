@@ -4,6 +4,7 @@
 #include "WallCollision.h"
 #include "PlatformCollision.h"
 #include "LadderCollision.h"
+#include "TeleportCollision.h"
 
 enum class CharState {
     Idle,
@@ -109,6 +110,12 @@ private:
     float m_ladderTop = 0.0f;
     float m_ladderBottom = 0.0f;
 
+    // Teleport collision
+    std::unique_ptr<TeleportCollision> m_teleportCollision;
+    float m_teleportLockTimer = 0.0f;
+    int m_lastTeleportFromId = -1;
+    bool m_invertHorizontal = false;
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;
@@ -171,6 +178,10 @@ public:
     void InitializeLadderCollision();
     LadderCollision* GetLadderCollision() const { return m_ladderCollision.get(); }
     bool IsOnLadder() const { return m_isOnLadder; }
+
+    // Teleport collision methods
+    void InitializeTeleportCollision();
+    TeleportCollision* GetTeleportCollision() const { return m_teleportCollision.get(); }
 
     // Static input configurations
     static const PlayerInputConfig PLAYER1_INPUT;

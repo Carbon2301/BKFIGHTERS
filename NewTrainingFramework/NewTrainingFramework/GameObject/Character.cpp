@@ -44,6 +44,7 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
     if (m_movement) {
         m_movement->InitializeWallCollision();
         m_movement->InitializeLadderCollision();
+        m_movement->InitializeTeleportCollision();
     }
 }
 
