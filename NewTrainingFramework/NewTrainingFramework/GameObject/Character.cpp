@@ -96,6 +96,11 @@ void Character::Update(float deltaTime) {
     
     if (m_combat) {
         m_combat->Update(deltaTime);
+        float dx = m_combat->ConsumeLungeDelta();
+        if (dx != 0.0f) {
+            Vector3 p = m_movement->GetPosition();
+            m_movement->SetPosition(p.x + dx, p.y);
+        }
     }
 }
 

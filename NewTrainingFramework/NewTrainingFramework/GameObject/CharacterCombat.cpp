@@ -7,9 +7,13 @@
 #include <iostream>
 #include <cstdlib>
 
-const float CharacterCombat::COMBO_WINDOW = 0.5f;
+const float CharacterCombat::COMBO_WINDOW = 0.8f;
 const float CharacterCombat::HIT_DURATION = 0.3f;
 const float CharacterCombat::HITBOX_DURATION = 0.2f;
+const float CharacterCombat::WEAPON_COMBO_MIN_INTERVAL = 0.4f;
+const float CharacterCombat::WEAPON_COMBO_WINDOW = 1.0f;
+const float CharacterCombat::PUNCH_COMBO_MIN_INTERVAL = 0.35f;
+const float CharacterCombat::PUNCH_COMBO_WINDOW = 0.8f;
 
 CharacterCombat::CharacterCombat() 
     : m_comboCount(0), m_comboTimer(0.0f),
@@ -19,7 +23,9 @@ CharacterCombat::CharacterCombat()
       m_isKicking(false), m_isHit(false), m_hitTimer(0.0f),
       m_showHitbox(false), m_hitboxTimer(0.0f), m_hitboxWidth(0.0f), m_hitboxHeight(0.0f),
       m_hitboxOffsetX(0.0f), m_hitboxOffsetY(0.0f),
-      m_nextGetHitAnimation(8) {
+      m_nextGetHitAnimation(8),
+      m_weaponComboCooldown(0.0f),
+      m_punchComboCooldown(0.0f) {
 }
 
 CharacterCombat::~CharacterCombat() {
@@ -28,6 +34,28 @@ CharacterCombat::~CharacterCombat() {
 void CharacterCombat::Update(float deltaTime) {
     UpdateComboTimers(deltaTime);
     UpdateHitboxTimer(deltaTime);
+    if (m_weaponComboCooldown > 0.0f) {
+        m_weaponComboCooldown -= deltaTime;
+        if (m_weaponComboCooldown < 0.0f) m_weaponComboCooldown = 0.0f;
+    }
+    if (m_punchComboCooldown > 0.0f) {
+        m_punchComboCooldown -= deltaTime;
+        if (m_punchComboCooldown < 0.0f) m_punchComboCooldown = 0.0f;
+    }
+    m_lungeDeltaThisFrame = 0.0f;
+    if (m_isLunging) {
+        float delta = m_lungeSpeed * deltaTime;
+        if (delta > m_lungeRemainingDistance) delta = m_lungeRemainingDistance;
+        m_lungeRemainingDistance -= delta;
+        m_lungeDeltaThisFrame = delta * m_lungeDirection;
+        if (m_lungeRemainingDistance <= 0.0f) {
+            m_isLunging = false;
+            m_lungeSpeed = 0.0f;
+            m_lungeDirection = 0.0f;
+        }
+    }
+    if (m_isInAxeCombo && m_weaponComboQueued && m_weaponComboCooldown <= 0.0f && m_axeComboTimer > 0.0f) {
+    }
     
     // Update hit timer
     if (m_isHit) {
@@ -71,12 +99,14 @@ void CharacterCombat::UpdateHitboxTimer(float deltaTime) {
 
 void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterMovement* movement) {
     if (!animation || !movement) return;
+    if (m_punchComboCooldown > 0.0f) { m_punchComboQueued = true; return; }
     
     if (!m_isInCombo) {
         m_comboCount = 1;
         m_isInCombo = true;
-        m_comboTimer = COMBO_WINDOW;
+        m_comboTimer = PUNCH_COMBO_WINDOW;
         animation->PlayAnimation(10, false);
+        m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
         
         // Show hitbox for punch 1
         float hitboxWidth = 0.03f;
@@ -90,10 +120,11 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         std::cout << "Press J again within " << COMBO_WINDOW << " seconds for next punch!" << std::endl;
     } else if (m_comboTimer > 0.0f) {
         m_comboCount++;
-        m_comboTimer = COMBO_WINDOW;
+        m_comboTimer = PUNCH_COMBO_WINDOW;
         
         if (m_comboCount == 2) {
             animation->PlayAnimation(11, false);
+            m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
             
             // Show hitbox for punch 2
             float hitboxWidth = 0.03f;
@@ -103,6 +134,7 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         } else if (m_comboCount == 3) {
             animation->PlayAnimation(12, false);
+            m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
             
             // Show hitbox for punch 3
             float hitboxWidth = 0.03f;
@@ -110,6 +142,7 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
             float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.05f : 0.05f;
             float hitboxOffsetY = -0.02f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
+            StartLunge(animation->IsFacingLeft(movement), 0.02f, 0.15f);
             
             m_comboCompleted = true;
         } else if (m_comboCount > 3) {
@@ -119,8 +152,9 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
     } else {
         m_comboCount = 1;
         m_isInCombo = true;
-        m_comboTimer = COMBO_WINDOW;
+        m_comboTimer = PUNCH_COMBO_WINDOW;
         animation->PlayAnimation(10, false);
+        m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
         
         // Show hitbox for punch 1
         float hitboxWidth = 0.03f;
@@ -139,19 +173,24 @@ void CharacterCombat::HandleAxeCombo(CharacterAnimation* animation, CharacterMov
 
 void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement, int anim1, int anim2, int anim3) {
     if (!animation || !movement) return;
+    if (m_weaponComboCooldown > 0.0f) { m_weaponComboQueued = true; return; }
     if (!m_isInAxeCombo) {
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
-        m_axeComboTimer = COMBO_WINDOW;
+        m_axeComboTimer = WEAPON_COMBO_WINDOW;
         animation->PlayAnimation(anim1, false);
+        m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
     } else if (m_axeComboTimer > 0.0f) {
         m_axeComboCount++;
-        m_axeComboTimer = COMBO_WINDOW;
+        m_axeComboTimer = WEAPON_COMBO_WINDOW;
         if (m_axeComboCount == 2) {
             animation->PlayAnimation(anim2, false);
+            m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
         } else if (m_axeComboCount == 3) {
             animation->PlayAnimation(anim3, false);
             m_axeComboCompleted = true;
+            m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
+            StartLunge(animation->IsFacingLeft(movement), 0.02f, 0.15f);
         } else if (m_axeComboCount > 3) {
             m_axeComboCount = 3;
             m_axeComboCompleted = true;
@@ -159,9 +198,11 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
     } else {
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
-        m_axeComboTimer = COMBO_WINDOW;
+        m_axeComboTimer = WEAPON_COMBO_WINDOW;
         animation->PlayAnimation(anim1, false);
+        m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
     }
+    m_weaponComboQueued = false;
 }
 
 void CharacterCombat::HandleKick(CharacterAnimation* animation, CharacterMovement* movement) {
