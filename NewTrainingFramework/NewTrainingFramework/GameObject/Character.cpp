@@ -228,6 +228,14 @@ bool Character::IsAnimationPlaying() const {
     return m_animation ? m_animation->IsAnimationPlaying() : false;
 }
 
+void Character::GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const {
+    if (m_animation) {
+        m_animation->GetCurrentFrameUV(u0, v0, u1, v1);
+    } else {
+        u0 = 0.0f; v0 = 0.0f; u1 = 1.0f; v1 = 1.0f;
+    }
+}
+
 bool Character::IsInCombo() const {
     return m_combat ? m_combat->IsInCombo() : false;
 }

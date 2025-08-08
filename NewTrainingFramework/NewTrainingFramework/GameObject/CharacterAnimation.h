@@ -46,6 +46,7 @@ public:
     void PlayAnimation(int animIndex, bool loop);
     int GetCurrentAnimation() const;
     bool IsAnimationPlaying() const;
+    void GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const;
     
     // Getters
     int GetObjectId() const { return m_objectId; }

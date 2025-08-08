@@ -376,6 +376,9 @@ void SceneManager::Draw() {
             }
             // HUD/UI (screen-space, fixed position regardless of camera zoom/move)
             else if ((objId >= 900 && objId < 1000)) {
+                if (objId == 916 || objId == 917) {
+                    continue;
+                }
                 obj->Draw(uiViewMatrix, uiProjectionMatrix);
             }
             else {

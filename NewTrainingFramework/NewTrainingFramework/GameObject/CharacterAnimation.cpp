@@ -257,3 +257,11 @@ bool CharacterAnimation::IsAnimationPlaying() const {
 bool CharacterAnimation::IsFacingLeft(CharacterMovement* movement) const {
     return movement ? movement->IsFacingLeft() : false;
 } 
+
+void CharacterAnimation::GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const {
+    if (m_animManager) {
+        m_animManager->GetUV(u0, v0, u1, v1);
+    } else {
+        u0 = 0.0f; v0 = 0.0f; u1 = 1.0f; v1 = 1.0f;
+    }
+}

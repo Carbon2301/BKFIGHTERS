@@ -310,6 +310,9 @@ void GSPlay::Draw() {
         m_player.Draw(cam);
         m_player2.Draw(cam);
     }
+
+    // Draw HUD portraits with independent UVs
+    DrawHudPortraits();
     
     static float lastPosX = m_player.GetPosition().x;
     static int lastAnim = m_player.GetCurrentAnimation();
@@ -388,6 +391,42 @@ void GSPlay::Draw() {
         lastPosX2 = m_player2.GetPosition().x;
         lastAnim2 = m_player2.GetCurrentAnimation();
         wasMoving2 = isMoving2;
+    }
+}
+
+void GSPlay::DrawHudPortraits() {
+    SceneManager* scene = SceneManager::GetInstance();
+    Camera* activeCamera = scene->GetActiveCamera();
+    if (!activeCamera) return;
+
+    // Prepare UI matrices (screen-space)
+    float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+    Matrix uiView;
+    Matrix uiProj;
+    uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+    uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+
+    // HUD Player 1 (ID 916)
+    if (Object* hud1 = scene->GetObject(916)) {
+        float u0, v0, u1, v1;
+        m_player.GetCurrentFrameUV(u0, v0, u1, v1);
+        // Flip horizontally if player is facing left so HUD mirrors in the same direction
+        if (m_player.IsFacingLeft()) {
+            std::swap(u0, u1);
+        }
+        hud1->SetCustomUV(u0, v0, u1, v1);
+        hud1->Draw(uiView, uiProj);
+    }
+
+    // HUD Player 2 (ID 917)
+    if (Object* hud2 = scene->GetObject(917)) {
+        float u0, v0, u1, v1;
+        m_player2.GetCurrentFrameUV(u0, v0, u1, v1);
+        if (m_player2.IsFacingLeft()) {
+            std::swap(u0, u1);
+        }
+        hud2->SetCustomUV(u0, v0, u1, v1);
+        hud2->Draw(uiView, uiProj);
     }
 }
 

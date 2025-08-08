@@ -63,4 +63,7 @@ public:
     
     // Fan rotation system
     void UpdateFanRotation(float deltaTime);
+
+private:
+    void DrawHudPortraits();
 }; 
