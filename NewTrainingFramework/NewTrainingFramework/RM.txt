@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 15
+# 2DTexture 16
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -218,6 +218,10 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 20
 FILE "../Resources/Fighter/UI/Lift_Platform.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 21
+FILE "../Resources/Textures/black_box.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1

@@ -227,18 +227,17 @@ void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
         }
     }
     
-    // If no valid texture, use default texture or wireframe mode
-    if (!hasValidTexture) {
-        // Try to use texture ID 0 as fallback
-        auto fallbackTexture = ResourceManager::GetInstance()->GetTexture(0);
-        if (fallbackTexture) {
-            fallbackTexture->Bind(0);
-            GLint textureLocation = glGetUniformLocation(m_shader->program, "u_texture");
-            if (textureLocation != -1) {
-                glUniform1i(textureLocation, 0);
-            }
-        }
-    }
+    // Removed fallback binding to texture ID 0 to avoid masking missing textures
+    // if (!hasValidTexture) {
+    //     auto fallbackTexture = ResourceManager::GetInstance()->GetTexture(0);
+    //     if (fallbackTexture) {
+    //         fallbackTexture->Bind(0);
+    //         GLint textureLocation = glGetUniformLocation(m_shader->program, "u_texture");
+    //         if (textureLocation != -1) {
+    //             glUniform1i(textureLocation, 0);
+    //         }
+    //     }
+    // }
     
     // Draw model
     m_model->Draw();
