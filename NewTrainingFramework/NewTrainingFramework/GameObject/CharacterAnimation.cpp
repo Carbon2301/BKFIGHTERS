@@ -5,10 +5,14 @@
 #include "AnimationManager.h"
 #include "SceneManager.h"
 #include "Object.h"
+#include <SDL.h>
 #include <iostream>
 
 CharacterAnimation::CharacterAnimation() 
-    : m_lastAnimation(-1), m_objectId(1000) {
+    : m_lastAnimation(-1), m_objectId(1000),
+      m_climbHoldTimer(0.0f), m_lastClimbDir(0),
+      m_prevClimbUpPressed(false), m_prevClimbDownPressed(false),
+      m_downPressStartTime(-1.0f) {
 }
 
 CharacterAnimation::~CharacterAnimation() {
@@ -136,6 +140,71 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     }
     
     if (!combat->IsInCombo() && !combat->IsInAxeCombo() && !combat->IsKicking() && !combat->IsHit()) {
+        // Ưu tiên animation leo thang khi đang ở trên ladder
+        if (movement->IsOnLadder()) {
+            if (GetCurrentAnimation() != 6) {
+                PlayAnimation(6, true);
+            }
+
+            const PlayerInputConfig& input = movement->GetInputConfig();
+            const bool upHeld = keyStates[input.jumpKey];
+            const bool downHeld = keyStates[input.sitKey];
+            const bool upPressed = upHeld;
+            const bool downPressed = downHeld;
+            const bool upJustPressed = upPressed && !m_prevClimbUpPressed;
+            const bool downJustPressed = downPressed && !m_prevClimbDownPressed;
+
+            if (upJustPressed && !upHeld) {
+                const AnimationData* anim = m_animManager->GetAnimation(6);
+                if (anim) {
+                    int frame = m_animManager->GetCurrentFrame();
+                    frame = (frame + 1) % anim->numFrames; // 1->2->3->4->1
+                    m_animManager->SetCurrentFrame(frame);
+                }
+            }
+            if (downJustPressed) {
+                const AnimationData* anim = m_animManager->GetAnimation(6);
+                if (anim) {
+                    int frame = m_animManager->GetCurrentFrame();
+                    frame = (frame - 1);
+                    if (frame < 0) frame = anim->numFrames - 1; // 4->3->2->1->4
+                    m_animManager->SetCurrentFrame(frame);
+                }
+            }
+
+            float now = SDL_GetTicks() / 1000.0f;
+            if (downJustPressed) {
+                m_downPressStartTime = now;
+            }
+            bool isDownHeldLong = false;
+            if (downHeld && m_downPressStartTime >= 0.0f) {
+                isDownHeldLong = (now - m_downPressStartTime) > CLIMB_DOWN_HOLD_THRESHOLD;
+            }
+            if (!downHeld) {
+                m_downPressStartTime = -1.0f;
+            }
+
+            bool leftHeld = keyStates[input.moveLeftKey];
+            bool rightHeld = keyStates[input.moveRightKey];
+            if (upHeld || leftHeld || rightHeld) {
+                m_animManager->SetPlaying(true);
+                m_lastClimbDir = 1;
+            } else if (isDownHeldLong) {
+                const AnimationData* anim = m_animManager->GetAnimation(6);
+                if (anim) {
+                    m_animManager->Pause();
+                    m_animManager->SetCurrentFrame(0);
+                }
+                m_lastClimbDir = -1;
+            } else if (!upHeld && !downHeld) {
+                m_animManager->Pause();
+                m_lastClimbDir = 0;
+            }
+
+            m_prevClimbUpPressed = upPressed;
+            m_prevClimbDownPressed = downPressed;
+            return;
+        }
         
         if (movement->IsJumping()) {
             PlayAnimation(16, false);

@@ -3,6 +3,7 @@
 #include "../../Utilities/Math.h"
 #include "WallCollision.h"
 #include "PlatformCollision.h"
+#include "LadderCollision.h"
 
 enum class CharState {
     Idle,
@@ -78,9 +79,17 @@ private:
     // Double-tap xuống platform
     float m_lastDownPressTime = -1.0f;
     bool m_prevDownKey = false;
+    bool m_prevUpKey = false;
     bool m_isFallingThroughPlatform = false;
     float m_fallThroughTimer = 0.0f;
     static constexpr float FALL_THROUGH_DURATION = 0.5f; // 500ms để rơi xuyên platform
+    
+    // Double-tap vào thang khi đang đứng đất và thấp hơn đáy thang
+    float m_lastUpTapTimeForLadder = -1.0f;
+    float m_lastDownTapTimeForLadder = -1.0f;
+    bool m_prevDownKeyForLadder = false;
+    int m_upTapCountForLadder = 0;
+    int m_downTapCountForLadder = 0;
     
     // Platform collision
     std::unique_ptr<PlatformCollision> m_platformCollision;
@@ -93,11 +102,20 @@ private:
     // Wall collision
     std::unique_ptr<WallCollision> m_wallCollision;
 
+    // Ladder collision
+    std::unique_ptr<LadderCollision> m_ladderCollision;
+    bool m_isOnLadder = false;
+    float m_ladderCenterX = 0.0f;
+    float m_ladderTop = 0.0f;
+    float m_ladderBottom = 0.0f;
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;
     static const float GROUND_Y;
     static const float MOVE_SPEED;
+    static const float CLIMB_SPEED;
+    static const float CLIMB_DOWN_SPEED;
 
 public:
     CharacterMovement();
@@ -110,6 +128,7 @@ public:
     
     void Update(float deltaTime, const bool* keyStates);
     void UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
+    bool HandleLadderWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
     
     void HandleMovement(float deltaTime, const bool* keyStates);
     void HandleJump(float deltaTime, const bool* keyStates);
@@ -147,6 +166,11 @@ public:
     // Wall collision methods
     void InitializeWallCollision();
     WallCollision* GetWallCollision() const { return m_wallCollision.get(); }
+
+    // Ladder collision methods
+    void InitializeLadderCollision();
+    LadderCollision* GetLadderCollision() const { return m_ladderCollision.get(); }
+    bool IsOnLadder() const { return m_isOnLadder; }
 
     // Static input configurations
     static const PlayerInputConfig PLAYER1_INPUT;

@@ -122,6 +122,7 @@
     </ClCompile>
     <ClCompile Include="GameObject\Texture2D.cpp" />
     <ClCompile Include="GameObject\PlatformCollision.cpp" />
+    <ClCompile Include="GameObject\LadderCollision.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameObject\Camera.h" />
@@ -144,6 +145,7 @@
     <ClInclude Include="GameObject\CharacterHitbox.h" />
     <ClInclude Include="GameObject\CharacterMovement.h" />
     <ClInclude Include="GameObject\WallCollision.h" />
+    <ClInclude Include="GameObject\LadderCollision.h" />
     <ClInclude Include="GameObject\InputManager.h" />
     <ClInclude Include="GameObject\Shaders.h" />
     <ClInclude Include="Core\stdafx.h" />

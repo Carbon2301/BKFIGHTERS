@@ -16,6 +16,7 @@ private:
     static bool s_showHitboxHurtbox;
     static bool s_showPlatformBoxes;
     static bool s_showWallBoxes;
+    static bool s_showLadderBoxes;
     
     // Health system variables
     float m_player1Health;
@@ -45,14 +46,10 @@ public:
     void Exit() override;
     void Cleanup() override;
     
-    // Static getter for hitbox/hurtbox visibility
     static bool IsShowHitboxHurtbox() { return s_showHitboxHurtbox; }
-    
-    // Static getter for platform box visibility
     static bool IsShowPlatformBoxes() { return s_showPlatformBoxes; }
-    
-    // Static getter for wall box visibility
     static bool IsShowWallBoxes() { return s_showWallBoxes; }
+    static bool IsShowLadderBoxes() { return s_showLadderBoxes; }
     
     // Health system methods
     void UpdateHealthBars();

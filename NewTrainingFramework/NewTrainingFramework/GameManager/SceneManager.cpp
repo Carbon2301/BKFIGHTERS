@@ -355,6 +355,12 @@ void SceneManager::Draw() {
                     obj->Draw(viewMatrix, projectionMatrix);
                 }
             }
+            // Ladder boxes
+            else if (objId == 600) {
+                if (GSPlay::IsShowLadderBoxes()) {
+                    obj->Draw(viewMatrix, projectionMatrix);
+                }
+            }
             else {
                 obj->Draw(viewMatrix, projectionMatrix);
             }

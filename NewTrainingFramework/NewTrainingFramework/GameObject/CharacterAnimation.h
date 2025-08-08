@@ -16,6 +16,16 @@ private:
     int m_lastAnimation;
     int m_objectId;
 
+    // Leo thang: điều khiển frame step-by-step
+    float m_climbHoldTimer = 0.0f;
+    static constexpr float CLIMB_HOLD_STEP_INTERVAL = 0.12f; // giữ phím: tốc độ chuyển frame liên tục
+    int m_lastClimbDir = 0; // 1: lên, -1: xuống, 0: đứng yên
+    bool m_prevClimbUpPressed = false;
+    bool m_prevClimbDownPressed = false;
+    // Phân biệt nhấn-nhả vs giữ khi đi xuống
+    float m_downPressStartTime = -1.0f; // giây
+    static constexpr float CLIMB_DOWN_HOLD_THRESHOLD = 0.15f; // > 150ms coi như giữ
+
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
 
