@@ -16,6 +16,7 @@ Camera::Camera()
     , m_minZoom(1.0f), m_maxZoom(3.5f)
     , m_currentZoom(1.8f), m_zoomSpeed(2.0f), m_targetZoom(2.0f)
     , m_autoZoomEnabled(false)
+    , m_verticalOffset(0.0f)
     , m_characterWidth(0.5f), m_characterHeight(1.0f)
     , m_paddingX(0.3f), m_paddingY(0.2f)
     , m_initialPosition(0.0f, 0.0f, 1.0f)
@@ -36,6 +37,7 @@ Camera::Camera(const Vector3& position, const Vector3& target, const Vector3& up
     , m_minZoom(1.0f), m_maxZoom(3.5f)
     , m_currentZoom(1.8f), m_zoomSpeed(2.0f), m_targetZoom(1.8f)
     , m_autoZoomEnabled(false)
+    , m_verticalOffset(0.0f)
     , m_characterWidth(0.5f), m_characterHeight(1.0f)
     , m_paddingX(0.3f), m_paddingY(0.2f)
     , m_initialPosition(position.x, position.y, position.z)
@@ -161,47 +163,62 @@ void Camera::SetTargetZoom(float targetZoom) {
 
 void Camera::UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3& player2Pos, float deltaTime) {
     if (!m_autoZoomEnabled) return;
-    
+
+    float baseViewWidth = m_baseRight - m_baseLeft;
+    float baseViewHeight = m_baseTop - m_baseBottom;
+
+    float distanceX = (player1Pos.x > player2Pos.x) ? (player1Pos.x - player2Pos.x) : (player2Pos.x - player1Pos.x);
+    float distanceY = (player1Pos.y > player2Pos.y) ? (player1Pos.y - player2Pos.y) : (player2Pos.y - player1Pos.y);
+    float normalizedDistanceX = distanceX / (baseViewWidth * 0.6f);
+    if (normalizedDistanceX < 0.0f) normalizedDistanceX = 0.0f;
+    if (normalizedDistanceX > 1.0f) normalizedDistanceX = 1.0f;
+
+    float paddingScale = 0.3f + 0.7f * normalizedDistanceX; 
+    float effectivePaddingX = m_paddingX * paddingScale;
+    float effectivePaddingY = m_paddingY * paddingScale;
+
     float minX = (player1Pos.x < player2Pos.x) ? player1Pos.x : player2Pos.x;
     float maxX = (player1Pos.x > player2Pos.x) ? player1Pos.x : player2Pos.x;
     float minY = (player1Pos.y < player2Pos.y) ? player1Pos.y : player2Pos.y;
     float maxY = (player1Pos.y > player2Pos.y) ? player1Pos.y : player2Pos.y;
-    
-    minX -= (m_characterWidth * 0.5f + m_paddingX);
-    maxX += (m_characterWidth * 0.5f + m_paddingX);
-    minY -= (m_characterHeight * 0.5f + m_paddingY);
-    maxY += (m_characterHeight * 0.5f + m_paddingY);
-    
+
+    minX -= (m_characterWidth * 0.5f + effectivePaddingX);
+    maxX += (m_characterWidth * 0.5f + effectivePaddingX);
+    minY -= (m_characterHeight * 0.5f + effectivePaddingY);
+    maxY += (m_characterHeight * 0.5f + effectivePaddingY);
+
     float requiredWidth = maxX - minX;
     float requiredHeight = maxY - minY;
-    
-    float baseViewWidth = m_baseRight - m_baseLeft;
-    float baseViewHeight = m_baseTop - m_baseBottom;
-    
+
     float zoomForWidth = baseViewWidth / requiredWidth;
     float zoomForHeight = baseViewHeight / requiredHeight;
-    
+
     float targetZoom = (zoomForWidth < zoomForHeight) ? zoomForWidth : zoomForHeight;
-    
+
+    float closeBias = 1.0f + (1.0f - paddingScale) * 0.60f;
+    targetZoom *= closeBias;
+
     if (targetZoom < m_minZoom) targetZoom = m_minZoom;
     if (targetZoom > m_maxZoom) targetZoom = m_maxZoom;
-    
+
     SetTargetZoom(targetZoom);
     UpdateZoom(deltaTime);
-    
+
     float centerX = (minX + maxX) * 0.5f;
-    float centerY = (minY + maxY) * 0.5f;
-    
+    float effectiveVerticalOffset = m_verticalOffset * paddingScale;
+    float dynamicYOffset = -(1.0f - paddingScale) * 0.45f;
+    float centerY = (minY + maxY) * 0.5f + effectiveVerticalOffset + dynamicYOffset;
+
     Vector3 targetPosition(centerX, centerY, m_position.z);
     Vector3 currentPos = m_position;
-    
-    float moveSpeedX = 3.0f;
-    float moveSpeedY = 3.0f;
+
+    float moveSpeedX = 5.0f;
+    float moveSpeedY = 5.0f;
     Vector3 newPosition;
     newPosition.x = currentPos.x + (targetPosition.x - currentPos.x) * moveSpeedX * deltaTime;
     newPosition.y = currentPos.y + (targetPosition.y - currentPos.y) * moveSpeedY * deltaTime;
     newPosition.z = currentPos.z;
-    
+
     SetPosition2D(newPosition.x, newPosition.y);
 }
 

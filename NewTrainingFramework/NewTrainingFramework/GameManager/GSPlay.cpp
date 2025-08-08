@@ -71,8 +71,10 @@ void GSPlay::Init() {
             camera->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
             
             camera->EnableAutoZoom(true);
-            camera->SetZoomRange(0.4f, 1.8f);
+            camera->SetZoomRange(0.4f, 2.4f);
             camera->SetZoomSpeed(3.0f);
+            camera->SetCameraPadding(0.8f, 0.60f);
+            camera->SetVerticalOffset(0.50f);
             
             sceneManager->SetActiveCamera(0);
         }
@@ -83,8 +85,10 @@ void GSPlay::Init() {
             camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
             
             camera->EnableAutoZoom(true);
-            camera->SetZoomRange(0.4f, 1.8f);
+            camera->SetZoomRange(0.4f, 2.4f);
             camera->SetZoomSpeed(3.0f);
+            camera->SetCameraPadding(0.8f, 0.60f);
+            camera->SetVerticalOffset(0.50f);
         }
     }    
     

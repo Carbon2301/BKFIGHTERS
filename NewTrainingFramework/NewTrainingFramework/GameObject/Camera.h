@@ -16,6 +16,7 @@ private:
     float m_zoomSpeed;
     float m_targetZoom;
     bool m_autoZoomEnabled;
+    float m_verticalOffset;
     
     float m_characterWidth;
     float m_characterHeight;
@@ -60,6 +61,7 @@ public:
     float GetCurrentZoom() const { return m_currentZoom; }
     bool IsAutoZoomEnabled() const { return m_autoZoomEnabled; }
     void ResetToInitialState();
+    void SetVerticalOffset(float offset) { m_verticalOffset = offset; }
     
     void UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3& player2Pos, float deltaTime);
     
