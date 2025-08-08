@@ -71,8 +71,10 @@ void GSPlay::Init() {
             camera->SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
             
             camera->EnableAutoZoom(true);
-            camera->SetZoomRange(0.4f, 1.8f);
+            camera->SetZoomRange(0.4f, 2.4f);
             camera->SetZoomSpeed(3.0f);
+            camera->SetCameraPadding(0.8f, 0.60f);
+            camera->SetVerticalOffset(0.50f);
             
             sceneManager->SetActiveCamera(0);
         }
@@ -83,8 +85,10 @@ void GSPlay::Init() {
             camera->SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
             
             camera->EnableAutoZoom(true);
-            camera->SetZoomRange(0.4f, 1.8f);
+            camera->SetZoomRange(0.4f, 2.4f);
             camera->SetZoomSpeed(3.0f);
+            camera->SetCameraPadding(0.8f, 0.60f);
+            camera->SetVerticalOffset(0.50f);
         }
     }    
     
@@ -181,6 +185,34 @@ void GSPlay::Init() {
         std::cout << "Warning: Lift platform (ID 30) not found in scene" << std::endl;
     }
     
+    // Mark weapon availability if present in scene
+    m_isAxeAvailable   = (sceneManager->GetObject(AXE_OBJECT_ID)   != nullptr);
+    m_isSwordAvailable = (sceneManager->GetObject(SWORD_OBJECT_ID) != nullptr);
+    m_isPipeAvailable  = (sceneManager->GetObject(PIPE_OBJECT_ID)  != nullptr);
+
+    // Apply glint shader to world weapons (IDs 1100/1101/1102)
+    auto applyGlint = [&](int objId){ if (Object* o = sceneManager->GetObject(objId)) { o->SetShader(1); } };
+    applyGlint(AXE_OBJECT_ID);
+    applyGlint(SWORD_OBJECT_ID);
+    applyGlint(PIPE_OBJECT_ID);
+
+    // Initialize lifetime tracking for item objects
+    m_itemLives.clear();
+    auto tryAdd = [&](int id){ if (sceneManager->GetObject(id)) m_itemLives.push_back({id, 0.0f}); };
+    tryAdd(AXE_OBJECT_ID);
+    tryAdd(SWORD_OBJECT_ID);
+    tryAdd(PIPE_OBJECT_ID);
+
+    // Initialize HUD weapons: cache base scales and hide by default
+    if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
+        m_hudWeapon1BaseScale = hudWeapon1->GetScale();
+        hudWeapon1->SetScale(0.0f, 0.0f, m_hudWeapon1BaseScale.z);
+    }
+    if (Object* hudWeapon2 = sceneManager->GetObject(919)) {
+        m_hudWeapon2BaseScale = hudWeapon2->GetScale();
+        hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
+    }
+
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
@@ -197,15 +229,7 @@ void GSPlay::Init() {
     std::cout << "- S + D: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
     std::cout << "=== PLAYER 1 COMBO SYSTEM ===" << std::endl;
-    std::cout << "- J: Start/Continue Punch Combo" << std::endl;
-    std::cout << "  * Press J once: Punch1 (Animation 10: Punch1)" << std::endl;
-    std::cout << "  * Press J twice: Punch2 (Animation 11: Punch2)" << std::endl;
-    std::cout << "  * Press J three times: Punch3 (Animation 12: Punch3)" << std::endl;
-    std::cout << "  * Combo window: 0.5 seconds" << std::endl;
-    std::cout << "- L: Start/Continue Axe Combo" << std::endl;
-    std::cout << "  * Press L once: Axe1 (Animation 20: Axe1)" << std::endl;
-    std::cout << "  * Press L twice: Axe2 (Animation 21: Axe2)" << std::endl;
-    std::cout << "  * Press L three times: Axe3 (Animation 22: Axe3)" << std::endl;
+    std::cout << "- J: Combo (Punch by default; Axe after pickup)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- K: Kick (Animation 19: Kick)" << std::endl;
     std::cout << "=== PLAYER 2 MOVEMENT CONTROLS ===" << std::endl;
@@ -220,15 +244,7 @@ void GSPlay::Init() {
     std::cout << "- Down Arrow + Right Arrow: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
     std::cout << "=== PLAYER 2 COMBO SYSTEM ===" << std::endl;
-    std::cout << "- 1: Start/Continue Punch Combo" << std::endl;
-    std::cout << "  * Press 1 once: Punch1 (Animation 10: Punch1)" << std::endl;
-    std::cout << "  * Press 1 twice: Punch2 (Animation 11: Punch2)" << std::endl;
-    std::cout << "  * Press 1 three times: Punch3 (Animation 12: Punch3)" << std::endl;
-    std::cout << "  * Combo window: 0.5 seconds" << std::endl;
-    std::cout << "- 3: Start/Continue Axe Combo" << std::endl;
-    std::cout << "  * Press 3 once: Axe1 (Animation 20: Axe1)" << std::endl;
-    std::cout << "  * Press 3 twice: Axe2 (Animation 21: Axe2)" << std::endl;
-    std::cout << "  * Press 3 three times: Axe3 (Animation 22: Axe3)" << std::endl;
+    std::cout << "- 1: Combo (Punch by default; Axe after pickup)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- 2: Kick (Animation 19: Kick)" << std::endl;
     std::cout << "=== PLATFORM SYSTEM ===" << std::endl;
@@ -247,6 +263,7 @@ void GSPlay::Init() {
     
 
     UpdateHealthBars();
+    UpdateHudWeapons();
 }
 
 void GSPlay::Update(float deltaTime) {
@@ -257,7 +274,7 @@ void GSPlay::Update(float deltaTime) {
     if (m_inputManager) {
         m_player.ProcessInput(deltaTime, m_inputManager);
         m_player2.ProcessInput(deltaTime, m_inputManager);
-        
+        HandleItemPickup();
         m_inputManager->Update();
     } else {
         m_inputManager = InputManager::GetInstance();
@@ -265,6 +282,7 @@ void GSPlay::Update(float deltaTime) {
     
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
+    UpdateHudWeapons();
     
     if (m_player.CheckHitboxCollision(m_player2)) {
         m_player2.TriggerGetHit(m_player);
@@ -296,6 +314,31 @@ void GSPlay::Update(float deltaTime) {
     
     // Update fan rotation
     UpdateFanRotation(deltaTime);
+
+    // Update item lifetimes (20s total; blink after 12s)
+    {
+        SceneManager* scene = SceneManager::GetInstance();
+        const float LIFETIME = 20.0f;
+        const float BLINK_START = 12.0f;
+        static float blinkTimer = 0.0f;
+        blinkTimer += deltaTime;
+        bool blinkVisible = fmodf(blinkTimer, 0.3f) < 0.15f; // toggle every 0.15s
+
+        for (auto it = m_itemLives.begin(); it != m_itemLives.end(); ) {
+            it->timer += deltaTime;
+            Object* obj = scene->GetObject(it->id);
+            if (!obj) { it = m_itemLives.erase(it); continue; }
+            if (it->timer >= LIFETIME) {
+                scene->RemoveObject(it->id);
+                it = m_itemLives.erase(it);
+                continue;
+            }
+            if (it->timer >= BLINK_START) {
+                obj->SetVisible(blinkVisible);
+            }
+            ++it;
+        }
+    }
 }
 
 void GSPlay::Draw() {
@@ -306,6 +349,9 @@ void GSPlay::Draw() {
         m_player.Draw(cam);
         m_player2.Draw(cam);
     }
+
+    // Draw HUD portraits with independent UVs
+    DrawHudPortraits();
     
     static float lastPosX = m_player.GetPosition().x;
     static int lastAnim = m_player.GetCurrentAnimation();
@@ -384,6 +430,66 @@ void GSPlay::Draw() {
         lastPosX2 = m_player2.GetPosition().x;
         lastAnim2 = m_player2.GetCurrentAnimation();
         wasMoving2 = isMoving2;
+    }
+}
+
+void GSPlay::UpdateHudWeapons() {
+    SceneManager* scene = SceneManager::GetInstance();
+    if (Object* hudWeapon1 = scene->GetObject(918)) {
+        auto w = m_player.GetWeapon();
+        if (w != Character::WeaponType::None) {
+            hudWeapon1->SetScale(m_hudWeapon1BaseScale);
+            int texId = (w == Character::WeaponType::Axe) ? HUD_TEX_AXE : (w == Character::WeaponType::Sword) ? HUD_TEX_SWORD : HUD_TEX_PIPE;
+            hudWeapon1->SetTexture(texId, 0);
+        } else {
+            hudWeapon1->SetScale(0.0f, 0.0f, m_hudWeapon1BaseScale.z);
+        }
+    }
+    if (Object* hudWeapon2 = scene->GetObject(919)) {
+        auto w = m_player2.GetWeapon();
+        if (w != Character::WeaponType::None) {
+            hudWeapon2->SetScale(m_hudWeapon2BaseScale);
+            int texId = (w == Character::WeaponType::Axe) ? HUD_TEX_AXE : (w == Character::WeaponType::Sword) ? HUD_TEX_SWORD : HUD_TEX_PIPE;
+            hudWeapon2->SetTexture(texId, 0);
+        } else {
+            hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
+        }
+    }
+}
+
+void GSPlay::DrawHudPortraits() {
+    SceneManager* scene = SceneManager::GetInstance();
+    Camera* activeCamera = scene->GetActiveCamera();
+    if (!activeCamera) return;
+
+    // Prepare UI matrices (screen-space)
+    float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+    Matrix uiView;
+    Matrix uiProj;
+    uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+    uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+
+    // HUD Player 1 (ID 916)
+    if (Object* hud1 = scene->GetObject(916)) {
+        float u0, v0, u1, v1;
+        m_player.GetCurrentFrameUV(u0, v0, u1, v1);
+        // Flip horizontally if player is facing left so HUD mirrors in the same direction
+        if (m_player.IsFacingLeft()) {
+            std::swap(u0, u1);
+        }
+        hud1->SetCustomUV(u0, v0, u1, v1);
+        hud1->Draw(uiView, uiProj);
+    }
+
+    // HUD Player 2 (ID 917)
+    if (Object* hud2 = scene->GetObject(917)) {
+        float u0, v0, u1, v1;
+        m_player2.GetCurrentFrameUV(u0, v0, u1, v1);
+        if (m_player2.IsFacingLeft()) {
+            std::swap(u0, u1);
+        }
+        hud2->SetCustomUV(u0, v0, u1, v1);
+        hud2->Draw(uiView, uiProj);
     }
 }
 
@@ -552,6 +658,23 @@ void GSPlay::UpdateHealthBars() {
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         healthBar2->SetScale(healthRatio2 * 0.18f, currentScale.y, currentScale.z);
     }
+
+    // Update HUD health bars (fixed position)
+    Object* hudHealth1 = sceneManager->GetObject(914);
+    if (hudHealth1) {
+        float healthRatio1 = m_player.GetHealth() / m_player.GetMaxHealth();
+        const Vector3& hudScale1 = hudHealth1->GetScale();
+        // Base width defined in scene file: 0.94
+        hudHealth1->SetScale(healthRatio1 * 0.94f, hudScale1.y, hudScale1.z);
+    }
+
+    Object* hudHealth2 = sceneManager->GetObject(915);
+    if (hudHealth2) {
+        float healthRatio2 = m_player2.GetHealth() / m_player2.GetMaxHealth();
+        const Vector3& hudScale2 = hudHealth2->GetScale();
+        // Base width defined in scene file: 0.94
+        hudHealth2->SetScale(healthRatio2 * 0.94f, hudScale2.y, hudScale2.z);
+    }
 }
 
 void GSPlay::UpdateCloudMovement(float deltaTime) {
@@ -612,3 +735,69 @@ void GSPlay::UpdateFanRotation(float deltaTime) {
         }
     }
 } 
+
+// Item pickup: sit + kick
+void GSPlay::HandleItemPickup() {
+    if (!m_inputManager) return;
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* axe   = scene->GetObject(AXE_OBJECT_ID);
+    Object* sword = scene->GetObject(SWORD_OBJECT_ID);
+    Object* pipe  = scene->GetObject(PIPE_OBJECT_ID);
+
+    const bool* keys = m_inputManager->GetKeyStates();
+    if (!keys) return;
+
+    // Player 1 input gates: sit + kick
+    const PlayerInputConfig& cfg1 = m_player.GetMovement()->GetInputConfig();
+    bool p1Sit = keys[cfg1.sitKey];
+    bool p1KickJust = m_inputManager->IsKeyJustPressed(cfg1.kickKey);
+
+    // Player 2 input gates: sit + kick
+    const PlayerInputConfig& cfg2 = m_player2.GetMovement()->GetInputConfig();
+    bool p2Sit = keys[cfg2.sitKey];
+    bool p2KickJust = m_inputManager->IsKeyJustPressed(cfg2.kickKey);
+
+    auto isOverlapping = [](const Vector3& pos, float w, float h, const Vector3& objPos, const Vector3& objScale) {
+        float halfW = w * 0.5f;
+        float halfH = h * 0.5f;
+        float l1 = pos.x - halfW, r1 = pos.x + halfW, b1 = pos.y - halfH, t1 = pos.y + halfH;
+        float objHalfW = std::abs(objScale.x) * 0.5f;
+        float objHalfH = std::abs(objScale.y) * 0.5f;
+        float l2 = objPos.x - objHalfW, r2 = objPos.x + objHalfW;
+        float b2 = objPos.y - objHalfH, t2 = objPos.y + objHalfH;
+        bool overlapX = (r1 >= l2) && (l1 <= r2);
+        bool overlapY = (t1 >= b2) && (b1 <= t2);
+        return overlapX && overlapY;
+    };
+
+    auto tryPickup = [&](Character& player, bool sitHeld, bool kickJust, Object*& objRef, bool& availFlag, Character::WeaponType weaponType){
+        if (!sitHeld || !kickJust || !objRef) return false;
+        const Vector3& objPos = objRef->GetPosition();
+        const Vector3& objScale = objRef->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = objRef->GetId();
+            scene->RemoveObject(removedId);
+            objRef = nullptr;
+            availFlag = false;
+            player.SetWeapon(weaponType);
+            std::cout << "Picked up weapon ID " << removedId << " (type=" << (int)weaponType << ")" << std::endl;
+            return true;
+        }
+        return false;
+    };
+
+    // Check Player 1
+    if ( tryPickup(m_player,  p1Sit, p1KickJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+         tryPickup(m_player,  p1Sit, p1KickJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
+         tryPickup(m_player,  p1Sit, p1KickJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+
+    // Check Player 2
+    if ( tryPickup(m_player2, p2Sit, p2KickJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+         tryPickup(m_player2, p2Sit, p2KickJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
+         tryPickup(m_player2, p2Sit, p2KickJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+}

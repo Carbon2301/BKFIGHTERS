@@ -58,7 +58,10 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         return;
     }
     
-    CancelCombosOnOtherAction(keyStates);
+    if (m_movement && m_combat) {
+        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+        m_movement->SetInputLocked(lock);
+    }
     
     m_movement->UpdateWithHurtbox(deltaTime, keyStates, 
                                   GetHurtboxWidth(), GetHurtboxHeight(), 
@@ -71,19 +74,31 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     
     if (inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
-        HandlePunchCombo();
-    }
-    
-    if (inputManager->IsKeyJustPressed(inputConfig.axeKey)) {
-        HandleAxeCombo();
+        if (m_movement->IsJumping()) {
+            HandleAirKick();
+        } else {
+        switch (m_weapon) {
+            case WeaponType::Axe:   HandleAxeCombo(); break;
+            case WeaponType::Sword: HandleSwordCombo(); break;
+            case WeaponType::Pipe:  HandlePipeCombo(); break;
+            case WeaponType::None:
+            default: HandlePunchCombo(); break;
+        }
+        }
     }
     
     if (inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
+        if (!m_movement->IsJumping()) {
         HandleKick();
+        }
     }
     
     if (inputManager->IsKeyJustPressed(inputConfig.dieKey)) {
         HandleDie();
+    }
+    if (m_movement && m_combat) {
+        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+        m_movement->SetInputLocked(lock);
     }
 }
 
@@ -94,6 +109,16 @@ void Character::Update(float deltaTime) {
     
     if (m_combat) {
         m_combat->Update(deltaTime);
+        float dx = m_combat->ConsumeLungeDelta();
+        if (dx != 0.0f) {
+            Vector3 p = m_movement->GetPosition();
+            m_movement->SetPosition(p.x + dx, p.y);
+        }
+    }
+
+    if (m_movement && m_combat) {
+        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+        m_movement->SetInputLocked(lock);
     }
 }
 
@@ -110,27 +135,6 @@ void Character::Draw(Camera* camera) {
 
 
 void Character::CancelCombosOnOtherAction(const bool* keyStates) {
-    if (!keyStates) {
-        return;
-    }
-    
-    const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
-    
-    bool isRollingLeft = (keyStates[inputConfig.rollLeftKey1] && keyStates[inputConfig.rollLeftKey2]);
-    bool isRollingRight = (keyStates[inputConfig.rollRightKey1] && keyStates[inputConfig.rollRightKey2]);
-    bool isOtherAction = (keyStates[inputConfig.sitKey] || keyStates[inputConfig.jumpKey] || isRollingLeft || isRollingRight);
-    
-    if (isOtherAction && m_combat->IsInCombo()) {
-        m_combat->CancelAllCombos();
-    }
-    
-    if (isOtherAction && m_combat->IsInAxeCombo()) {
-        m_combat->CancelAllCombos();
-    }
-    
-    if (isOtherAction && m_combat->IsKicking()) {
-        m_combat->CancelAllCombos();
-    }
 }
 
 void Character::SetPosition(float x, float y) {
@@ -173,13 +177,31 @@ void Character::HandlePunchCombo() {
 
 void Character::HandleAxeCombo() {
     if (m_combat && m_animation) {
-        m_combat->HandleAxeCombo(m_animation.get(), m_movement.get());
+        m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 20, 21, 22);
+    }
+}
+
+void Character::HandleSwordCombo() {
+    if (m_combat && m_animation) {
+        m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 23, 24, 25);
+    }
+}
+
+void Character::HandlePipeCombo() {
+    if (m_combat && m_animation) {
+        m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 26, 27, 28);
     }
 }
 
 void Character::HandleKick() {
     if (m_combat && m_animation) {
         m_combat->HandleKick(m_animation.get(), m_movement.get());
+    }
+}
+
+void Character::HandleAirKick() {
+    if (m_combat && m_animation && m_movement && m_movement->IsJumping()) {
+        m_combat->HandleAirKick(m_animation.get(), m_movement.get());
     }
 }
 
@@ -226,6 +248,14 @@ int Character::GetCurrentAnimation() const {
 
 bool Character::IsAnimationPlaying() const {
     return m_animation ? m_animation->IsAnimationPlaying() : false;
+}
+
+void Character::GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const {
+    if (m_animation) {
+        m_animation->GetCurrentFrameUV(u0, v0, u1, v1);
+    } else {
+        u0 = 0.0f; v0 = 0.0f; u1 = 1.0f; v1 = 1.0f;
+    }
 }
 
 bool Character::IsInCombo() const {

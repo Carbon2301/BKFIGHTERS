@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 16
+# 2DTexture 22
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -224,10 +224,39 @@ ID 21
 FILE "../Resources/Textures/black_box.tga"
 TILING GL_CLAMP_TO_EDGE
 
+ID 22
+FILE "../Resources/Fighter/UI/HUD_red_box.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 23
+FILE "../Resources/Fighter/UI/P1.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 24
+FILE "../Resources/Fighter/UI/P2.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 30
+FILE "../Resources/Fighter/Weapons/Axe.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 31
+FILE "../Resources/Fighter/Weapons/Sword.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 32
+FILE "../Resources/Fighter/Weapons/Pipe.tga"
+TILING GL_CLAMP_TO_EDGE
+
 # Shader 1
 ID 0
 VS "../Resources/Shaders/TriangleShaderVS.vs"
 FS "../Resources/Shaders/TriangleShaderFS.fs" 
+
+# Shader 2 - Weapon Glint
+ID 1
+VS "../Resources/Shaders/TriangleShaderVS.vs"
+FS "../Resources/Shaders/WeaponGlint.fs"
 
 # Music
 ID 0

@@ -34,9 +34,25 @@ private:
     float m_hitboxOffsetY;
     
     static const float COMBO_WINDOW;
+    static const float WEAPON_COMBO_MIN_INTERVAL;
+    static const float WEAPON_COMBO_WINDOW;
+    static const float PUNCH_COMBO_MIN_INTERVAL;
+    static const float PUNCH_COMBO_WINDOW;
 
     void UpdateComboTimers(float deltaTime);
     void UpdateHitboxTimer(float deltaTime);
+
+    int m_nextGetHitAnimation;
+
+    float m_weaponComboCooldown;
+    bool m_weaponComboQueued = false;
+
+    float m_punchComboCooldown;
+    bool m_punchComboQueued = false;
+    int m_currentWeaponAnim1 = -1;
+    int m_currentWeaponAnim2 = -1;
+    int m_currentWeaponAnim3 = -1;
+    void AdvanceQueuedWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement);
 
 public:
     CharacterCombat();
@@ -46,7 +62,9 @@ public:
     
     void HandlePunchCombo(CharacterAnimation* animation, CharacterMovement* movement);
     void HandleAxeCombo(CharacterAnimation* animation, CharacterMovement* movement);
+    void HandleWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement, int anim1, int anim2, int anim3);
     void HandleKick(CharacterAnimation* animation, CharacterMovement* movement);
+    void HandleAirKick(CharacterAnimation* animation, CharacterMovement* movement);
     void CancelAllCombos();
     void HandleRandomGetHit(CharacterAnimation* animation, CharacterMovement* movement);
     
@@ -73,4 +91,24 @@ public:
     float GetHitboxHeight() const { return m_hitboxHeight; }
     float GetHitboxOffsetX() const { return m_hitboxOffsetX; }
     float GetHitboxOffsetY() const { return m_hitboxOffsetY; }
+
+    void StartLunge(bool facingLeft, float distance, float duration) {
+        if (distance <= 0.0f || duration <= 0.0f) return;
+        m_isLunging = true;
+        m_lungeRemainingDistance = distance;
+        m_lungeSpeed = distance / duration;
+        m_lungeDirection = facingLeft ? -1.0f : 1.0f;
+    }
+    float ConsumeLungeDelta() {
+        float d = m_lungeDeltaThisFrame;
+        m_lungeDeltaThisFrame = 0.0f;
+        return d;
+    }
+
+private:
+    bool m_isLunging = false;
+    float m_lungeRemainingDistance = 0.0f;
+    float m_lungeSpeed = 0.0f;
+    float m_lungeDirection = 0.0f;
+    float m_lungeDeltaThisFrame = 0.0f;
 }; 

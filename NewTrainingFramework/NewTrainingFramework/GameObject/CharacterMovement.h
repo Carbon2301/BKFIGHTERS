@@ -64,6 +64,9 @@ private:
     float m_knockdownTimer;
     bool m_knockdownComplete;
     bool m_attackerFacingLeft;
+    float m_dieBaseY = 0.0f;
+    bool m_dieLanded = false;
+    float m_dieVerticalVelocity = 0.0f;
     
     // Input configuration
     PlayerInputConfig m_inputConfig;
@@ -116,6 +119,8 @@ private:
     int m_lastTeleportFromId = -1;
     bool m_invertHorizontal = false;
 
+    bool m_inputLocked = false;
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;
@@ -123,6 +128,9 @@ private:
     static const float MOVE_SPEED;
     static const float CLIMB_SPEED;
     static const float CLIMB_DOWN_SPEED;
+    static const float DIE_KNOCKBACK_SPEED;
+    static const float DIE_SLOWMO_DURATION;
+    static const float DIE_SLOWMO_SCALE;
 
 public:
     CharacterMovement();
@@ -132,6 +140,8 @@ public:
     void Initialize(float startX, float startY, float groundY);
     void SetInputConfig(const PlayerInputConfig& config) { m_inputConfig = config; }
     const PlayerInputConfig& GetInputConfig() const { return m_inputConfig; }
+    void SetInputLocked(bool locked) { m_inputLocked = locked; }
+    bool IsInputLocked() const { return m_inputLocked; }
     
     void Update(float deltaTime, const bool* keyStates);
     void UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
@@ -157,6 +167,7 @@ public:
     bool IsDead() const { return m_isDead; }
     float GetDieTimer() const { return m_dieTimer; }
     void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
+    bool HasDieLanded() const { return m_dieLanded; }
     
     // Platform collision methods
     void AddPlatform(float x, float y, float width, float height);

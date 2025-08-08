@@ -4,6 +4,7 @@
 #include "Model.h"
 #include "Texture2D.h"
 #include "Shaders.h"
+#include <SDL.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -26,7 +27,8 @@ Object::Object()
     , m_liftProgress(0.0f)
     , m_liftGoingUp(true)
     , m_liftPauseTime(1.0f)
-    , m_liftPauseTimer(0.0f) {
+    , m_liftPauseTimer(0.0f)
+    , m_visible(true) {
     m_worldMatrix.SetIdentity();
 }
 
@@ -47,7 +49,8 @@ Object::Object(int id)
     , m_liftProgress(0.0f)
     , m_liftGoingUp(true)
     , m_liftPauseTime(1.0f)
-    , m_liftPauseTimer(0.0f) {
+    , m_liftPauseTimer(0.0f)
+    , m_visible(true) {
     m_worldMatrix.SetIdentity();
 }
 
@@ -180,7 +183,9 @@ void Object::RefreshResources() {
 }
 
 void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
-    // Check if we have valid resources
+    if (!m_visible) {
+        return;
+    }
     if (!m_model || !m_shader) {
         std::cout << "Object ID " << m_id << " missing resources: model=" << (m_model ? "OK" : "NULL") 
                   << ", shader=" << (m_shader ? "OK" : "NULL") << std::endl;
@@ -208,6 +213,28 @@ void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
     GLint mvpLocation = glGetUniformLocation(m_shader->program, "u_mvpMatrix");
     if (mvpLocation != -1) {
         glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, &mvpMatrix.m[0][0]);
+    }
+    // Optional uniforms for glint shader
+    GLint timeLoc = glGetUniformLocation(m_shader->program, "u_time");
+    if (timeLoc != -1) {
+        float t = SDL_GetTicks() / 1000.0f;
+        glUniform1f(timeLoc, t);
+    }
+    GLint dirLoc = glGetUniformLocation(m_shader->program, "u_glintDir");
+    if (dirLoc != -1) {
+        glUniform2f(dirLoc, 0.7071f, -0.7071f);
+    }
+    GLint widthLoc = glGetUniformLocation(m_shader->program, "u_glintWidth");
+    if (widthLoc != -1) {
+        glUniform1f(widthLoc, 0.16f);
+    }
+    GLint speedLoc = glGetUniformLocation(m_shader->program, "u_glintSpeed");
+    if (speedLoc != -1) {
+        glUniform1f(speedLoc, 0.9f);
+    }
+    GLint intensityLoc = glGetUniformLocation(m_shader->program, "u_glintIntensity");
+    if (intensityLoc != -1) {
+        glUniform1f(intensityLoc, 1.0f);
     }
     
     // Bind textures

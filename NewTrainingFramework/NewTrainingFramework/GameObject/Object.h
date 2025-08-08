@@ -30,6 +30,7 @@ private:
     
     // Object ID for identification
     int m_id;
+    bool m_visible;
     
     // Auto-rotation
     bool m_autoRotate;
@@ -88,6 +89,10 @@ public:
     // Rendering
     void Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix);
     void Update(float deltaTime);
+    
+    // Visibility control
+    void SetVisible(bool visible) { m_visible = visible; }
+    bool IsVisible() const { return m_visible; }
     
     // Auto-rotation
     void ToggleAutoRotation();
