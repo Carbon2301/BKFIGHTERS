@@ -38,6 +38,8 @@ private:
     void UpdateComboTimers(float deltaTime);
     void UpdateHitboxTimer(float deltaTime);
 
+    int m_nextGetHitAnimation;
+
 public:
     CharacterCombat();
     ~CharacterCombat();

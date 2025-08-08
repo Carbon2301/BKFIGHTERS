@@ -18,7 +18,8 @@ CharacterCombat::CharacterCombat()
       m_isInAxeCombo(false), m_axeComboCompleted(false),
       m_isKicking(false), m_isHit(false), m_hitTimer(0.0f),
       m_showHitbox(false), m_hitboxTimer(0.0f), m_hitboxWidth(0.0f), m_hitboxHeight(0.0f),
-      m_hitboxOffsetX(0.0f), m_hitboxOffsetY(0.0f) {
+      m_hitboxOffsetX(0.0f), m_hitboxOffsetY(0.0f),
+      m_nextGetHitAnimation(8) {
 }
 
 CharacterCombat::~CharacterCombat() {
@@ -199,20 +200,14 @@ void CharacterCombat::CancelAllCombos() {
 void CharacterCombat::HandleRandomGetHit(CharacterAnimation* animation, CharacterMovement* movement) {
     if (!animation || !movement) return;
     
-    bool attackerFacingLeft = rand() % 2 == 0;
-    
     CancelAllCombos();
-    
-    int randomHitAnimation = (rand() % 2) + 8;
     
     m_isHit = true;
     m_hitTimer = HIT_DURATION;
     
-    animation->PlayAnimation(randomHitAnimation, false);
+    animation->PlayAnimation(m_nextGetHitAnimation, false);
+    m_nextGetHitAnimation = (m_nextGetHitAnimation == 8) ? 9 : 8;
     
-    std::cout << "=== RANDOM HIT ===" << std::endl;
-    std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
-    std::cout << "===================" << std::endl;
 }
 
 void CharacterCombat::ShowHitbox(float width, float height, float offsetX, float offsetY) {
@@ -266,12 +261,12 @@ void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Charact
     bool attackerFacingLeft = attacker.IsFacingLeft();
     // Note: Character facing direction should be set by the Character class
     
-    int randomHitAnimation = (rand() % 2) + 8;
-    
     m_isHit = true;
     m_hitTimer = HIT_DURATION;
     
-    animation->PlayAnimation(randomHitAnimation, false);
+    animation->PlayAnimation(m_nextGetHitAnimation, false);
+    int playedAnim = m_nextGetHitAnimation;
+    m_nextGetHitAnimation = (m_nextGetHitAnimation == 8) ? 9 : 8;
     
     // Apply damage to target
     if (target) {
@@ -284,7 +279,7 @@ void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Charact
     }
     
     std::cout << "=== HIT DETECTED ===" << std::endl;
-    std::cout << "Character hit! Playing GetHit animation " << randomHitAnimation << std::endl;
+    std::cout << "Character hit! Playing GetHit animation " << playedAnim << std::endl;
     std::cout << "Attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
     std::cout << "Damage applied: 10 HP" << std::endl;
     std::cout << "===================" << std::endl;
