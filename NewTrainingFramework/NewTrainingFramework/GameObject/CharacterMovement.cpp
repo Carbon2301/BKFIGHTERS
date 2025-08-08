@@ -6,11 +6,14 @@
 #include <SDL.h>
 #include "SceneManager.h"
 #include "Object.h"
+#include "LadderCollision.h"
 
 const float CharacterMovement::JUMP_FORCE = 0.9f;
 const float CharacterMovement::GRAVITY = 2.5f;
 const float CharacterMovement::GROUND_Y = 0.0f;
 const float CharacterMovement::MOVE_SPEED = 0.25f;
+const float CharacterMovement::CLIMB_SPEED = 0.25f;
+const float CharacterMovement::CLIMB_DOWN_SPEED = 0.375f;
 
 const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'L', 'K', 0, 'A', 'S', 'S', 'D');
 const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', '1', '3', '2', 0, 0x25, 0x28, 0x27, 0x28);
@@ -22,7 +25,8 @@ CharacterMovement::CharacterMovement()
       m_knockdownTimer(0.0f), m_knockdownComplete(false), m_attackerFacingLeft(false), m_inputConfig(PLAYER1_INPUT),
       m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f),
       m_wallCollision(std::make_unique<WallCollision>()),
-      m_platformCollision(std::make_unique<PlatformCollision>()) {
+      m_platformCollision(std::make_unique<PlatformCollision>()),
+      m_ladderCollision(std::make_unique<LadderCollision>()) {
 }
 
 CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
@@ -32,7 +36,8 @@ CharacterMovement::CharacterMovement(const PlayerInputConfig& inputConfig)
       m_knockdownTimer(0.0f), m_knockdownComplete(false), m_attackerFacingLeft(false), m_inputConfig(inputConfig),
       m_characterWidth(0.1f), m_characterHeight(0.2f), m_isOnPlatform(false), m_currentPlatformY(0.0f),
       m_wallCollision(std::make_unique<WallCollision>()),
-      m_platformCollision(std::make_unique<PlatformCollision>()) {
+      m_platformCollision(std::make_unique<PlatformCollision>()),
+      m_ladderCollision(std::make_unique<LadderCollision>()) {
 }
 
 CharacterMovement::~CharacterMovement() {
@@ -337,8 +342,12 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
     
     Vector3 currentPos(m_posX, m_posY, 0.0f);
     
-    HandleMovement(deltaTime, keyStates);
-    HandleJumpWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+    // Nếu đang trên ladder, ưu tiên xử lý ladder trước (vô hiệu hóa gravity/jump/move ngang)
+    bool handledLadder = HandleLadderWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+    if (!handledLadder) {
+        HandleMovement(deltaTime, keyStates);
+        HandleJumpWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+    }
     HandleLandingWithHurtbox(keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
     
     if (m_wallCollision) {
@@ -367,6 +376,148 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
         }
     }
 }
+bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
+    if (!m_ladderCollision) return false;
+
+    // Kiểm tra overlap nếu chưa ở trên ladder
+    if (!m_isOnLadder) {
+        float cx, top, bottom;
+        bool overlapped = m_ladderCollision->CheckLadderOverlapWithHurtbox(
+            m_posX, m_posY,
+            hurtboxWidth, hurtboxHeight,
+            hurtboxOffsetX, hurtboxOffsetY,
+            cx, top, bottom
+        );
+        if (overlapped) {
+            float hurtboxBottom = (m_posY + hurtboxOffsetY) - hurtboxHeight * 0.5f;
+            bool requireDoubleTap = (hurtboxBottom <= bottom + 0.001f) && !m_isJumping;
+
+            const PlayerInputConfig& input = GetInputConfig();
+            bool upKey = keyStates[input.jumpKey];
+            bool downKey = keyStates[input.sitKey];
+
+            bool canEnter = false;
+            float now = SDL_GetTicks() / 1000.0f;
+
+            if (requireDoubleTap) {
+                if (upKey && !m_prevUpKey) {
+                    if (now - m_lastUpTapTimeForLadder < DOUBLE_TAP_THRESHOLD) {
+                        m_upTapCountForLadder++;
+                    } else {
+                        m_upTapCountForLadder = 1;
+                    }
+                    m_lastUpTapTimeForLadder = now;
+                }
+                if (downKey && !m_prevDownKeyForLadder) {
+                    if (now - m_lastDownTapTimeForLadder < DOUBLE_TAP_THRESHOLD) {
+                        m_downTapCountForLadder++;
+                    } else {
+                        m_downTapCountForLadder = 1;
+                    }
+                    m_lastDownTapTimeForLadder = now;
+                }
+                canEnter = (m_upTapCountForLadder >= 2) || (m_downTapCountForLadder >= 2);
+            } else {
+                canEnter = (upKey && !m_prevUpKey) || (downKey && !m_prevDownKeyForLadder);
+            }
+
+            if (canEnter) {
+                m_isOnLadder = true;
+                m_ladderCenterX = cx;
+                m_ladderTop = top;
+                m_ladderBottom = bottom;
+                m_isJumping = false;      // vô hiệu hóa nhảy
+                m_jumpVelocity = 0.0f;
+                m_isOnPlatform = false;   // rời platform
+                // reset bộ đếm sau khi đã vào thang
+                m_upTapCountForLadder = 0;
+                m_downTapCountForLadder = 0;
+            }
+
+            // Cập nhật previous cho lần sau
+            m_prevUpKey = upKey;
+            m_prevDownKeyForLadder = downKey;
+        }
+    }
+
+    if (!m_isOnLadder) {
+        return false;
+    }
+
+    // Khi đang trên ladder
+    const PlayerInputConfig& input = GetInputConfig();
+    bool upHeld = keyStates[input.jumpKey];
+    bool downHeld = keyStates[input.sitKey];
+    bool leftHeld = keyStates[input.moveLeftKey];
+    bool rightHeld = keyStates[input.moveRightKey];
+
+    // Nếu không có input trái/phải, khóa X vào tâm thang để leo thẳng đứng
+    if (!leftHeld && !rightHeld) {
+        m_posX = m_ladderCenterX;
+    }
+    // Cho phép di chuyển ngang để rời thang
+    if (leftHeld) {
+        m_facingLeft = true;
+        m_state = CharState::MoveLeft;
+        m_posX -= MOVE_SPEED * 0.8f * deltaTime;
+    } else if (rightHeld) {
+        m_facingLeft = false;
+        m_state = CharState::MoveRight;
+        m_posX += MOVE_SPEED * 0.8f * deltaTime;
+    }
+
+    if (upHeld) {
+        m_posY += CLIMB_SPEED * deltaTime;
+        if (m_posY > m_ladderTop) m_posY = m_ladderTop; // chạm đỉnh
+    } else if (downHeld) {
+        m_posY -= CLIMB_DOWN_SPEED * deltaTime; // xuống nhanh hơn
+        if (m_posY < m_ladderBottom) m_posY = m_ladderBottom; // chạm đáy
+    }
+
+    // Nếu đang nhấn xuống và đáy hurtbox đã thấp hơn đáy ladder, thoát thang và rơi tự do
+    if (downHeld) {
+        const float hurtboxBottom = (m_posY + hurtboxOffsetY) - hurtboxHeight * 0.5f;
+        const float eps = 0.0005f;
+        if (hurtboxBottom <= m_ladderBottom + eps) {
+            m_isOnLadder = false;
+            // bật trạng thái rơi; đặt vận tốc rơi hiện tại bằng 0 để bắt đầu rơi mượt
+            m_isJumping = true;
+            m_jumpVelocity = 0.0f;
+            return false;
+        }
+    }
+
+    const float LADDER_EDGE_EPS = 0.002f;
+    bool atTop = (m_posY >= m_ladderTop - LADDER_EDGE_EPS);
+    if (atTop) {
+        if (!upHeld && m_prevUpKey) {
+        }
+        if (!m_prevUpKey && upHeld) {
+            m_isOnLadder = false;
+            m_isJumping = true;
+            m_jumpVelocity = JUMP_FORCE;
+            m_prevUpKey = upHeld;
+            return false;
+        }
+    }
+
+    float cx, top, bottom;
+    bool stillOverlap = m_ladderCollision->CheckLadderOverlapWithHurtbox(
+        m_posX, m_posY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY, cx, top, bottom);
+    if (!stillOverlap) {
+        m_isOnLadder = false;
+        if (m_posY > m_groundY + 0.01f) {
+            m_isJumping = true;
+            m_jumpVelocity = 0.0f;
+        }
+        return false;
+    }
+
+    m_state = CharState::Idle;
+    m_prevUpKey = upHeld;
+    return true;
+}
+
 
 void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
     const PlayerInputConfig& inputConfig = GetInputConfig();
@@ -519,3 +670,9 @@ void CharacterMovement::InitializeWallCollision() {
         m_wallCollision->LoadWallsFromScene();
     }
 } 
+
+void CharacterMovement::InitializeLadderCollision() {
+    if (m_ladderCollision) {
+        m_ladderCollision->LoadLaddersFromScene();
+    }
+}

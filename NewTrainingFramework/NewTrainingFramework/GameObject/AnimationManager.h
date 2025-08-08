@@ -34,6 +34,7 @@ public:
     void Stop();
     void Pause();
     void Resume();
+    void SetPlaying(bool playing) { m_isPlaying = playing; }
     
     // Update animation
     void Update(float deltaTime);
@@ -41,6 +42,7 @@ public:
     // Get current frame info
     int GetCurrentAnimation() const { return m_currentAnimation; }
     int GetCurrentFrame() const { return m_currentFrame; }
+    void SetCurrentFrame(int frame) { m_currentFrame = frame; }
     bool IsPlaying() const { return m_isPlaying; }
     
     // Get UV coordinates for current frame
