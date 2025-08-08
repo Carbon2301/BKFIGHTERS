@@ -338,6 +338,13 @@ void SceneManager::Draw() {
     viewMatrix = const_cast<Matrix&>(viewMatrixRef);
     projectionMatrix = const_cast<Matrix&>(projMatrixRef);
     
+    // UI matrices independent of camera zoom/movement (screen-space)
+    float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+    Matrix uiViewMatrix;
+    Matrix uiProjectionMatrix;
+    uiViewMatrix.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+    uiProjectionMatrix.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+    
     // Draw all objects except character objects (ID 1000, 1001)
     // Character objects will be drawn by Character class
     for (auto& obj : m_objects) {
@@ -366,6 +373,10 @@ void SceneManager::Draw() {
                 if (GSPlay::IsShowTeleportBoxes()) {
                     obj->Draw(viewMatrix, projectionMatrix);
                 }
+            }
+            // HUD/UI (screen-space, fixed position regardless of camera zoom/move)
+            else if ((objId >= 900 && objId < 1000)) {
+                obj->Draw(uiViewMatrix, uiProjectionMatrix);
             }
             else {
                 obj->Draw(viewMatrix, projectionMatrix);
