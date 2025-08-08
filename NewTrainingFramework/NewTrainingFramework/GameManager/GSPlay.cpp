@@ -185,6 +185,9 @@ void GSPlay::Init() {
         std::cout << "Warning: Lift platform (ID 30) not found in scene" << std::endl;
     }
     
+    // Mark axe availability if present in scene
+    m_isAxeAvailable = (sceneManager->GetObject(AXE_OBJECT_ID) != nullptr);
+
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
@@ -261,7 +264,7 @@ void GSPlay::Update(float deltaTime) {
     if (m_inputManager) {
         m_player.ProcessInput(deltaTime, m_inputManager);
         m_player2.ProcessInput(deltaTime, m_inputManager);
-        
+        HandleItemPickup();
         m_inputManager->Update();
     } else {
         m_inputManager = InputManager::GetInstance();
@@ -672,3 +675,70 @@ void GSPlay::UpdateFanRotation(float deltaTime) {
         }
     }
 } 
+
+// Item pickup: sit + kick
+void GSPlay::HandleItemPickup() {
+    if (!m_isAxeAvailable || !m_inputManager) return;
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* axe = scene->GetObject(AXE_OBJECT_ID);
+    if (!axe) { m_isAxeAvailable = false; return; }
+
+    const bool* keys = m_inputManager->GetKeyStates();
+    if (!keys) return;
+
+    // Player 1 input gates: sit + kick
+    const PlayerInputConfig& cfg1 = m_player.GetMovement()->GetInputConfig();
+    bool p1Sit = keys[cfg1.sitKey];
+    bool p1KickJust = m_inputManager->IsKeyJustPressed(cfg1.kickKey);
+
+    // Player 2 input gates: sit + kick
+    const PlayerInputConfig& cfg2 = m_player2.GetMovement()->GetInputConfig();
+    bool p2Sit = keys[cfg2.sitKey];
+    bool p2KickJust = m_inputManager->IsKeyJustPressed(cfg2.kickKey);
+
+    auto isOverlapping = [](const Vector3& pos, float w, float h, const Vector3& objPos, const Vector3& objScale) {
+        float halfW = w * 0.5f;
+        float halfH = h * 0.5f;
+        float l1 = pos.x - halfW, r1 = pos.x + halfW, b1 = pos.y - halfH, t1 = pos.y + halfH;
+        float objHalfW = std::abs(objScale.x) * 0.5f;
+        float objHalfH = std::abs(objScale.y) * 0.5f;
+        float l2 = objPos.x - objHalfW, r2 = objPos.x + objHalfW;
+        float b2 = objPos.y - objHalfH, t2 = objPos.y + objHalfH;
+        bool overlapX = (r1 >= l2) && (l1 <= r2);
+        bool overlapY = (t1 >= b2) && (b1 <= t2);
+        return overlapX && overlapY;
+    };
+
+    const Vector3& axePos = axe->GetPosition();
+    const Vector3& axeScale = axe->GetScale();
+
+    // Check Player 1
+    if (p1Sit && p1KickJust) {
+        Vector3 p1Pos = m_player.GetPosition();
+        float w = m_player.GetHurtboxWidth();
+        float h = m_player.GetHurtboxHeight();
+        float ox = m_player.GetHurtboxOffsetX();
+        float oy = m_player.GetHurtboxOffsetY();
+        p1Pos.x += ox; p1Pos.y += oy;
+        if (isOverlapping(p1Pos, w, h, axePos, axeScale)) {
+            scene->RemoveObject(AXE_OBJECT_ID);
+            m_isAxeAvailable = false;
+            return;
+        }
+    }
+
+    // Check Player 2
+    if (p2Sit && p2KickJust) {
+        Vector3 p2Pos = m_player2.GetPosition();
+        float w = m_player2.GetHurtboxWidth();
+        float h = m_player2.GetHurtboxHeight();
+        float ox = m_player2.GetHurtboxOffsetX();
+        float oy = m_player2.GetHurtboxOffsetY();
+        p2Pos.x += ox; p2Pos.y += oy;
+        if (isOverlapping(p2Pos, w, h, axePos, axeScale)) {
+            scene->RemoveObject(AXE_OBJECT_ID);
+            m_isAxeAvailable = false;
+            return;
+        }
+    }
+}

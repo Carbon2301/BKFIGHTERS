@@ -66,4 +66,8 @@ public:
 
 private:
     void DrawHudPortraits();
+    // Item pickup system
+    void HandleItemPickup();
+    static const int AXE_OBJECT_ID = 1100;
+    bool m_isAxeAvailable = false;
 }; 
