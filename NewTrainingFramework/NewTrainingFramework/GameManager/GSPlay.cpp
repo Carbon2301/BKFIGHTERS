@@ -190,6 +190,12 @@ void GSPlay::Init() {
     m_isSwordAvailable = (sceneManager->GetObject(SWORD_OBJECT_ID) != nullptr);
     m_isPipeAvailable  = (sceneManager->GetObject(PIPE_OBJECT_ID)  != nullptr);
 
+    // Apply glint shader to world weapons (IDs 1100/1101/1102)
+    auto applyGlint = [&](int objId){ if (Object* o = sceneManager->GetObject(objId)) { o->SetShader(1); } };
+    applyGlint(AXE_OBJECT_ID);
+    applyGlint(SWORD_OBJECT_ID);
+    applyGlint(PIPE_OBJECT_ID);
+
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
         m_hudWeapon1BaseScale = hudWeapon1->GetScale();
