@@ -64,6 +64,9 @@ private:
     float m_knockdownTimer;
     bool m_knockdownComplete;
     bool m_attackerFacingLeft;
+    float m_dieBaseY = 0.0f;
+    bool m_dieLanded = false;
+    float m_dieVerticalVelocity = 0.0f;
     
     // Input configuration
     PlayerInputConfig m_inputConfig;
@@ -123,6 +126,9 @@ private:
     static const float MOVE_SPEED;
     static const float CLIMB_SPEED;
     static const float CLIMB_DOWN_SPEED;
+    static const float DIE_KNOCKBACK_SPEED;
+    static const float DIE_SLOWMO_DURATION;
+    static const float DIE_SLOWMO_SCALE;
 
 public:
     CharacterMovement();
@@ -157,6 +163,7 @@ public:
     bool IsDead() const { return m_isDead; }
     float GetDieTimer() const { return m_dieTimer; }
     void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
+    bool HasDieLanded() const { return m_dieLanded; }
     
     // Platform collision methods
     void AddPlatform(float x, float y, float width, float height);
