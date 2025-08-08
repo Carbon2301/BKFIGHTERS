@@ -27,7 +27,8 @@ Object::Object()
     , m_liftProgress(0.0f)
     , m_liftGoingUp(true)
     , m_liftPauseTime(1.0f)
-    , m_liftPauseTimer(0.0f) {
+    , m_liftPauseTimer(0.0f)
+    , m_visible(true) {
     m_worldMatrix.SetIdentity();
 }
 
@@ -48,7 +49,8 @@ Object::Object(int id)
     , m_liftProgress(0.0f)
     , m_liftGoingUp(true)
     , m_liftPauseTime(1.0f)
-    , m_liftPauseTimer(0.0f) {
+    , m_liftPauseTimer(0.0f)
+    , m_visible(true) {
     m_worldMatrix.SetIdentity();
 }
 
@@ -181,7 +183,9 @@ void Object::RefreshResources() {
 }
 
 void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
-    // Check if we have valid resources
+    if (!m_visible) {
+        return;
+    }
     if (!m_model || !m_shader) {
         std::cout << "Object ID " << m_id << " missing resources: model=" << (m_model ? "OK" : "NULL") 
                   << ", shader=" << (m_shader ? "OK" : "NULL") << std::endl;

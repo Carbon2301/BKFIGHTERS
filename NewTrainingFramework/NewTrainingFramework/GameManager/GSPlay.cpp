@@ -196,6 +196,13 @@ void GSPlay::Init() {
     applyGlint(SWORD_OBJECT_ID);
     applyGlint(PIPE_OBJECT_ID);
 
+    // Initialize lifetime tracking for item objects
+    m_itemLives.clear();
+    auto tryAdd = [&](int id){ if (sceneManager->GetObject(id)) m_itemLives.push_back({id, 0.0f}); };
+    tryAdd(AXE_OBJECT_ID);
+    tryAdd(SWORD_OBJECT_ID);
+    tryAdd(PIPE_OBJECT_ID);
+
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
         m_hudWeapon1BaseScale = hudWeapon1->GetScale();
@@ -307,6 +314,31 @@ void GSPlay::Update(float deltaTime) {
     
     // Update fan rotation
     UpdateFanRotation(deltaTime);
+
+    // Update item lifetimes (20s total; blink after 12s)
+    {
+        SceneManager* scene = SceneManager::GetInstance();
+        const float LIFETIME = 20.0f;
+        const float BLINK_START = 12.0f;
+        static float blinkTimer = 0.0f;
+        blinkTimer += deltaTime;
+        bool blinkVisible = fmodf(blinkTimer, 0.3f) < 0.15f; // toggle every 0.15s
+
+        for (auto it = m_itemLives.begin(); it != m_itemLives.end(); ) {
+            it->timer += deltaTime;
+            Object* obj = scene->GetObject(it->id);
+            if (!obj) { it = m_itemLives.erase(it); continue; }
+            if (it->timer >= LIFETIME) {
+                scene->RemoveObject(it->id);
+                it = m_itemLives.erase(it);
+                continue;
+            }
+            if (it->timer >= BLINK_START) {
+                obj->SetVisible(blinkVisible);
+            }
+            ++it;
+        }
+    }
 }
 
 void GSPlay::Draw() {

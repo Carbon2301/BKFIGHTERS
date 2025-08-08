@@ -86,6 +86,8 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         } else if (combat->GetComboTimer() <= 0.0f) {
             combat->CancelAllCombos();
             m_animManager->Play(0, true);
+        } else {
+            m_animManager->Play(0, true);
         }
     }
     
@@ -95,6 +97,8 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
             m_animManager->Play(0, true);
         } else if (combat->GetAxeComboTimer() <= 0.0f) {
             combat->CancelAllCombos();
+            m_animManager->Play(0, true);
+        } else {
             m_animManager->Play(0, true);
         }
     }

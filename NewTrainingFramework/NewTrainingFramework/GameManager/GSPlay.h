@@ -5,6 +5,7 @@
 #include "../GameObject/Character.h"
 #include "../GameObject/InputManager.h"
 #include "../../Utilities/Math.h"
+#include <vector>
 
 class GSPlay : public GameStateBase {
 private:
@@ -83,4 +84,8 @@ private:
     void UpdateHudWeapons();
     Vector3 m_hudWeapon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     Vector3 m_hudWeapon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+
+    // Item lifetime tracking
+    struct ItemLife { int id; float timer; };
+    std::vector<ItemLife> m_itemLives;
 }; 

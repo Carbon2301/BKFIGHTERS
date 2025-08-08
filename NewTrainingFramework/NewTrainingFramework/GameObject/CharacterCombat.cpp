@@ -11,9 +11,9 @@ const float CharacterCombat::COMBO_WINDOW = 0.8f;
 const float CharacterCombat::HIT_DURATION = 0.3f;
 const float CharacterCombat::HITBOX_DURATION = 0.2f;
 const float CharacterCombat::WEAPON_COMBO_MIN_INTERVAL = 0.4f;
-const float CharacterCombat::WEAPON_COMBO_WINDOW = 1.0f;
-const float CharacterCombat::PUNCH_COMBO_MIN_INTERVAL = 0.35f;
-const float CharacterCombat::PUNCH_COMBO_WINDOW = 0.8f;
+const float CharacterCombat::WEAPON_COMBO_WINDOW = 0.6f;
+const float CharacterCombat::PUNCH_COMBO_MIN_INTERVAL = 0.4f;
+const float CharacterCombat::PUNCH_COMBO_WINDOW = 0.6f;
 
 CharacterCombat::CharacterCombat() 
     : m_comboCount(0), m_comboTimer(0.0f),
