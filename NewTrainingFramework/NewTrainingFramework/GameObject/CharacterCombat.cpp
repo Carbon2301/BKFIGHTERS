@@ -226,6 +226,33 @@ void CharacterCombat::HandleKick(CharacterAnimation* animation, CharacterMovemen
     animation->PlayAnimation(19, false);
 }
 
+void CharacterCombat::HandleAirKick(CharacterAnimation* animation, CharacterMovement* movement) {
+    if (!animation || !movement) return;
+    if (!movement->IsJumping()) return;
+
+    if (m_isInCombo) {
+        m_isInCombo = false;
+        m_comboCount = 0;
+        m_comboTimer = 0.0f;
+        m_comboCompleted = false;
+    }
+    if (m_isInAxeCombo) {
+        m_isInAxeCombo = false;
+        m_axeComboCount = 0;
+        m_axeComboTimer = 0.0f;
+        m_axeComboCompleted = false;
+    }
+
+    m_isKicking = true;
+    animation->PlayAnimation(17, false);
+
+    float hitboxWidth = 0.04f;
+    float hitboxHeight = 0.03f;
+    float hitboxOffsetX = animation->IsFacingLeft(movement) ? -0.05f : 0.05f;
+    float hitboxOffsetY = -0.01f;
+    ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
+}
+
 void CharacterCombat::CancelAllCombos() {
     m_isInCombo = false;
     m_comboCount = 0;

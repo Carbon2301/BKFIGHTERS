@@ -64,6 +64,7 @@ public:
     void HandleAxeCombo(CharacterAnimation* animation, CharacterMovement* movement);
     void HandleWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement, int anim1, int anim2, int anim3);
     void HandleKick(CharacterAnimation* animation, CharacterMovement* movement);
+    void HandleAirKick(CharacterAnimation* animation, CharacterMovement* movement);
     void CancelAllCombos();
     void HandleRandomGetHit(CharacterAnimation* animation, CharacterMovement* movement);
     

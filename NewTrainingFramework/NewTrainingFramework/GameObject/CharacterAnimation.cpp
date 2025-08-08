@@ -103,9 +103,13 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         }
     }
     
-    if (combat->IsKicking() && m_animManager->GetCurrentAnimation() == 19 && !m_animManager->IsPlaying()) {
-        combat->CancelAllCombos();
-        m_animManager->Play(0, true);
+    if (combat->IsKicking()) {
+        int cur = m_animManager->GetCurrentAnimation();
+        bool isKickAnim = (cur == 17 || cur == 19);
+        if (!m_animManager->IsPlaying() || !movement->IsJumping() || !isKickAnim) {
+            combat->CancelAllCombos();
+            m_animManager->Play(0, true);
+        }
     }
     
     if (!m_animManager->IsPlaying() && 
@@ -211,7 +215,10 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         }
         
         if (movement->IsJumping()) {
-            PlayAnimation(16, false);
+            if (combat->IsKicking() && GetCurrentAnimation() == 17) {
+            } else {
+                PlayAnimation(16, false);
+            }
         } else if ((keyStates[inputConfig.rollLeftKey1] && keyStates[inputConfig.rollLeftKey2]) ||
                    (keyStates[inputConfig.rollRightKey1] && keyStates[inputConfig.rollRightKey2])) {
             PlayAnimation(4, true);
@@ -237,7 +244,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
 
 void CharacterAnimation::PlayAnimation(int animIndex, bool loop) {
     if (m_animManager) {
-        bool allowReplay = (animIndex == 19) ||
+        bool allowReplay = (animIndex == 19 || animIndex == 17) ||
                           (animIndex >= 10 && animIndex <= 12) ||
                           (animIndex >= 20 && animIndex <= 22) ||
                           (animIndex == 8 || animIndex == 9) ||

@@ -64,6 +64,7 @@ public:
     void HandleSwordCombo();
     void HandlePipeCombo();
     void HandleKick();
+    void HandleAirKick();
     void HandleDie();
     void TriggerDie();
     void TriggerDieFromAttack(const Character& attacker);

@@ -92,6 +92,13 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
         return;
     }
     
+    if (m_inputLocked) {
+        if (!m_isJumping) {
+            m_state = CharState::Idle;
+        }
+        return;
+    }
+
     bool isRollingLeft = (keyStates[m_inputConfig.rollLeftKey1] && keyStates[m_inputConfig.rollLeftKey2]);
     bool isRollingRight = (keyStates[m_inputConfig.rollRightKey1] && keyStates[m_inputConfig.rollRightKey2]);
     
@@ -189,8 +196,8 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
         m_jumpVelocity -= GRAVITY * deltaTime;
         m_posY += m_jumpVelocity * deltaTime;
         
-        bool isMovingLeft = keyStates[m_inputConfig.moveLeftKey];
-        bool isMovingRight = keyStates[m_inputConfig.moveRightKey];
+        bool isMovingLeft = !m_inputLocked && keyStates[m_inputConfig.moveLeftKey];
+        bool isMovingRight = !m_inputLocked && keyStates[m_inputConfig.moveRightKey];
         
         if (isMovingLeft) {
             m_facingLeft = true;
@@ -234,6 +241,12 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_isJumping = true;
             m_jumpVelocity = 0.0f;
             m_currentMovingPlatformId = -1;
+        }
+    }
+
+    if (!m_isJumping && !m_isDying && !m_isDead && (m_posY <= m_groundY + 0.0001f)) {
+        if (!keyStates[m_inputConfig.moveLeftKey] && !keyStates[m_inputConfig.moveRightKey]) {
+            m_state = CharState::Idle;
         }
     }
 }
@@ -468,6 +481,9 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
     }
 }
 bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
+    if (m_inputLocked) {
+        return false;
+    }
     if (!m_ladderCollision) return false;
 
     // Kiểm tra overlap nếu chưa ở trên ladder
@@ -647,7 +663,7 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
     }
     
     if (!m_isJumping && (onGround || m_isOnPlatform || onWallSupport)) {
-        if (keyStates[inputConfig.jumpKey]) {
+        if (!m_inputLocked && keyStates[inputConfig.jumpKey]) {
             m_isJumping = true;
             m_jumpVelocity = JUMP_FORCE;
             m_jumpStartY = m_posY;
@@ -661,13 +677,13 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
         m_jumpVelocity -= GRAVITY * deltaTime;
         m_posY += m_jumpVelocity * deltaTime;
         
-        if (keyStates[inputConfig.moveLeftKey]) {
+        if (!m_inputLocked && keyStates[inputConfig.moveLeftKey]) {
             m_posX -= MOVE_SPEED * 1.5f * deltaTime;
             m_facingLeft = true;
             m_state = CharState::MoveLeft;
         }
         
-        if (keyStates[inputConfig.moveRightKey]) {
+        if (!m_inputLocked && keyStates[inputConfig.moveRightKey]) {
             m_posX += MOVE_SPEED * 1.5f * deltaTime;
             m_facingLeft = false;
             m_state = CharState::MoveRight;

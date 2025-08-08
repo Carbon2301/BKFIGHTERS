@@ -119,6 +119,8 @@ private:
     int m_lastTeleportFromId = -1;
     bool m_invertHorizontal = false;
 
+    bool m_inputLocked = false;
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;
@@ -138,6 +140,8 @@ public:
     void Initialize(float startX, float startY, float groundY);
     void SetInputConfig(const PlayerInputConfig& config) { m_inputConfig = config; }
     const PlayerInputConfig& GetInputConfig() const { return m_inputConfig; }
+    void SetInputLocked(bool locked) { m_inputLocked = locked; }
+    bool IsInputLocked() const { return m_inputLocked; }
     
     void Update(float deltaTime, const bool* keyStates);
     void UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
