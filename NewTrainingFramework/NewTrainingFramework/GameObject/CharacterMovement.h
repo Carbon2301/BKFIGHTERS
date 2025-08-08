@@ -88,6 +88,7 @@ private:
     float m_characterHeight;
     bool m_isOnPlatform;
     float m_currentPlatformY;
+    int m_currentMovingPlatformId = -1;
     
     // Wall collision
     std::unique_ptr<WallCollision> m_wallCollision;
@@ -134,6 +135,8 @@ public:
     // Platform collision methods
     void AddPlatform(float x, float y, float width, float height);
     void ClearPlatforms();
+    void AddMovingPlatformById(int objectId);
+    void ClearMovingPlatforms();
     void SetCharacterSize(float width, float height);
     bool CheckPlatformCollision(float& newY);
     bool CheckPlatformCollisionWithHurtbox(float& newY, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);

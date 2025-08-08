@@ -18,7 +18,15 @@ Object::Object()
     , m_shaderId(-1)
     , m_id(-1)
     , m_autoRotate(false)
-    , m_rotationSpeed(30.0f) {
+    , m_rotationSpeed(30.0f)
+    , m_isLiftPlatform(false)
+    , m_liftStartPos(0.0f, 0.0f, 0.0f)
+    , m_liftEndPos(0.0f, 0.0f, 0.0f)
+    , m_liftSpeed(1.0f)
+    , m_liftProgress(0.0f)
+    , m_liftGoingUp(true)
+    , m_liftPauseTime(1.0f)
+    , m_liftPauseTimer(0.0f) {
     m_worldMatrix.SetIdentity();
 }
 
@@ -31,7 +39,15 @@ Object::Object(int id)
     , m_shaderId(-1)
     , m_id(id)
     , m_autoRotate(false)
-    , m_rotationSpeed(30.0f) {
+    , m_rotationSpeed(30.0f)
+    , m_isLiftPlatform(false)
+    , m_liftStartPos(0.0f, 0.0f, 0.0f)
+    , m_liftEndPos(0.0f, 0.0f, 0.0f)
+    , m_liftSpeed(1.0f)
+    , m_liftProgress(0.0f)
+    , m_liftGoingUp(true)
+    , m_liftPauseTime(1.0f)
+    , m_liftPauseTimer(0.0f) {
     m_worldMatrix.SetIdentity();
 }
 
@@ -251,6 +267,39 @@ void Object::Update(float deltaTime) {
         
         m_matrixNeedsUpdate = true;
     }
+    
+    // Lift platform logic
+    if (m_isLiftPlatform) {
+        // Check if we're in pause state
+        if (m_liftPauseTimer > 0.0f) {
+            m_liftPauseTimer -= deltaTime;
+            return; // Don't move during pause
+        }
+        
+        // Calculate movement
+        float distance = m_liftSpeed * deltaTime;
+        float totalDistance = Vector3::Distance(m_liftStartPos, m_liftEndPos);
+        
+        if (m_liftGoingUp) {
+            m_liftProgress += distance / totalDistance;
+            if (m_liftProgress >= 1.0f) {
+                m_liftProgress = 1.0f;
+                m_liftGoingUp = false;
+                m_liftPauseTimer = m_liftPauseTime; // Start pause at top
+            }
+        } else {
+            m_liftProgress -= distance / totalDistance;
+            if (m_liftProgress <= 0.0f) {
+                m_liftProgress = 0.0f;
+                m_liftGoingUp = true;
+                m_liftPauseTimer = m_liftPauseTime; // Start pause at bottom
+            }
+        }
+        
+        // Interpolate position
+        m_position = Vector3::Lerp(m_liftStartPos, m_liftEndPos, m_liftProgress);
+        m_matrixNeedsUpdate = true;
+    }
 }
 
 // Auto-rotation methods
@@ -278,4 +327,34 @@ void Object::SetCustomUV(float u0, float v0, float u1, float v1) {
     glBindBuffer(GL_ARRAY_BUFFER, m_model->vboId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * sizeof(Vertex), m_model->vertices.data());
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+// Lift platform methods
+void Object::SetLiftPlatform(bool enabled, const Vector3& startPos, const Vector3& endPos, 
+                            float speed, float pauseTime) {
+    m_isLiftPlatform = enabled;
+    if (enabled) {
+        m_liftStartPos = startPos;
+        m_liftEndPos = endPos;
+        m_liftSpeed = speed;
+        m_liftPauseTime = pauseTime;
+        m_liftProgress = 0.0f;
+        m_liftGoingUp = true;
+        m_liftPauseTimer = 0.0f;
+        
+        // Set initial position to start position
+        m_position = startPos;
+        m_matrixNeedsUpdate = true;
+        
+        std::cout << "Object ID " << m_id << " lift platform enabled: " 
+                  << "(" << startPos.x << ", " << startPos.y << ", " << startPos.z << ") to "
+                  << "(" << endPos.x << ", " << endPos.y << ", " << endPos.z << ")" << std::endl;
+    } else {
+        std::cout << "Object ID " << m_id << " lift platform disabled" << std::endl;
+    }
+}
+
+void Object::SetLiftPlatform(bool enabled, float startX, float startY, float startZ,
+                            float endX, float endY, float endZ, float speed, float pauseTime) {
+    SetLiftPlatform(enabled, Vector3(startX, startY, startZ), Vector3(endX, endY, endZ), speed, pauseTime);
 }

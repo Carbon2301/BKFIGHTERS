@@ -33,7 +33,7 @@ bool GSPlay_IsShowPlatformBoxes() {
 }
 
 GSPlay::GSPlay() 
-    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f) {
+    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f), m_cloudSpeed(0.5f) {
 }
 
 GSPlay::~GSPlay() {
@@ -132,6 +132,8 @@ void GSPlay::Init() {
     
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
+    m_player.GetMovement()->ClearMovingPlatforms();
+    m_player2.GetMovement()->ClearMovingPlatforms();
     {
         std::ifstream sceneFile("Resources/Scenes/GSPlay.txt");
         if (sceneFile.is_open()) {
@@ -161,6 +163,21 @@ void GSPlay::Init() {
     
     m_player.GetMovement()->SetCharacterSize(0.16f, 0.24f);
     m_player2.GetMovement()->SetCharacterSize(0.16f, 0.24f);
+    
+    // Setup lift platform (Object ID 30)
+    Object* liftPlatform = sceneManager->GetObject(30);
+    if (liftPlatform) {
+        liftPlatform->SetLiftPlatform(true, 
+            0.49f, -0.862f, 0.0f,  // Start position
+            0.49f, 0.33f, 0.0f,   // End position
+            0.2f, 1.0f);          // Speed: 0.2 units/sec, Pause time: 1.0 second
+        std::cout << "Lift platform (ID 30) configured successfully" << std::endl;
+
+        m_player.GetMovement()->AddMovingPlatformById(30);
+        m_player2.GetMovement()->AddMovingPlatformById(30);
+    } else {
+        std::cout << "Warning: Lift platform (ID 30) not found in scene" << std::endl;
+    }
     
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
@@ -271,6 +288,12 @@ void GSPlay::Update(float deltaTime) {
     if (menuButton) {
         menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
     }
+    
+    // Update cloud movement
+    UpdateCloudMovement(deltaTime);
+    
+    // Update fan rotation
+    UpdateFanRotation(deltaTime);
 }
 
 void GSPlay::Draw() {
@@ -322,9 +345,7 @@ void GSPlay::Draw() {
             }
         } else if (m_player.GetCurrentAnimation() == 19) {
             std::cout << "Action: KICK [Animation 19]" << std::endl;
-        }
-        std::cout << "=========================" << std::endl;
-            
+        }            
         lastPosX = m_player.GetPosition().x;
         lastAnim = m_player.GetCurrentAnimation();
         wasMoving = isMoving;
@@ -357,7 +378,6 @@ void GSPlay::Draw() {
         } else if (m_player2.GetCurrentAnimation() == 19) {
             std::cout << "Action: KICK [Animation 19]" << std::endl;
         }
-        std::cout << "=========================" << std::endl;
             
         lastPosX2 = m_player2.GetPosition().x;
         lastAnim2 = m_player2.GetCurrentAnimation();
@@ -489,7 +509,7 @@ void GSPlay::UpdateHealthBars() {
     
     Object* healthBar1 = sceneManager->GetObject(2000);
     if (healthBar1) {
-        Vector3 player1Pos = m_player.GetPosition();
+        const Vector3& player1Pos = m_player.GetPosition();
         
         Object* player1Obj = sceneManager->GetObject(1000);
         float characterHeight = 0.24f;
@@ -511,7 +531,7 @@ void GSPlay::UpdateHealthBars() {
     
     Object* healthBar2 = sceneManager->GetObject(2001);
     if (healthBar2) {
-        Vector3 player2Pos = m_player2.GetPosition();
+        const Vector3& player2Pos = m_player2.GetPosition();
         
         Object* player2Obj = sceneManager->GetObject(1001);
         float characterHeight = 0.24f;
@@ -527,5 +547,64 @@ void GSPlay::UpdateHealthBars() {
         const Vector3& scaleRef = healthBar2->GetScale();
         Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
         healthBar2->SetScale(healthRatio2 * 0.18f, currentScale.y, currentScale.z);
+    }
+}
+
+void GSPlay::UpdateCloudMovement(float deltaTime) {
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    
+    int cloudIds[] = {51, 52, 53, 54, 55, 56, 57, 58, 59, 60};
+    
+    for (int cloudId : cloudIds) {
+        Object* cloud = sceneManager->GetObject(cloudId);
+        if (cloud) {
+            const Vector3& currentPos = cloud->GetPosition();
+            float newX = currentPos.x - CLOUD_MOVE_SPEED * deltaTime;
+            cloud->SetPosition(newX, currentPos.y, currentPos.z);
+        }
+    }
+    
+    for (int cloudId : cloudIds) {
+        Object* cloud = sceneManager->GetObject(cloudId);
+        if (cloud) {
+            const Vector3& currentPos = cloud->GetPosition();
+            
+            if (currentPos.x <= CLOUD_LEFT_BOUNDARY) {
+                float rightmostX = -1000.0f;
+                for (int otherCloudId : cloudIds) {
+                    Object* otherCloud = sceneManager->GetObject(otherCloudId);
+                    if (otherCloud) {
+                        const Vector3& otherPos = otherCloud->GetPosition();
+                        if (otherPos.x > rightmostX) {
+                            rightmostX = otherPos.x;
+                        }
+                    }
+                }
+                
+                float newX = rightmostX + CLOUD_SPACING;
+                cloud->SetPosition(newX, currentPos.y, currentPos.z);
+            }
+        }
+    }
+}
+
+void GSPlay::UpdateFanRotation(float deltaTime) {
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    
+    int fanIds[] = {800, 801, 802, 803};
+    const float FAN_ROTATION_SPEED = 90.0f;
+    
+    for (int fanId : fanIds) {
+        Object* fan = sceneManager->GetObject(fanId);
+        if (fan) {
+            const Vector3& currentRotation = fan->GetRotation();
+            float newZRotation = currentRotation.z + FAN_ROTATION_SPEED * deltaTime;
+            
+            if (newZRotation >= 360.0f) {
+                newZRotation -= 360.0f;
+            }
+            
+            fan->SetRotation(currentRotation.x, currentRotation.y, newZRotation);
+        }
     }
 } 

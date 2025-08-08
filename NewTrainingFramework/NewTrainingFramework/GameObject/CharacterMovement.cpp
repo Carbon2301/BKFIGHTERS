@@ -4,6 +4,8 @@
 #include "PlatformCollision.h"
 #include <iostream>
 #include <SDL.h>
+#include "SceneManager.h"
+#include "Object.h"
 
 const float CharacterMovement::JUMP_FORCE = 0.9f;
 const float CharacterMovement::GRAVITY = 2.5f;
@@ -211,6 +213,7 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_isOnPlatform = false;
             m_isJumping = true;
             m_jumpVelocity = 0.0f;
+            m_currentMovingPlatformId = -1;
         }
     }
 }
@@ -289,6 +292,18 @@ void CharacterMovement::ClearPlatforms() {
     }
 }
 
+void CharacterMovement::AddMovingPlatformById(int objectId) {
+    if (m_platformCollision) {
+        m_platformCollision->AddMovingPlatform(objectId);
+    }
+}
+
+void CharacterMovement::ClearMovingPlatforms() {
+    if (m_platformCollision) {
+        m_platformCollision->ClearMovingPlatforms();
+    }
+}
+
 void CharacterMovement::SetCharacterSize(float width, float height) {
     m_characterWidth = width;
     m_characterHeight = height;
@@ -296,12 +311,20 @@ void CharacterMovement::SetCharacterSize(float width, float height) {
 
 bool CharacterMovement::CheckPlatformCollision(float& newY) {
     if (!m_platformCollision) return false;
-    return m_platformCollision->CheckPlatformCollision(newY, m_posX, m_posY, m_jumpVelocity, m_characterWidth, m_characterHeight);
+    bool collided = m_platformCollision->CheckPlatformCollision(newY, m_posX, m_posY, m_jumpVelocity, m_characterWidth, m_characterHeight);
+    if (collided) {
+        m_currentMovingPlatformId = m_platformCollision->GetLastCollidedMovingPlatformId();
+    }
+    return collided;
 }
 
 bool CharacterMovement::CheckPlatformCollisionWithHurtbox(float& newY, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
     if (!m_platformCollision) return false;
-    return m_platformCollision->CheckPlatformCollisionWithHurtbox(newY, m_posX, m_posY, m_jumpVelocity, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+    bool collided = m_platformCollision->CheckPlatformCollisionWithHurtbox(newY, m_posX, m_posY, m_jumpVelocity, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+    if (collided) {
+        m_currentMovingPlatformId = m_platformCollision->GetLastCollidedMovingPlatformId();
+    }
+    return collided;
 }
 
 void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
@@ -441,6 +464,31 @@ void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hu
     if (!m_isJumping) {
         float newY = m_posY;
         bool onPlatform = !m_isFallingThroughPlatform && CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+        // Fallback bám bệ di chuyển nếu kiểm tra chuẩn bị trượt do epsilon nhỏ
+        if (!onPlatform && !m_isFallingThroughPlatform && m_currentMovingPlatformId != -1) {
+            Object* platformObj = SceneManager::GetInstance()->GetObject(m_currentMovingPlatformId);
+            if (platformObj) {
+                const Vector3& pPos = platformObj->GetPosition();
+                const Vector3& pScale = platformObj->GetScale();
+                float platformLeft = pPos.x - pScale.x * 0.5f;
+                float platformRight = pPos.x + pScale.x * 0.5f;
+                float platformTop = pPos.y + pScale.y * 0.5f;
+
+                float hurtboxCenterX = m_posX + hurtboxOffsetX;
+                float hurtboxLeft = hurtboxCenterX - hurtboxWidth * 0.5f;
+                float hurtboxRight = hurtboxCenterX + hurtboxWidth * 0.5f;
+                float hurtboxBottom = m_posY + hurtboxOffsetY - hurtboxHeight * 0.5f;
+
+                bool horizontalOverlap = (hurtboxRight > platformLeft && hurtboxLeft < platformRight);
+                // Cho phép dung sai lớn khi bệ di chuyển (tránh trượt do bước thời gian)
+                const float stickMargin = 0.05f;
+                bool closeToTop = (hurtboxBottom >= platformTop - stickMargin && hurtboxBottom <= platformTop + stickMargin);
+                if (horizontalOverlap && closeToTop) {
+                    newY = platformTop - hurtboxOffsetY + hurtboxHeight * 0.5f;
+                    onPlatform = true;
+                }
+            }
+        }
         bool onWall = false;
         if (m_wallCollision) {
             Vector3 testPos(m_posX, m_posY - 0.01f, 0.0f);
@@ -456,6 +504,12 @@ void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hu
         } else if (onPlatform) {
             m_posY = newY;
             m_isOnPlatform = true;
+            // Nếu đang đứng trên bệ nâng di chuyển, bám theo chuyển động của bệ theo frame
+            if (m_currentMovingPlatformId != -1) {
+                Object* platformObj = SceneManager::GetInstance()->GetObject(m_currentMovingPlatformId);
+                if (platformObj) {
+                }
+            }
         }
     }
 }

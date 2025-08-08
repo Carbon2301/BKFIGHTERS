@@ -13,13 +13,8 @@ private:
     static const int ANIM_OBJECT_ID = 1000;
     std::shared_ptr<AnimationManager> m_animManager;
     
-    // Static variable to control hitbox/hurtbox visibility
     static bool s_showHitboxHurtbox;
-    
-    // Static variable to control platform box visibility
     static bool s_showPlatformBoxes;
-    
-    // Static variable to control wall box visibility
     static bool s_showWallBoxes;
     
     // Health system variables
@@ -27,6 +22,13 @@ private:
     float m_player2Health;
     const float MAX_HEALTH = 100.0f;
     const float HEALTH_DAMAGE = 10.0f; // Máu mất mỗi lần nhấn T
+    
+    // Cloud movement system
+    float m_cloudSpeed;
+    const float CLOUD_MOVE_SPEED = 0.2f; // Tốc độ di chuyển mây (units per second) - đã giảm từ 0.5f xuống 0.2f
+    const float CLOUD_SPACING = 1.74f; // Khoảng cách giữa các mây
+    const float CLOUD_LEFT_BOUNDARY = -6.0f; // Vị trí mây biến mất (bên trái màn hình)
+    const int TOTAL_CLOUDS = 10; // Tổng số mây
     
 public:
     GSPlay();
@@ -56,4 +58,10 @@ public:
     void UpdateHealthBars();
     float GetPlayer1Health() const { return m_player1Health; }
     float GetPlayer2Health() const { return m_player2Health; }
+    
+    // Cloud movement system
+    void UpdateCloudMovement(float deltaTime);
+    
+    // Fan rotation system
+    void UpdateFanRotation(float deltaTime);
 }; 

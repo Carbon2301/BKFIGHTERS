@@ -35,6 +35,16 @@ private:
     bool m_autoRotate;
     float m_rotationSpeed;  // degrees per second
     
+    // Lift platform properties
+    bool m_isLiftPlatform;
+    Vector3 m_liftStartPos;
+    Vector3 m_liftEndPos;
+    float m_liftSpeed;      // units per second
+    float m_liftProgress;   // 0.0 to 1.0
+    bool m_liftGoingUp;     // true = going up, false = going down
+    float m_liftPauseTime;  // pause time at each end
+    float m_liftPauseTimer; // current pause timer
+    
     void UpdateWorldMatrix();
     void CacheResources();
     
@@ -83,6 +93,15 @@ public:
     void ToggleAutoRotation();
     void SetAutoRotation(bool enabled, float speed = 30.0f); // 30 degrees/sec default
     bool IsAutoRotating() const { return m_autoRotate; }
+    
+    // Lift platform methods
+    void SetLiftPlatform(bool enabled, const Vector3& startPos, const Vector3& endPos, 
+                        float speed = 1.0f, float pauseTime = 1.0f);
+    void SetLiftPlatform(bool enabled, float startX, float startY, float startZ,
+                        float endX, float endY, float endZ, float speed = 1.0f, float pauseTime = 1.0f);
+    bool IsLiftPlatform() const { return m_isLiftPlatform; }
+    void SetLiftSpeed(float speed) { m_liftSpeed = speed; }
+    void SetLiftPauseTime(float pauseTime) { m_liftPauseTime = pauseTime; }
     
     // Resource management
     void RefreshResources();
