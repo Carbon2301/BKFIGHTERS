@@ -185,8 +185,10 @@ void GSPlay::Init() {
         std::cout << "Warning: Lift platform (ID 30) not found in scene" << std::endl;
     }
     
-    // Mark axe availability if present in scene
-    m_isAxeAvailable = (sceneManager->GetObject(AXE_OBJECT_ID) != nullptr);
+    // Mark weapon availability if present in scene
+    m_isAxeAvailable   = (sceneManager->GetObject(AXE_OBJECT_ID)   != nullptr);
+    m_isSwordAvailable = (sceneManager->GetObject(SWORD_OBJECT_ID) != nullptr);
+    m_isPipeAvailable  = (sceneManager->GetObject(PIPE_OBJECT_ID)  != nullptr);
 
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
@@ -396,16 +398,15 @@ void GSPlay::Draw() {
 void GSPlay::UpdateHudWeapons() {
     SceneManager* scene = SceneManager::GetInstance();
     if (Object* hudWeapon1 = scene->GetObject(918)) {
-        if (m_player.HasAxe()) {
-            // Show axe icon
+        if (m_player.GetWeapon() != Character::WeaponType::None) {
             hudWeapon1->SetScale(m_hudWeapon1BaseScale);
+            // Optional: swap texture ID by weapon type if needed in future
         } else {
-            // Hide
             hudWeapon1->SetScale(0.0f, 0.0f, m_hudWeapon1BaseScale.z);
         }
     }
     if (Object* hudWeapon2 = scene->GetObject(919)) {
-        if (m_player2.HasAxe()) {
+        if (m_player2.GetWeapon() != Character::WeaponType::None) {
             hudWeapon2->SetScale(m_hudWeapon2BaseScale);
         } else {
             hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
@@ -694,10 +695,11 @@ void GSPlay::UpdateFanRotation(float deltaTime) {
 
 // Item pickup: sit + kick
 void GSPlay::HandleItemPickup() {
-    if (!m_isAxeAvailable || !m_inputManager) return;
+    if (!m_inputManager) return;
     SceneManager* scene = SceneManager::GetInstance();
-    Object* axe = scene->GetObject(AXE_OBJECT_ID);
-    if (!axe) { m_isAxeAvailable = false; return; }
+    Object* axe   = scene->GetObject(AXE_OBJECT_ID);
+    Object* sword = scene->GetObject(SWORD_OBJECT_ID);
+    Object* pipe  = scene->GetObject(PIPE_OBJECT_ID);
 
     const bool* keys = m_inputManager->GetKeyStates();
     if (!keys) return;
@@ -725,38 +727,34 @@ void GSPlay::HandleItemPickup() {
         return overlapX && overlapY;
     };
 
-    const Vector3& axePos = axe->GetPosition();
-    const Vector3& axeScale = axe->GetScale();
+    auto tryPickup = [&](Character& player, bool sitHeld, bool kickJust, Object*& objRef, bool& availFlag, Character::WeaponType weaponType){
+        if (!sitHeld || !kickJust || !objRef) return false;
+        const Vector3& objPos = objRef->GetPosition();
+        const Vector3& objScale = objRef->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = objRef->GetId();
+            scene->RemoveObject(removedId);
+            objRef = nullptr;
+            availFlag = false;
+            player.SetWeapon(weaponType);
+            std::cout << "Picked up weapon ID " << removedId << " (type=" << (int)weaponType << ")" << std::endl;
+            return true;
+        }
+        return false;
+    };
 
     // Check Player 1
-    if (p1Sit && p1KickJust) {
-        Vector3 p1Pos = m_player.GetPosition();
-        float w = m_player.GetHurtboxWidth();
-        float h = m_player.GetHurtboxHeight();
-        float ox = m_player.GetHurtboxOffsetX();
-        float oy = m_player.GetHurtboxOffsetY();
-        p1Pos.x += ox; p1Pos.y += oy;
-        if (isOverlapping(p1Pos, w, h, axePos, axeScale)) {
-            scene->RemoveObject(AXE_OBJECT_ID);
-            m_isAxeAvailable = false;
-            m_player.SetHasAxe(true);
-            return;
-        }
-    }
+    if ( tryPickup(m_player,  p1Sit, p1KickJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+         tryPickup(m_player,  p1Sit, p1KickJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
+         tryPickup(m_player,  p1Sit, p1KickJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
 
     // Check Player 2
-    if (p2Sit && p2KickJust) {
-        Vector3 p2Pos = m_player2.GetPosition();
-        float w = m_player2.GetHurtboxWidth();
-        float h = m_player2.GetHurtboxHeight();
-        float ox = m_player2.GetHurtboxOffsetX();
-        float oy = m_player2.GetHurtboxOffsetY();
-        p2Pos.x += ox; p2Pos.y += oy;
-        if (isOverlapping(p2Pos, w, h, axePos, axeScale)) {
-            scene->RemoveObject(AXE_OBJECT_ID);
-            m_isAxeAvailable = false;
-            m_player2.SetHasAxe(true);
-            return;
-        }
-    }
+    if ( tryPickup(m_player2, p2Sit, p2KickJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+         tryPickup(m_player2, p2Sit, p2KickJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
+         tryPickup(m_player2, p2Sit, p2KickJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
 }

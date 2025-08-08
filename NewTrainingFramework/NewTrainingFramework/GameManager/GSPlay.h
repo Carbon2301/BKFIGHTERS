@@ -70,7 +70,11 @@ private:
     // Item pickup system
     void HandleItemPickup();
     static const int AXE_OBJECT_ID = 1100;
+    static const int SWORD_OBJECT_ID = 1101;
+    static const int PIPE_OBJECT_ID  = 1102;
     bool m_isAxeAvailable = false;
+    bool m_isSwordAvailable = false;
+    bool m_isPipeAvailable  = false;
     
     // HUD weapons
     void UpdateHudWeapons();

@@ -71,10 +71,12 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     
     if (inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
-        if (m_hasAxe) {
-            HandleAxeCombo();
-        } else {
-            HandlePunchCombo();
+        switch (m_weapon) {
+            case WeaponType::Axe:   HandleAxeCombo(); break;
+            case WeaponType::Sword: HandleSwordCombo(); break;
+            case WeaponType::Pipe:  HandlePipeCombo(); break;
+            case WeaponType::None:
+            default: HandlePunchCombo(); break;
         }
     }
     
@@ -173,7 +175,19 @@ void Character::HandlePunchCombo() {
 
 void Character::HandleAxeCombo() {
     if (m_combat && m_animation) {
-        m_combat->HandleAxeCombo(m_animation.get(), m_movement.get());
+        m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 20, 21, 22);
+    }
+}
+
+void Character::HandleSwordCombo() {
+    if (m_combat && m_animation) {
+        m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 23, 24, 25);
+    }
+}
+
+void Character::HandlePipeCombo() {
+    if (m_combat && m_animation) {
+        m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 26, 27, 28);
     }
 }
 

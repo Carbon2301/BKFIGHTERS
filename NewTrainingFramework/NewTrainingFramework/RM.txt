@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 20
+# 2DTexture 22
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -238,6 +238,14 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 30
 FILE "../Resources/Fighter/Weapons/Axe.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 31
+FILE "../Resources/Fighter/Weapons/Sword.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 32
+FILE "../Resources/Fighter/Weapons/Pipe.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1

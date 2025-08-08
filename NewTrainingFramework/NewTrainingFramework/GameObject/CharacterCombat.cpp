@@ -134,19 +134,23 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
 void CharacterCombat::HandleAxeCombo(CharacterAnimation* animation, CharacterMovement* movement) {
     if (!animation || !movement) return;
     
+    HandleWeaponCombo(animation, movement, 20, 21, 22);
+}
+
+void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement, int anim1, int anim2, int anim3) {
+    if (!animation || !movement) return;
     if (!m_isInAxeCombo) {
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
         m_axeComboTimer = COMBO_WINDOW;
-        animation->PlayAnimation(20, false);
+        animation->PlayAnimation(anim1, false);
     } else if (m_axeComboTimer > 0.0f) {
         m_axeComboCount++;
         m_axeComboTimer = COMBO_WINDOW;
-        
         if (m_axeComboCount == 2) {
-            animation->PlayAnimation(21, false);
+            animation->PlayAnimation(anim2, false);
         } else if (m_axeComboCount == 3) {
-            animation->PlayAnimation(22, false);
+            animation->PlayAnimation(anim3, false);
             m_axeComboCompleted = true;
         } else if (m_axeComboCount > 3) {
             m_axeComboCount = 3;
@@ -156,7 +160,7 @@ void CharacterCombat::HandleAxeCombo(CharacterAnimation* animation, CharacterMov
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
         m_axeComboTimer = COMBO_WINDOW;
-        animation->PlayAnimation(20, false);
+        animation->PlayAnimation(anim1, false);
     }
 }
 

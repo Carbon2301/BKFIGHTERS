@@ -13,6 +13,8 @@ class InputManager;
 class Camera;
 
 class Character {
+public:
+    enum class WeaponType { None = 0, Axe = 1, Sword = 2, Pipe = 3 };
 private:
     std::unique_ptr<CharacterMovement> m_movement;
     std::unique_ptr<CharacterCombat> m_combat;
@@ -29,7 +31,7 @@ private:
     void CancelCombosOnOtherAction(const bool* keyStates);
 
     // Inventory/state
-    bool m_hasAxe = false;
+    WeaponType m_weapon = WeaponType::None;
 
 public:
     Character();
@@ -59,6 +61,8 @@ public:
     // Combat
     void HandlePunchCombo();
     void HandleAxeCombo();
+    void HandleSwordCombo();
+    void HandlePipeCombo();
     void HandleKick();
     void HandleDie();
     void TriggerDie();
@@ -114,8 +118,8 @@ public:
     bool IsKicking() const;
     
     // Inventory/state
-    void SetHasAxe(bool hasAxe) { m_hasAxe = hasAxe; }
-    bool HasAxe() const { return m_hasAxe; }
+    void SetWeapon(WeaponType weapon) { m_weapon = weapon; }
+    WeaponType GetWeapon() const { return m_weapon; }
     
     // Health system
     float GetHealth() const { return m_health; }
