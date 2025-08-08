@@ -71,11 +71,11 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     
     if (inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
-        HandlePunchCombo();
-    }
-    
-    if (inputManager->IsKeyJustPressed(inputConfig.axeKey)) {
-        HandleAxeCombo();
+        if (m_hasAxe) {
+            HandleAxeCombo();
+        } else {
+            HandlePunchCombo();
+        }
     }
     
     if (inputManager->IsKeyJustPressed(inputConfig.kickKey)) {

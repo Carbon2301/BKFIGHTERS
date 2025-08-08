@@ -204,15 +204,7 @@ void GSPlay::Init() {
     std::cout << "- S + D: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
     std::cout << "=== PLAYER 1 COMBO SYSTEM ===" << std::endl;
-    std::cout << "- J: Start/Continue Punch Combo" << std::endl;
-    std::cout << "  * Press J once: Punch1 (Animation 10: Punch1)" << std::endl;
-    std::cout << "  * Press J twice: Punch2 (Animation 11: Punch2)" << std::endl;
-    std::cout << "  * Press J three times: Punch3 (Animation 12: Punch3)" << std::endl;
-    std::cout << "  * Combo window: 0.5 seconds" << std::endl;
-    std::cout << "- L: Start/Continue Axe Combo" << std::endl;
-    std::cout << "  * Press L once: Axe1 (Animation 20: Axe1)" << std::endl;
-    std::cout << "  * Press L twice: Axe2 (Animation 21: Axe2)" << std::endl;
-    std::cout << "  * Press L three times: Axe3 (Animation 22: Axe3)" << std::endl;
+    std::cout << "- J: Combo (Punch by default; Axe after pickup)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- K: Kick (Animation 19: Kick)" << std::endl;
     std::cout << "=== PLAYER 2 MOVEMENT CONTROLS ===" << std::endl;
@@ -227,15 +219,7 @@ void GSPlay::Init() {
     std::cout << "- Down Arrow + Right Arrow: Roll right (Animation 4: Roll)" << std::endl;
     std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
     std::cout << "=== PLAYER 2 COMBO SYSTEM ===" << std::endl;
-    std::cout << "- 1: Start/Continue Punch Combo" << std::endl;
-    std::cout << "  * Press 1 once: Punch1 (Animation 10: Punch1)" << std::endl;
-    std::cout << "  * Press 1 twice: Punch2 (Animation 11: Punch2)" << std::endl;
-    std::cout << "  * Press 1 three times: Punch3 (Animation 12: Punch3)" << std::endl;
-    std::cout << "  * Combo window: 0.5 seconds" << std::endl;
-    std::cout << "- 3: Start/Continue Axe Combo" << std::endl;
-    std::cout << "  * Press 3 once: Axe1 (Animation 20: Axe1)" << std::endl;
-    std::cout << "  * Press 3 twice: Axe2 (Animation 21: Axe2)" << std::endl;
-    std::cout << "  * Press 3 three times: Axe3 (Animation 22: Axe3)" << std::endl;
+    std::cout << "- 1: Combo (Punch by default; Axe after pickup)" << std::endl;
     std::cout << "  * Combo window: 0.5 seconds" << std::endl;
     std::cout << "- 2: Kick (Animation 19: Kick)" << std::endl;
     std::cout << "=== PLATFORM SYSTEM ===" << std::endl;
@@ -723,6 +707,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(p1Pos, w, h, axePos, axeScale)) {
             scene->RemoveObject(AXE_OBJECT_ID);
             m_isAxeAvailable = false;
+            m_player.SetHasAxe(true);
             return;
         }
     }
@@ -738,6 +723,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(p2Pos, w, h, axePos, axeScale)) {
             scene->RemoveObject(AXE_OBJECT_ID);
             m_isAxeAvailable = false;
+            m_player2.SetHasAxe(true);
             return;
         }
     }

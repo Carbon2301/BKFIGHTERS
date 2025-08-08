@@ -28,6 +28,9 @@ private:
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
 
+    // Inventory/state
+    bool m_hasAxe = false;
+
 public:
     Character();
     ~Character();
@@ -109,6 +112,10 @@ public:
     
     // Kick getter
     bool IsKicking() const;
+    
+    // Inventory/state
+    void SetHasAxe(bool hasAxe) { m_hasAxe = hasAxe; }
+    bool HasAxe() const { return m_hasAxe; }
     
     // Health system
     float GetHealth() const { return m_health; }
