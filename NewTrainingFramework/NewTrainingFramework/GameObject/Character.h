@@ -131,4 +131,8 @@ public:
     void Heal(float amount);
     void ResetHealth();
 
+     // Gun helpers
+     Vector3 GetGunTopWorldPosition() const;
+     float GetAimAngleDeg() const;
+
 }; 

@@ -570,13 +570,47 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
 }
 
 void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
-    Vector3 spawn = ch.GetPosition();
-    spawn.x += ch.IsFacingLeft() ? -BULLET_SPAWN_OFFSET_X : BULLET_SPAWN_OFFSET_X;
-    spawn.y += BULLET_SPAWN_OFFSET_Y;
-    bool left = ch.IsFacingLeft();
-    Vector3 dir = left ? Vector3(-1.0f, 0.0f, 0.0f) : Vector3(1.0f, 0.0f, 0.0f);
+    // Pivot at the top overlay (shoulder/gun root)
+    Vector3 pivot = ch.GetGunTopWorldPosition();
+    Vector3 base  = ch.GetPosition();
+    const float aimDeg = ch.GetAimAngleDeg();
+    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+    const float aimRad = aimDeg * 3.14159265f / 180.0f;
+    const float angleWorld = faceSign * aimRad;
+
+    // Compute the muzzle point at aim=0 using the original constants (relative to base)
+    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                       base.y + BULLET_SPAWN_OFFSET_Y,
+                       0.0f);
+    // Local vector from pivot to that muzzle at aim=0
+    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+
+    // Rotate this local vector by the same upper-body rotation to get current spawn
+    float cosA = cosf(angleWorld);
+    float sinA = sinf(angleWorld);
+    Vector3 vRot(vLocal0.x * cosA - vLocal0.y * sinA,
+                 vLocal0.x * sinA + vLocal0.y * cosA,
+                 0.0f);
+    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+
+    // Bullet direction: use the same rotated forward as the top by rotating a small local +X step
+    const float forwardStep = 0.02f; // small step along muzzle axis at aim=0
+    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+    Vector3 vRotForward(vLocalForward.x * cosA - vLocalForward.y * sinA,
+                        vLocalForward.x * sinA + vLocalForward.y * cosA,
+                        0.0f);
+    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+    {
+        float len = dir.Length();
+        if (len > 1e-6f) {
+            dir = dir / len;
+        } else {
+            dir = Vector3(faceSign, 0.0f, 0.0f);
+        }
+    }
+
     int slot = CreateOrAcquireBulletObject();
-    Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED; b.life = BULLET_LIFETIME; b.objIndex = slot;
+    Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
     m_bullets.push_back(b);
 }
 
@@ -629,6 +663,16 @@ void GSPlay::DrawBullets(Camera* cam) {
         int idx = b.objIndex;
         if (idx >= 0 && idx < (int)m_bulletObjs.size() && m_bulletObjs[idx]) {
             m_bulletObjs[idx]->SetPosition(b.x, b.y, 0.0f);
+            float desiredAngle = (b.faceSign < 0.0f) ? (b.angleRad + 3.14159265f) : b.angleRad;
+            const Vector3& sc = m_bulletObjs[idx]->GetScale();
+            float sx = fabsf(sc.x);
+            float sy = fabsf(sc.y);
+            if (sy < 1e-6f) sy = 1e-6f;
+            float k = sx / sy;
+            float c = cosf(desiredAngle);
+            float s = sinf(desiredAngle);
+            float compensated = atan2f(k * s, c);
+            m_bulletObjs[idx]->SetRotation(0.0f, 0.0f, compensated);
             m_bulletObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
         }
     }

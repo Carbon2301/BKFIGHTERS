@@ -415,3 +415,17 @@ void Character::ResetHealth() {
     m_health = MAX_HEALTH;
     m_isDead = false;
 } 
+
+Vector3 Character::GetGunTopWorldPosition() const {
+    if (m_animation && m_movement) {
+        return m_animation->GetTopWorldPosition(m_movement.get());
+    }
+    return GetPosition();
+}
+
+float Character::GetAimAngleDeg() const {
+    if (m_animation) {
+        return m_animation->GetAimAngleDeg();
+    }
+    return 0.0f;
+}
