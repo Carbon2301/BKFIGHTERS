@@ -213,6 +213,11 @@ void GSPlay::Init() {
         hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
     }
 
+    m_wallCollision = std::make_unique<WallCollision>();
+    if (m_wallCollision) {
+        m_wallCollision->LoadWallsFromScene();
+    }
+
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
@@ -610,26 +615,75 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
     }
 
     int slot = CreateOrAcquireBulletObject();
-    Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+    Bullet b;
+    b.x = spawn.x; b.y = spawn.y;
+    b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED;
+    b.life = BULLET_LIFETIME; b.objIndex = slot;
+    b.angleRad = angleWorld; b.faceSign = faceSign;
+    b.ownerId = (&ch == &m_player) ? 1 : 2;
     m_bullets.push_back(b);
 }
 
 void GSPlay::UpdateBullets(float dt) {
+    auto removeBullet = [&](decltype(m_bullets.begin())& it){
+        if (it->objIndex >= 0 && it->objIndex < (int)m_bulletObjs.size() && m_bulletObjs[it->objIndex]) {
+            m_freeBulletSlots.push_back(it->objIndex);
+            m_bulletObjs[it->objIndex]->SetVisible(false);
+        }
+        it = m_bullets.erase(it);
+    };
+
+    auto aabbOverlap = [](float aLeft, float aRight, float aBottom, float aTop,
+                          float bLeft, float bRight, float bBottom, float bTop){
+        return (aLeft < bRight && aRight > bLeft && aBottom < bTop && aTop > bBottom);
+    };
+
     // Update all bullets
     for (auto it = m_bullets.begin(); it != m_bullets.end(); ) {
         it->life -= dt;
         it->x += it->vx * dt;
         it->y += it->vy * dt;
-        if (it->life <= 0.0f) {
-            // release object back to pool
-            if (it->objIndex >= 0 && it->objIndex < (int)m_bulletObjs.size() && m_bulletObjs[it->objIndex]) {
-                m_freeBulletSlots.push_back(it->objIndex);
-                m_bulletObjs[it->objIndex]->SetVisible(false);
+
+        if (it->life <= 0.0f) { removeBullet(it); continue; }
+
+        if (m_wallCollision) {
+            Vector3 pos(it->x, it->y, 0.0f);
+            if (m_wallCollision->CheckWallCollision(pos, BULLET_COLLISION_WIDTH, BULLET_COLLISION_HEIGHT, 0.0f, 0.0f)) {
+                removeBullet(it); continue;
             }
-            it = m_bullets.erase(it);
-        } else {
-            ++it;
         }
+
+        Character* target = (it->ownerId == 1) ? &m_player2 : &m_player;
+        Character* attacker = (it->ownerId == 1) ? &m_player : &m_player2;
+        if (target) {
+            Vector3 targetPos = target->GetPosition();
+            float hx = targetPos.x + target->GetHurtboxOffsetX();
+            float hy = targetPos.y + target->GetHurtboxOffsetY();
+            float halfW = target->GetHurtboxWidth() * 0.5f;
+            float halfH = target->GetHurtboxHeight() * 0.5f;
+            float tLeft = hx - halfW;
+            float tRight = hx + halfW;
+            float tBottom = hy - halfH;
+            float tTop = hy + halfH;
+
+            float bHalfW = BULLET_COLLISION_WIDTH * 0.5f;
+            float bHalfH = BULLET_COLLISION_HEIGHT * 0.5f;
+            float bLeft = it->x - bHalfW;
+            float bRight = it->x + bHalfW;
+            float bBottom = it->y - bHalfH;
+            float bTop = it->y + bHalfH;
+
+            if (aabbOverlap(bLeft, bRight, bBottom, bTop, tLeft, tRight, tBottom, tTop)) {
+                float prev = target->GetHealth();
+                target->TakeDamage(10.0f);
+                if (prev > 0.0f && target->GetHealth() <= 0.0f && attacker) {
+                    target->TriggerDieFromAttack(*attacker);
+                }
+                removeBullet(it); continue;
+            }
+        }
+
+        ++it;
     }
 }
 
