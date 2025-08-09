@@ -21,8 +21,8 @@ private:
     std::unique_ptr<class Object> m_topObject;          // separate object drawn on top
     int m_lastTopAnimation = -1;
     bool m_gunMode = false; // when true: force body anim 29 and top anim pistol (1)
-    float m_topOffsetX = -0.02f; // temporary alignment tweak: shift head left by 0.02
-    float m_topOffsetY = -0.02f; // temporary alignment tweak: shift head down by 0.02
+    float m_topOffsetX = -0.02f; // alignment tweak (default)
+    float m_topOffsetY = -0.02f; // alignment tweak (default)
 
     // Leo thang: điều khiển frame step-by-step
     float m_climbHoldTimer = 0.0f;
@@ -33,6 +33,14 @@ private:
     // Phân biệt nhấn-nhả vs giữ khi đi xuống
     float m_downPressStartTime = -1.0f; // giây
     static constexpr float CLIMB_DOWN_HOLD_THRESHOLD = 0.15f; // > 150ms coi như giữ
+
+    // Turning control for gun mode
+    bool m_isTurning = false;
+    bool m_turnTargetLeft = false;
+    float m_turnTimer = 0.0f;
+    static constexpr float TURN_DURATION = 0.18f; // seconds: 1 frame transition
+    bool m_turnInitialLeft = false;
+    bool m_prevFacingLeft = false; // committed facing (before a new turn)
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
@@ -68,4 +76,7 @@ public:
     void SetGunMode(bool enabled) { m_gunMode = enabled; }
     bool IsGunMode() const { return m_gunMode; }
     void SetTopOffset(float ox, float oy) { m_topOffsetX = ox; m_topOffsetY = oy; }
+
+private:
+    void StartTurn(bool toLeft, bool initialLeft);
 }; 

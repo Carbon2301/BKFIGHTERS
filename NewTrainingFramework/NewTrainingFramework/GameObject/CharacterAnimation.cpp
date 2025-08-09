@@ -70,6 +70,17 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
     if (m_topAnimManager) {
         m_topAnimManager->Update(deltaTime);
     }
+
+    // Handle turn timing
+    if (m_gunMode && movement && m_isTurning) {
+        m_turnTimer += deltaTime;
+        if (m_turnTimer >= TURN_DURATION) {
+            // Turn finished
+            m_isTurning = false;
+            m_prevFacingLeft = m_turnTargetLeft;
+            PlayTopAnimation(1, true);
+        }
+    }
 }
 
 void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
@@ -101,9 +112,9 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
         m_topObject->SetCustomUV(u0, v0, u1, v1);
         Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
-        // Mirror X offset when facing left so overlay stays aligned in both directions
-        float mirroredOffsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
-        m_topObject->SetPosition(position.x + mirroredOffsetX, position.y + m_topOffsetY, position.z);
+        // Mirror X offset when facing left so overlay aligns in both directions
+        float offsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
+        m_topObject->SetPosition(position.x + offsetX, position.y + m_topOffsetY, position.z);
         if (camera) {
             m_topObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
@@ -181,14 +192,38 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
 
     // Gun overlay mode: lock body to Body Shoot (29) and top to Pistol (1)
     if (m_gunMode) {
-        PlayAnimation(29, true);
-        if (m_topAnimManager) {
-            if (m_lastTopAnimation != 1) {
-                m_topAnimManager->Play(1, true);
-                m_lastTopAnimation = 1;
+        // Start turn when player presses opposite direction relative to committed facing
+        bool facingLeft = m_prevFacingLeft;
+        bool wantLeft = keyStates[movement->GetInputConfig().moveLeftKey];
+        bool wantRight = keyStates[movement->GetInputConfig().moveRightKey];
+        if (!m_isTurning) {
+            if (wantLeft && !facingLeft) {
+                m_turnTargetLeft = true;
+                m_isTurning = true;
+                m_turnTimer = 0.0f;
+                PlayTopAnimation(0, false);
+            } else if (wantRight && facingLeft) {
+                m_turnTargetLeft = false;
+                m_isTurning = true;
+                m_turnTimer = 0.0f;
+                PlayTopAnimation(0, false);
             }
-            m_topAnimManager->Update(0.0f); // ensure UV available immediately
         }
+
+        // Step A: show reverse frame (anim 0) while turning
+        if (m_isTurning) {
+            // Ensure we play the correct reverse frame: if currently facing right -> anim 0 (reverse pistol right)
+            // If currently facing left -> still use anim 0 since spritesheet reverse is mirrored by UV flip
+            PlayTopAnimation(0, false);
+            PlayAnimation(29, true);
+            return;
+        }
+
+        // Step B: steady state
+        PlayAnimation(29, true);
+        PlayTopAnimation(1, true);
+        // Update committed facing after we've been steady one frame
+        m_prevFacingLeft = movement->IsFacingLeft();
         return;
     }
     
@@ -344,4 +379,13 @@ void CharacterAnimation::GetCurrentFrameUV(float& u0, float& v0, float& u1, floa
     } else {
         u0 = 0.0f; v0 = 0.0f; u1 = 1.0f; v1 = 1.0f;
     }
+}
+
+void CharacterAnimation::StartTurn(bool toLeft, bool initialLeft) {
+    m_isTurning = true;
+    m_turnTargetLeft = toLeft;
+    m_turnTimer = 0.0f;
+    m_turnInitialLeft = initialLeft;
+    // Play reverse frame instantly at turn start
+    PlayTopAnimation(0, false);
 }
