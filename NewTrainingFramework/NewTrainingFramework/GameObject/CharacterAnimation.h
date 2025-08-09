@@ -61,6 +61,14 @@ private:
     unsigned int m_lastShotTickMs = 0;
     static constexpr unsigned int STICKY_AIM_WINDOW_MS = 500;
 
+    bool m_recoilActive = false;
+    float m_recoilTimer = 0.0f;
+    float m_recoilOffsetX = 0.0f;
+    float m_recoilOffsetY = 0.0f;
+    float m_recoilFaceSign = 1.0f;
+    static constexpr float RECOIL_DURATION = 0.09f;
+    static constexpr float RECOIL_STRENGTH = 0.03f;
+
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
 
@@ -99,7 +107,7 @@ public:
     bool IsGunMode() const { return m_gunMode; }
     void SetTopOffset(float ox, float oy) { m_topOffsetX = ox; m_topOffsetY = oy; }
 
-    void OnGunShotFired();
+    void OnGunShotFired(CharacterMovement* movement = nullptr);
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);

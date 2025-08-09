@@ -432,6 +432,6 @@ float Character::GetAimAngleDeg() const {
 
 void Character::MarkGunShotFired() {
     if (m_animation) {
-        m_animation->OnGunShotFired();
+        m_animation->OnGunShotFired(m_movement.get());
     }
 }

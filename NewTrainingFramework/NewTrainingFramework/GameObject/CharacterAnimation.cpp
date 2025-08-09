@@ -9,6 +9,7 @@
 #include "Object.h"
 #include <SDL.h>
 #include <iostream>
+#include <cmath>
 
 static inline float ClampFloat(float v, float mn, float mx) {
     return v < mn ? mn : (v > mx ? mx : v);
@@ -86,6 +87,26 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             PlayTopAnimation(1, true);
         }
     }
+    
+    if (m_recoilActive) {
+        m_recoilTimer += deltaTime;
+        if (m_recoilTimer >= RECOIL_DURATION) {
+            m_recoilActive = false;
+            m_recoilOffsetX = 0.0f;
+            m_recoilOffsetY = 0.0f;
+        } else {
+            float progress = m_recoilTimer / RECOIL_DURATION;
+            float easingFactor = 1.0f - powf(1.0f - progress, 3.0f);
+            float currentStrength = (1.0f - easingFactor);
+            
+            float aimRad = m_lastShotAimDeg * 3.14159265f / 180.0f;
+            float angleWorld = m_recoilFaceSign * aimRad;
+            float muzzleX = cosf(angleWorld);
+            float muzzleY = sinf(angleWorld);
+            m_recoilOffsetX = muzzleX * RECOIL_STRENGTH * currentStrength;
+            m_recoilOffsetY = muzzleY * RECOIL_STRENGTH * currentStrength;
+        }
+    }
 }
 
 void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
@@ -108,18 +129,33 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    if (m_gunMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+    if ((m_gunMode || m_recoilActive) && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
-        if (movement && movement->IsFacingLeft()) {
+        
+        bool shouldFlipUV = m_gunMode ? 
+                           (movement && movement->IsFacingLeft()) : 
+                           (m_recoilFaceSign < 0.0f);
+        if (shouldFlipUV) {
             std::swap(u0, u1);
         }
         m_topObject->SetCustomUV(u0, v0, u1, v1);
         Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
-        float offsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
-        m_topObject->SetPosition(position.x + offsetX, position.y + m_topOffsetY, position.z);
-        float faceSign = (movement && movement->IsFacingLeft()) ? -1.0f : 1.0f;
-        m_topObject->SetRotation(0.0f, 0.0f, faceSign * m_aimAngleDeg * 3.14159265f / 180.0f);
+        
+        bool isLeftFacing = m_gunMode ? 
+                           (movement && movement->IsFacingLeft()) : 
+                           (m_recoilFaceSign < 0.0f);
+        float offsetX = isLeftFacing ? -m_topOffsetX : m_topOffsetX;
+        
+        float finalOffsetX = offsetX + m_recoilOffsetX;
+        float finalOffsetY = m_topOffsetY + m_recoilOffsetY;
+        m_topObject->SetPosition(position.x + finalOffsetX, position.y + finalOffsetY, position.z);
+        
+        float faceSign = m_gunMode ? 
+                        ((movement && movement->IsFacingLeft()) ? -1.0f : 1.0f) : 
+                        m_recoilFaceSign;
+        float aimAngle = m_gunMode ? m_aimAngleDeg : m_lastShotAimDeg;
+        m_topObject->SetRotation(0.0f, 0.0f, faceSign * aimAngle * 3.14159265f / 180.0f);
         if (camera) {
             m_topObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
@@ -501,7 +537,21 @@ void CharacterAnimation::HandleGunAim(const bool* keyStates, const PlayerInputCo
     this->m_prevAimDown = downHeld;
 }
 
-void CharacterAnimation::OnGunShotFired() {
+void CharacterAnimation::OnGunShotFired(CharacterMovement* movement) {
     m_lastShotAimDeg = m_aimAngleDeg;
     m_lastShotTickMs = SDL_GetTicks();
+    
+    m_recoilActive = true;
+    m_recoilTimer = 0.0f;
+    
+    m_recoilFaceSign = (movement && movement->IsFacingLeft()) ? -1.0f : 1.0f;
+    
+    float aimRad = m_aimAngleDeg * 3.14159265f / 180.0f;
+    float angleWorld = m_recoilFaceSign * aimRad;
+    
+    float muzzleX = cosf(angleWorld);
+    float muzzleY = sinf(angleWorld);
+    
+    m_recoilOffsetX = muzzleX * RECOIL_STRENGTH;
+    m_recoilOffsetY = muzzleY * RECOIL_STRENGTH;
 }
