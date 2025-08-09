@@ -282,6 +282,8 @@ void GSPlay::Update(float deltaTime) {
     
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
+    UpdateBullets(deltaTime);
+    TryCompletePendingShots();
     UpdateHudWeapons();
     
     if (m_player.CheckHitboxCollision(m_player2)) {
@@ -352,6 +354,7 @@ void GSPlay::Draw() {
 
     // Draw HUD portraits with independent UVs
     DrawHudPortraits();
+    if (cam) { DrawBullets(cam); }
     
     static float lastPosX = m_player.GetPosition().x;
     static int lastAnim = m_player.GetCurrentAnimation();
@@ -499,14 +502,28 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == 'M' || key == 'm') {
-        bool enable = bIsPressed && !m_player2.IsJumping();
-        m_player2.SetGunMode(enable);
-        m_player2.GetMovement()->SetInputLocked(enable);
+        bool was = m_player2.IsGunMode();
+        if (bIsPressed) {
+            if (!m_player2.IsJumping()) {
+                m_player2.SetGunMode(true);
+                m_player2.GetMovement()->SetInputLocked(true);
+                if (!was) { m_p2ShotPending = false; m_p2GunStartTime = m_gameTime; }
+            }
+        } else {
+            if (was) { m_p2ShotPending = true; }
+        }
     }
     if (key == '2') {
-        bool enable = bIsPressed && !m_player.IsJumping();
-        m_player.SetGunMode(enable);
-        m_player.GetMovement()->SetInputLocked(enable);
+        bool was = m_player.IsGunMode();
+        if (bIsPressed) {
+            if (!m_player.IsJumping()) {
+                m_player.SetGunMode(true);
+                m_player.GetMovement()->SetInputLocked(true);
+                if (!was) { m_p1ShotPending = false; m_p1GunStartTime = m_gameTime; }
+            }
+        } else {
+            if (was) { m_p1ShotPending = true; }
+        }
     }
     
     if (!bIsPressed) return;
@@ -550,6 +567,87 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             s_showTeleportBoxes = !s_showTeleportBoxes;
             break;
     }
+}
+
+void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
+    Vector3 spawn = ch.GetPosition();
+    spawn.x += ch.IsFacingLeft() ? -BULLET_SPAWN_OFFSET_X : BULLET_SPAWN_OFFSET_X;
+    spawn.y += BULLET_SPAWN_OFFSET_Y;
+    bool left = ch.IsFacingLeft();
+    Vector3 dir = left ? Vector3(-1.0f, 0.0f, 0.0f) : Vector3(1.0f, 0.0f, 0.0f);
+    int slot = CreateOrAcquireBulletObject();
+    Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED; b.life = BULLET_LIFETIME; b.objIndex = slot;
+    m_bullets.push_back(b);
+}
+
+void GSPlay::UpdateBullets(float dt) {
+    // Update all bullets
+    for (auto it = m_bullets.begin(); it != m_bullets.end(); ) {
+        it->life -= dt;
+        it->x += it->vx * dt;
+        it->y += it->vy * dt;
+        if (it->life <= 0.0f) {
+            // release object back to pool
+            if (it->objIndex >= 0 && it->objIndex < (int)m_bulletObjs.size() && m_bulletObjs[it->objIndex]) {
+                m_freeBulletSlots.push_back(it->objIndex);
+                m_bulletObjs[it->objIndex]->SetVisible(false);
+            }
+            it = m_bullets.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+int GSPlay::CreateOrAcquireBulletObject() {
+    // reuse slot if available
+    if (!m_freeBulletSlots.empty()) {
+        int idx = m_freeBulletSlots.back();
+        m_freeBulletSlots.pop_back();
+        if (m_bulletObjs[idx]) {
+            m_bulletObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* proto = scene->GetObject(m_bulletObjectId);
+    std::unique_ptr<Object> obj = std::make_unique<Object>(20000 + (int)m_bulletObjs.size());
+    if (proto) {
+        obj->SetModel(proto->GetModelId());
+        const std::vector<int>& texIds = proto->GetTextureIds();
+        if (!texIds.empty()) obj->SetTexture(texIds[0], 0);
+        obj->SetShader(proto->GetShaderId());
+        obj->SetScale(proto->GetScale());
+    }
+    obj->SetVisible(true);
+    m_bulletObjs.push_back(std::move(obj));
+    return (int)m_bulletObjs.size() - 1;
+}
+
+void GSPlay::DrawBullets(Camera* cam) {
+    for (const Bullet& b : m_bullets) {
+        int idx = b.objIndex;
+        if (idx >= 0 && idx < (int)m_bulletObjs.size() && m_bulletObjs[idx]) {
+            m_bulletObjs[idx]->SetPosition(b.x, b.y, 0.0f);
+            m_bulletObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
+    }
+}
+
+void GSPlay::TryCompletePendingShots() {
+    auto tryFinish = [&](Character& ch, bool& pendingFlag, float& startTime){
+        if (!pendingFlag) return;
+        // Require minimum time for anim0 + anim1 display
+        float elapsed = m_gameTime - startTime;
+        if (elapsed < GetGunRequiredTime()) return;
+        // Fire then exit gun mode
+        SpawnBulletFromCharacter(ch);
+        pendingFlag = false;
+        ch.SetGunMode(false);
+        ch.GetMovement()->SetInputLocked(false);
+    };
+    tryFinish(m_player,  m_p1ShotPending, m_p1GunStartTime);
+    tryFinish(m_player2, m_p2ShotPending, m_p2GunStartTime);
 }
 
 static float MousePixelToWorldX(int x, Camera* cam) {

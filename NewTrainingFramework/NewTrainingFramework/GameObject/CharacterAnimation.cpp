@@ -126,6 +126,12 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
     }
 }
 
+Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) const {
+    Vector3 base = movement ? movement->GetPosition() : Vector3(0, 0, 0);
+    float offsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
+    return Vector3(base.x + offsetX, base.y + m_topOffsetY, base.z);
+}
+
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement || !combat) return;
 

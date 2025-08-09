@@ -77,6 +77,9 @@ public:
     int GetCurrentAnimation() const;
     bool IsAnimationPlaying() const;
     void GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const;
+    // Gun helpers
+    Vector3 GetTopWorldPosition(CharacterMovement* movement) const;
+    float GetAimAngleDeg() const { return m_aimAngleDeg; }
     
     // Getters
     int GetObjectId() const { return m_objectId; }
