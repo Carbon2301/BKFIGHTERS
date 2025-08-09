@@ -56,6 +56,11 @@ private:
     unsigned int m_lastAimTickMs = 0;
     unsigned int m_aimHoldBlockUntilMs = 0;
 
+    // Sticky aim after shot
+    float m_lastShotAimDeg = 0.0f;
+    unsigned int m_lastShotTickMs = 0;
+    static constexpr unsigned int STICKY_AIM_WINDOW_MS = 500;
+
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
 
@@ -93,6 +98,8 @@ public:
     void SetGunMode(bool enabled);
     bool IsGunMode() const { return m_gunMode; }
     void SetTopOffset(float ox, float oy) { m_topOffsetX = ox; m_topOffsetY = oy; }
+
+    void OnGunShotFired();
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);

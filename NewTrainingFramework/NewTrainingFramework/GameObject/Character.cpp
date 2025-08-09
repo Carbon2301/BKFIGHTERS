@@ -429,3 +429,9 @@ float Character::GetAimAngleDeg() const {
     }
     return 0.0f;
 }
+
+void Character::MarkGunShotFired() {
+    if (m_animation) {
+        m_animation->OnGunShotFired();
+    }
+}

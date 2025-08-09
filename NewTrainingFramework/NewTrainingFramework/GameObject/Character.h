@@ -134,5 +134,6 @@ public:
      // Gun helpers
      Vector3 GetGunTopWorldPosition() const;
      float GetAimAngleDeg() const;
+     void MarkGunShotFired();
 
 }; 

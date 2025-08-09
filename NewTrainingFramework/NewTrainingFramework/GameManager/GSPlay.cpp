@@ -686,6 +686,7 @@ void GSPlay::TryCompletePendingShots() {
         if (elapsed < GetGunRequiredTime()) return;
         // Fire then exit gun mode
         SpawnBulletFromCharacter(ch);
+        ch.MarkGunShotFired();
         pendingFlag = false;
         ch.SetGunMode(false);
         ch.GetMovement()->SetInputLocked(false);

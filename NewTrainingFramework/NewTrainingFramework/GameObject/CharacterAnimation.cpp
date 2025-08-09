@@ -399,12 +399,17 @@ bool CharacterAnimation::IsFacingLeft(CharacterMovement* movement) const {
 
 void CharacterAnimation::SetGunMode(bool enabled) {
     if (enabled && !m_gunMode) {
-        m_aimAngleDeg = 0.0f;
+        unsigned int nowMsEnter = SDL_GetTicks();
+        if (m_lastShotTickMs != 0 && (nowMsEnter - m_lastShotTickMs) <= STICKY_AIM_WINDOW_MS) {
+            m_aimAngleDeg = m_lastShotAimDeg;
+        } else {
+            m_aimAngleDeg = 0.0f;
+        }
         m_prevAimUp = m_prevAimDown = false;
         m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
         m_aimSincePressUp = m_aimSincePressDown = 0.0f;
         m_gunEntering = true;
-        m_gunEnterStartMs = SDL_GetTicks();
+        m_gunEnterStartMs = nowMsEnter;
         m_syncFacingOnEnter = true;
         m_aimHoldBlockUntilMs = m_gunEnterStartMs + (unsigned int)(AIM_HOLD_INITIAL_DELAY * 1000.0f);
         m_lastAimTickMs = m_gunEnterStartMs;
@@ -494,4 +499,9 @@ void CharacterAnimation::HandleGunAim(const bool* keyStates, const PlayerInputCo
 
     this->m_prevAimUp = upHeld;
     this->m_prevAimDown = downHeld;
+}
+
+void CharacterAnimation::OnGunShotFired() {
+    m_lastShotAimDeg = m_aimAngleDeg;
+    m_lastShotTickMs = SDL_GetTicks();
 }
