@@ -178,6 +178,10 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
     if (!keyStates) {
         return;
     }
+    // If inputs are locked (e.g., gun mode), completely disable jumping logic
+    if (m_inputLocked) {
+        return;
+    }
     
     if (keyStates[m_inputConfig.jumpKey]) {
         if (!m_isJumping && (m_posY <= m_groundY + 0.01f || m_isOnPlatform)) {

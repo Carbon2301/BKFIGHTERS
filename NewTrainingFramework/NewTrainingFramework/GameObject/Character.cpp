@@ -61,6 +61,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     if (m_movement && m_combat) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+        if (m_animation && m_animation->IsGunMode()) lock = true;
         m_movement->SetInputLocked(lock);
     }
     
@@ -73,6 +74,14 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         if (inputManager->IsKeyJustPressed('M')) {
             bool enable = !m_animation->IsGunMode();
             m_animation->SetGunMode(enable);
+            // Lock all movement when entering gun mode; unlock when leaving
+            if (m_movement) {
+                bool lock = enable;
+                if (!lock && m_combat) {
+                    lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+                }
+                m_movement->SetInputLocked(lock);
+            }
         }
         m_animation->HandleMovementAnimations(keyStates, m_movement.get(), m_combat.get());
     }
@@ -104,6 +113,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     }
     if (m_movement && m_combat) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+        if (m_animation && m_animation->IsGunMode()) lock = true;
         m_movement->SetInputLocked(lock);
     }
 }

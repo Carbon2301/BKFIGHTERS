@@ -7,6 +7,7 @@ class AnimationManager;
 class Camera;
 class Object;
 class CharacterMovement;
+struct PlayerInputConfig; // forward declaration for input config used in method signatures
 class CharacterCombat;
 
 class CharacterAnimation {
@@ -21,8 +22,8 @@ private:
     std::unique_ptr<class Object> m_topObject;          // separate object drawn on top
     int m_lastTopAnimation = -1;
     bool m_gunMode = false; // when true: force body anim 29 and top anim pistol (1)
-    float m_topOffsetX = -0.02f; // alignment tweak (default)
-    float m_topOffsetY = -0.02f; // alignment tweak (default)
+    float m_topOffsetX = -0.025f; // alignment tweak (default)
+    float m_topOffsetY = -0.025f; // alignment tweak (default)
 
     // Leo thang: điều khiển frame step-by-step
     float m_climbHoldTimer = 0.0f;
@@ -41,6 +42,18 @@ private:
     static constexpr float TURN_DURATION = 0.18f; // seconds: 1 frame transition
     bool m_turnInitialLeft = false;
     bool m_prevFacingLeft = false; // committed facing (before a new turn)
+
+    // Aim control (up/down) when in gun mode
+    float m_aimAngleDeg = 0.0f;  // -90 .. +90
+    bool m_prevAimUp = false;
+    bool m_prevAimDown = false;
+    float m_aimHoldTimerUp = 0.0f;
+    float m_aimHoldTimerDown = 0.0f;
+    static constexpr float AIM_HOLD_STEP_INTERVAL = 0.03f; // ~30 steps/sec => 180° in ~1s
+    static constexpr float AIM_HOLD_INITIAL_DELAY = 0.10f;  // short delay before auto-repeat
+    float m_aimSincePressUp = 0.0f;
+    float m_aimSincePressDown = 0.0f;
+    unsigned int m_lastAimTickMs = 0; // SDL_GetTicks snapshot for dt while aiming
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
@@ -79,4 +92,5 @@ public:
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);
+    void HandleGunAim(const bool* keyStates, const PlayerInputConfig& inputConfig);
 }; 
