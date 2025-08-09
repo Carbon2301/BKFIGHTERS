@@ -54,6 +54,7 @@ private:
     float m_aimSincePressUp = 0.0f;
     float m_aimSincePressDown = 0.0f;
     unsigned int m_lastAimTickMs = 0;
+    unsigned int m_aimHoldBlockUntilMs = 0;
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);

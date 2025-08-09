@@ -406,6 +406,8 @@ void CharacterAnimation::SetGunMode(bool enabled) {
         m_gunEntering = true;
         m_gunEnterStartMs = SDL_GetTicks();
         m_syncFacingOnEnter = true;
+        m_aimHoldBlockUntilMs = m_gunEnterStartMs + (unsigned int)(AIM_HOLD_INITIAL_DELAY * 1000.0f);
+        m_lastAimTickMs = m_gunEnterStartMs;
     }
     m_gunMode = enabled;
 }
@@ -438,6 +440,8 @@ void CharacterAnimation::HandleGunAim(const bool* keyStates, const PlayerInputCo
     } else {
         unsigned int diff = nowMs - m_lastAimTickMs;
         dt = diff / 1000.0f;
+        if (dt > 0.05f) dt = 0.05f;
+        if (dt < 0.0f) dt = 0.0f;
     }
     m_lastAimTickMs = nowMs;
 
@@ -446,16 +450,21 @@ void CharacterAnimation::HandleGunAim(const bool* keyStates, const PlayerInputCo
     bool upJust = upHeld && !this->m_prevAimUp;
     bool downJust = downHeld && !this->m_prevAimDown;
 
-    if (upJust) {
+    if (upJust && nowMs >= m_aimHoldBlockUntilMs) {
         this->m_aimAngleDeg = ClampFloat(this->m_aimAngleDeg + 6.0f, -90.0f, 90.0f);
         m_aimSincePressUp = 0.0f;
     }
-    if (downJust) {
+    if (downJust && nowMs >= m_aimHoldBlockUntilMs) {
         this->m_aimAngleDeg = ClampFloat(this->m_aimAngleDeg - 6.0f, -90.0f, 90.0f);
         m_aimSincePressDown = 0.0f;
     }
 
-    if (upHeld) {
+    if (upJust && downJust) {
+        m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+        m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+    }
+
+    if (upHeld && nowMs >= m_aimHoldBlockUntilMs) {
         m_aimSincePressUp += dt;
         if (m_aimSincePressUp >= AIM_HOLD_INITIAL_DELAY) {
             m_aimHoldTimerUp += dt;
@@ -469,7 +478,7 @@ void CharacterAnimation::HandleGunAim(const bool* keyStates, const PlayerInputCo
         m_aimSincePressUp = 0.0f;
     }
 
-    if (downHeld) {
+    if (downHeld && nowMs >= m_aimHoldBlockUntilMs) {
         m_aimSincePressDown += dt;
         if (m_aimSincePressDown >= AIM_HOLD_INITIAL_DELAY) {
             m_aimHoldTimerDown += dt;
