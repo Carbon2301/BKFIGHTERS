@@ -178,7 +178,6 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
     if (!keyStates) {
         return;
     }
-    // If inputs are locked (e.g., gun mode), completely disable jumping logic
     if (m_inputLocked) {
         return;
     }
@@ -415,7 +414,6 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
     
     Vector3 currentPos(m_posX, m_posY, 0.0f);
     
-    // Ưu tiên xử lý ladder trước
     bool handledLadder = HandleLadderWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
     if (!handledLadder) {
         HandleMovement(deltaTime, keyStates);
@@ -423,7 +421,6 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
     }
     HandleLandingWithHurtbox(keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
     
-    // Teleport detection
     if (m_teleportCollision) {
         const float TELEPORT_LOCK_DURATION = 0.25f;
         if (m_teleportLockTimer > 0.0f) {
@@ -490,7 +487,6 @@ bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* key
     }
     if (!m_ladderCollision) return false;
 
-    // Kiểm tra overlap nếu chưa ở trên ladder
     if (!m_isOnLadder) {
         float cx, top, bottom;
         bool overlapped = m_ladderCollision->CheckLadderOverlapWithHurtbox(
@@ -537,15 +533,13 @@ bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* key
                 m_ladderCenterX = cx;
                 m_ladderTop = top;
                 m_ladderBottom = bottom;
-                m_isJumping = false;      // vô hiệu hóa nhảy
+                m_isJumping = false;
                 m_jumpVelocity = 0.0f;
-                m_isOnPlatform = false;   // rời platform
-                // reset bộ đếm sau khi đã vào thang
+                m_isOnPlatform = false;
                 m_upTapCountForLadder = 0;
                 m_downTapCountForLadder = 0;
             }
 
-            // Cập nhật previous cho lần sau
             m_prevUpKey = upKey;
             m_prevDownKeyForLadder = downKey;
         }
@@ -555,18 +549,15 @@ bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* key
         return false;
     }
 
-    // Khi đang trên ladder
     const PlayerInputConfig& input = GetInputConfig();
     bool upHeld = keyStates[input.jumpKey];
     bool downHeld = keyStates[input.sitKey];
     bool leftHeld = keyStates[input.moveLeftKey];
     bool rightHeld = keyStates[input.moveRightKey];
 
-    // Nếu không có input trái/phải, khóa X vào tâm thang để leo thẳng đứng
     if (!leftHeld && !rightHeld) {
         m_posX = m_ladderCenterX;
     }
-    // Cho phép di chuyển ngang để rời thang
     if (leftHeld) {
         m_facingLeft = true;
         m_state = CharState::MoveLeft;
@@ -579,13 +570,12 @@ bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* key
 
     if (upHeld) {
         m_posY += CLIMB_SPEED * deltaTime;
-        if (m_posY > m_ladderTop) m_posY = m_ladderTop; // chạm đỉnh
+        if (m_posY > m_ladderTop) m_posY = m_ladderTop;
     } else if (downHeld) {
-        m_posY -= CLIMB_DOWN_SPEED * deltaTime; // xuống nhanh hơn
-        if (m_posY < m_ladderBottom) m_posY = m_ladderBottom; // chạm đáy
+        m_posY -= CLIMB_DOWN_SPEED * deltaTime;
+        if (m_posY < m_ladderBottom) m_posY = m_ladderBottom;
     }
 
-    // Nếu đang nhấn xuống và đáy hurtbox đã thấp hơn đáy ladder, thoát thang và rơi tự do
     if (downHeld) {
         const float hurtboxBottom = (m_posY + hurtboxOffsetY) - hurtboxHeight * 0.5f;
         const float eps = 0.0005f;
@@ -712,7 +702,7 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
             m_wasJumping = true;
             m_isOnPlatform = false;
             m_currentPlatformY = m_groundY;
-            m_isFallingThroughPlatform = false; // Reset trạng thái khi chạm đất
+            m_isFallingThroughPlatform = false;
             
             if (!keyStates[inputConfig.moveLeftKey] && !keyStates[inputConfig.moveRightKey]) {
                 m_state = CharState::Idle;
@@ -725,7 +715,6 @@ void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hu
     if (!m_isJumping) {
         float newY = m_posY;
         bool onPlatform = !m_isFallingThroughPlatform && CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
-        // Fallback bám bệ di chuyển nếu kiểm tra chuẩn bị trượt do epsilon nhỏ
         if (!onPlatform && !m_isFallingThroughPlatform && m_currentMovingPlatformId != -1) {
             Object* platformObj = SceneManager::GetInstance()->GetObject(m_currentMovingPlatformId);
             if (platformObj) {
@@ -741,7 +730,6 @@ void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hu
                 float hurtboxBottom = m_posY + hurtboxOffsetY - hurtboxHeight * 0.5f;
 
                 bool horizontalOverlap = (hurtboxRight > platformLeft && hurtboxLeft < platformRight);
-                // Cho phép dung sai lớn khi bệ di chuyển (tránh trượt do bước thời gian)
                 const float stickMargin = 0.05f;
                 bool closeToTop = (hurtboxBottom >= platformTop - stickMargin && hurtboxBottom <= platformTop + stickMargin);
                 if (horizontalOverlap && closeToTop) {
@@ -765,7 +753,6 @@ void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hu
         } else if (onPlatform) {
             m_posY = newY;
             m_isOnPlatform = true;
-            // Nếu đang đứng trên bệ nâng di chuyển, bám theo chuyển động của bệ theo frame
             if (m_currentMovingPlatformId != -1) {
                 Object* platformObj = SceneManager::GetInstance()->GetObject(m_currentMovingPlatformId);
                 if (platformObj) {

@@ -7,7 +7,7 @@ class AnimationManager;
 class Camera;
 class Object;
 class CharacterMovement;
-struct PlayerInputConfig; // forward declaration for input config used in method signatures
+struct PlayerInputConfig;
 class CharacterCombat;
 
 class CharacterAnimation {
@@ -17,43 +17,43 @@ private:
     int m_lastAnimation;
     int m_objectId;
 
-    // Top overlay (head/weapon) layer
-    std::shared_ptr<AnimationManager> m_topAnimManager; // animations for head/weapon (e.g., ID 9)
-    std::unique_ptr<class Object> m_topObject;          // separate object drawn on top
+    std::shared_ptr<AnimationManager> m_topAnimManager;
+    std::unique_ptr<class Object> m_topObject;
     int m_lastTopAnimation = -1;
-    bool m_gunMode = false; // when true: force body anim 29 and top anim pistol (1)
-    float m_topOffsetX = -0.025f; // alignment tweak (default)
-    float m_topOffsetY = -0.025f; // alignment tweak (default)
+    bool m_gunMode = false;
+    bool m_gunEntering = false;
+    unsigned int m_gunEnterStartMs = 0;
+    static constexpr float GUN_ENTER_DURATION = 0.12f;
+    bool m_syncFacingOnEnter = false;
+    float m_topOffsetX = -0.019f;
+    float m_topOffsetY = -0.025f;
 
-    // Leo thang: điều khiển frame step-by-step
     float m_climbHoldTimer = 0.0f;
-    static constexpr float CLIMB_HOLD_STEP_INTERVAL = 0.12f; // giữ phím: tốc độ chuyển frame liên tục
-    int m_lastClimbDir = 0; // 1: lên, -1: xuống, 0: đứng yên
+    static constexpr float CLIMB_HOLD_STEP_INTERVAL = 0.12f;
+    int m_lastClimbDir = 0;
     bool m_prevClimbUpPressed = false;
     bool m_prevClimbDownPressed = false;
-    // Phân biệt nhấn-nhả vs giữ khi đi xuống
-    float m_downPressStartTime = -1.0f; // giây
-    static constexpr float CLIMB_DOWN_HOLD_THRESHOLD = 0.15f; // > 150ms coi như giữ
+    float m_downPressStartTime = -1.0f;
+    static constexpr float CLIMB_DOWN_HOLD_THRESHOLD = 0.15f;
 
     // Turning control for gun mode
     bool m_isTurning = false;
     bool m_turnTargetLeft = false;
     float m_turnTimer = 0.0f;
-    static constexpr float TURN_DURATION = 0.18f; // seconds: 1 frame transition
+    static constexpr float TURN_DURATION = 0.12f;
     bool m_turnInitialLeft = false;
-    bool m_prevFacingLeft = false; // committed facing (before a new turn)
+    bool m_prevFacingLeft = false;
 
-    // Aim control (up/down) when in gun mode
-    float m_aimAngleDeg = 0.0f;  // -90 .. +90
+    float m_aimAngleDeg = 0.0f;
     bool m_prevAimUp = false;
     bool m_prevAimDown = false;
     float m_aimHoldTimerUp = 0.0f;
     float m_aimHoldTimerDown = 0.0f;
-    static constexpr float AIM_HOLD_STEP_INTERVAL = 0.03f; // ~30 steps/sec => 180° in ~1s
-    static constexpr float AIM_HOLD_INITIAL_DELAY = 0.10f;  // short delay before auto-repeat
+    static constexpr float AIM_HOLD_STEP_INTERVAL = 0.03f;
+    static constexpr float AIM_HOLD_INITIAL_DELAY = 0.10f;
     float m_aimSincePressUp = 0.0f;
     float m_aimSincePressDown = 0.0f;
-    unsigned int m_lastAimTickMs = 0; // SDL_GetTicks snapshot for dt while aiming
+    unsigned int m_lastAimTickMs = 0;
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
@@ -86,7 +86,7 @@ public:
     bool IsFacingLeft(CharacterMovement* movement) const;
 
     // Gun/overlay control
-    void SetGunMode(bool enabled) { m_gunMode = enabled; }
+    void SetGunMode(bool enabled);
     bool IsGunMode() const { return m_gunMode; }
     void SetTopOffset(float ox, float oy) { m_topOffsetX = ox; m_topOffsetY = oy; }
 

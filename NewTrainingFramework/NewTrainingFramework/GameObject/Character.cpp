@@ -24,6 +24,15 @@ Character::Character()
 
 Character::~Character() {
 }
+void Character::SetGunMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetGunMode(enabled);
+    }
+}
+
+bool Character::IsGunMode() const {
+    return m_animation ? m_animation->IsGunMode() : false;
+}
 
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
@@ -62,6 +71,9 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (m_movement && m_combat) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
         if (m_animation && m_animation->IsGunMode()) lock = true;
+        if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
+            m_movement->ForceSit(false);
+        }
         m_movement->SetInputLocked(lock);
     }
     
@@ -70,19 +82,6 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
                                   GetHurtboxOffsetX(), GetHurtboxOffsetY());
     
     if (m_animation) {
-        // Toggle gun mode with key 'M'
-        if (inputManager->IsKeyJustPressed('M')) {
-            bool enable = !m_animation->IsGunMode();
-            m_animation->SetGunMode(enable);
-            // Lock all movement when entering gun mode; unlock when leaving
-            if (m_movement) {
-                bool lock = enable;
-                if (!lock && m_combat) {
-                    lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
-                }
-                m_movement->SetInputLocked(lock);
-            }
-        }
         m_animation->HandleMovementAnimations(keyStates, m_movement.get(), m_combat.get());
     }
     

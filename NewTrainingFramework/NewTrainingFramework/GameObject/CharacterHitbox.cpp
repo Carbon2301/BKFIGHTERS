@@ -10,8 +10,8 @@ CharacterHitbox::CharacterHitbox()
     : m_hurtboxWidth(0.0f), m_hurtboxHeight(0.0f), 
       m_hurtboxOffsetX(0.0f), m_hurtboxOffsetY(0.0f), m_character(nullptr) {
     
-    m_hitboxObject = std::make_unique<Object>(-1); // Use -1 as ID for hitbox
-    m_hurtboxObject = std::make_unique<Object>(-2); // Use -2 as ID for hurtbox
+    m_hitboxObject = std::make_unique<Object>(-1);
+    m_hurtboxObject = std::make_unique<Object>(-2);
 }
 
 CharacterHitbox::~CharacterHitbox() {

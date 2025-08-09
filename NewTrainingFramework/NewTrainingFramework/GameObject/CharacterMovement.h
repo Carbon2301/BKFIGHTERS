@@ -42,22 +42,18 @@ struct PlayerInputConfig {
 
 class CharacterMovement {
 private:
-    // Position and state
     float m_posX, m_posY;
     float m_groundY;
     bool m_facingLeft;
     CharState m_state;
     
-    // Jump properties
     bool m_isJumping;
     float m_jumpVelocity;
     float m_jumpStartY;
     bool m_wasJumping;
     
-    // Sitting state
     bool m_isSitting;
     
-    // Die state
     bool m_isDying;
     bool m_isDead;
     float m_dieTimer;
@@ -68,17 +64,15 @@ private:
     bool m_dieLanded = false;
     float m_dieVerticalVelocity = 0.0f;
     
-    // Input configuration
     PlayerInputConfig m_inputConfig;
 
-    // Double-tap cho chạy nhanh
     float m_lastLeftPressTime = -1.0f;
     float m_lastRightPressTime = -1.0f;
     bool m_isRunningLeft = false;
     bool m_isRunningRight = false;
     bool m_prevLeftKey = false;
     bool m_prevRightKey = false;
-    static constexpr float DOUBLE_TAP_THRESHOLD = 0.2f; // 200ms
+    static constexpr float DOUBLE_TAP_THRESHOLD = 0.2f;
 
     // Double-tap xuống platform
     float m_lastDownPressTime = -1.0f;
@@ -86,7 +80,7 @@ private:
     bool m_prevUpKey = false;
     bool m_isFallingThroughPlatform = false;
     float m_fallThroughTimer = 0.0f;
-    static constexpr float FALL_THROUGH_DURATION = 0.5f; // 500ms để rơi xuyên platform
+    static constexpr float FALL_THROUGH_DURATION = 0.5f;
     
     // Double-tap vào thang khi đang đứng đất và thấp hơn đáy thang
     float m_lastUpTapTimeForLadder = -1.0f;
@@ -163,6 +157,7 @@ public:
     CharState GetState() const { return m_state; }
     bool IsJumping() const { return m_isJumping; }
     bool IsSitting() const { return m_isSitting; }
+    void ForceSit(bool sit) { m_isSitting = sit; }
     bool IsDying() const { return m_isDying; }
     bool IsDead() const { return m_isDead; }
     float GetDieTimer() const { return m_dieTimer; }

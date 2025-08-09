@@ -37,9 +37,10 @@ public:
     Character();
     ~Character();
     
-    // Initialization
     void Initialize(std::shared_ptr<AnimationManager> animManager, int objectId);
     void SetInputConfig(const PlayerInputConfig& config);
+    void SetGunMode(bool enabled);
+    bool IsGunMode() const;
     
     // Core update
     void Update(float deltaTime);

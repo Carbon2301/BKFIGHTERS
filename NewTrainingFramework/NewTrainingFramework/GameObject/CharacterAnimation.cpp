@@ -80,10 +80,8 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
     if (m_gunMode && movement && m_isTurning) {
         m_turnTimer += deltaTime;
         if (m_turnTimer >= TURN_DURATION) {
-            // Turn finished
             m_isTurning = false;
             m_prevFacingLeft = m_turnTargetLeft;
-            // Commit facing to movement even when inputs are locked
             movement->SetFacingLeft(m_turnTargetLeft);
             PlayTopAnimation(1, true);
         }
@@ -110,7 +108,6 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    // Draw top overlay (aligned center with body) only in gun mode
     if (m_gunMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
@@ -119,10 +116,8 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
         m_topObject->SetCustomUV(u0, v0, u1, v1);
         Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
-        // Mirror X offset when facing left so overlay aligns in both directions
         float offsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
         m_topObject->SetPosition(position.x + offsetX, position.y + m_topOffsetY, position.z);
-        // Apply aim rotation: when facing left, rotation needs to be mirrored
         float faceSign = (movement && movement->IsFacingLeft()) ? -1.0f : 1.0f;
         m_topObject->SetRotation(0.0f, 0.0f, faceSign * m_aimAngleDeg * 3.14159265f / 180.0f);
         if (camera) {
@@ -200,11 +195,11 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
 
-    // Gun overlay mode: lock body to Body Shoot (29) and top to Pistol (1)
     if (m_gunMode) {
-        // Handle up/down aiming by 6 degrees per key press
-        HandleGunAim(keyStates, movement->GetInputConfig());
-        // Start turn when player presses opposite direction relative to committed facing
+        if (m_syncFacingOnEnter) {
+            m_prevFacingLeft = movement->IsFacingLeft();
+            m_syncFacingOnEnter = false;
+        }
         bool facingLeft = m_prevFacingLeft;
         const PlayerInputConfig& ic = movement->GetInputConfig();
         bool wantLeft = keyStates[ic.moveLeftKey];
@@ -214,28 +209,40 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
                 m_turnTargetLeft = true;
                 m_isTurning = true;
                 m_turnTimer = 0.0f;
+                m_aimAngleDeg = 0.0f;
+                m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+                m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+                m_prevAimUp = m_prevAimDown = false;
                 PlayTopAnimation(0, false);
             } else if (wantRight && facingLeft) {
                 m_turnTargetLeft = false;
                 m_isTurning = true;
                 m_turnTimer = 0.0f;
+                m_aimAngleDeg = 0.0f;
+                m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+                m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+                m_prevAimUp = m_prevAimDown = false;
                 PlayTopAnimation(0, false);
             }
         }
 
-        // Step A: show reverse frame (anim 0) while turning
-        if (m_isTurning) {
-            // Ensure we play the correct reverse frame: if currently facing right -> anim 0 (reverse pistol right)
-            // If currently facing left -> still use anim 0 since spritesheet reverse is mirrored by UV flip
+        if (m_isTurning || m_gunEntering) {
             PlayTopAnimation(0, false);
             PlayAnimation(29, true);
+            if (m_gunEntering) {
+                unsigned int nowMs = SDL_GetTicks();
+                float elapsed = (nowMs - m_gunEnterStartMs) / 1000.0f;
+                if (elapsed >= GUN_ENTER_DURATION) {
+                    m_gunEntering = false;
+                }
+            }
             return;
         }
 
-        // Step B: steady state
+        HandleGunAim(keyStates, movement->GetInputConfig());
+
         PlayAnimation(29, true);
         PlayTopAnimation(1, true);
-        // Keep committed facing as movement's current facing (which we update on turn finish)
         return;
     }
     
@@ -255,7 +262,6 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     }
     
     if (!combat->IsInCombo() && !combat->IsInAxeCombo() && !combat->IsKicking() && !combat->IsHit()) {
-        // Ưu tiên animation leo thang khi đang ở trên ladder
         if (movement->IsOnLadder()) {
             if (GetCurrentAnimation() != 6) {
                 PlayAnimation(6, true);
@@ -273,7 +279,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
                 const AnimationData* anim = m_animManager->GetAnimation(6);
                 if (anim) {
                     int frame = m_animManager->GetCurrentFrame();
-                    frame = (frame + 1) % anim->numFrames; // 1->2->3->4->1
+                    frame = (frame + 1) % anim->numFrames;
                     m_animManager->SetCurrentFrame(frame);
                 }
             }
@@ -282,7 +288,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
                 if (anim) {
                     int frame = m_animManager->GetCurrentFrame();
                     frame = (frame - 1);
-                    if (frame < 0) frame = anim->numFrames - 1; // 4->3->2->1->4
+                    if (frame < 0) frame = anim->numFrames - 1;
                     m_animManager->SetCurrentFrame(frame);
                 }
             }
@@ -385,6 +391,19 @@ bool CharacterAnimation::IsFacingLeft(CharacterMovement* movement) const {
     return movement ? movement->IsFacingLeft() : false;
 } 
 
+void CharacterAnimation::SetGunMode(bool enabled) {
+    if (enabled && !m_gunMode) {
+        m_aimAngleDeg = 0.0f;
+        m_prevAimUp = m_prevAimDown = false;
+        m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+        m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+        m_gunEntering = true;
+        m_gunEnterStartMs = SDL_GetTicks();
+        m_syncFacingOnEnter = true;
+    }
+    m_gunMode = enabled;
+}
+
 void CharacterAnimation::GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const {
     if (m_animManager) {
         m_animManager->GetUV(u0, v0, u1, v1);
@@ -398,16 +417,14 @@ void CharacterAnimation::StartTurn(bool toLeft, bool initialLeft) {
     m_turnTargetLeft = toLeft;
     m_turnTimer = 0.0f;
     m_turnInitialLeft = initialLeft;
-    // Play reverse frame instantly at turn start
     PlayTopAnimation(0, false);
 }
 
 void CharacterAnimation::HandleGunAim(const bool* keyStates, const PlayerInputConfig& inputConfig) {
     if (!keyStates) return;
-    const int aimUpKey = inputConfig.jumpKey;   // W / Up arrow
-    const int aimDownKey = inputConfig.sitKey;  // S / Down arrow
+    const int aimUpKey = inputConfig.jumpKey;
+    const int aimDownKey = inputConfig.sitKey;
 
-    // Compute delta time using SDL ticks for hold stepping
     unsigned int nowMs = SDL_GetTicks();
     float dt = 0.0f;
     if (m_lastAimTickMs == 0) {
@@ -423,17 +440,15 @@ void CharacterAnimation::HandleGunAim(const bool* keyStates, const PlayerInputCo
     bool upJust = upHeld && !this->m_prevAimUp;
     bool downJust = downHeld && !this->m_prevAimDown;
 
-    // Step on press (each press always +6°/-6°)
     if (upJust) {
         this->m_aimAngleDeg = ClampFloat(this->m_aimAngleDeg + 6.0f, -90.0f, 90.0f);
-        m_aimSincePressUp = 0.0f; // reset initial delay timer
+        m_aimSincePressUp = 0.0f;
     }
     if (downJust) {
         this->m_aimAngleDeg = ClampFloat(this->m_aimAngleDeg - 6.0f, -90.0f, 90.0f);
         m_aimSincePressDown = 0.0f;
     }
 
-    // Accumulate timers while holding for repeat steps
     if (upHeld) {
         m_aimSincePressUp += dt;
         if (m_aimSincePressUp >= AIM_HOLD_INITIAL_DELAY) {

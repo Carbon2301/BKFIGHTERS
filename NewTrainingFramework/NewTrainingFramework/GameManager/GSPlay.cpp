@@ -498,6 +498,17 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         m_inputManager->UpdateKeyState(key, bIsPressed);
     }
     
+    if (key == 'M' || key == 'm') {
+        bool enable = bIsPressed && !m_player2.IsJumping();
+        m_player2.SetGunMode(enable);
+        m_player2.GetMovement()->SetInputLocked(enable);
+    }
+    if (key == '2') {
+        bool enable = bIsPressed && !m_player.IsJumping();
+        m_player.SetGunMode(enable);
+        m_player.GetMovement()->SetInputLocked(enable);
+    }
+    
     if (!bIsPressed) return;
     
     switch (key) {
