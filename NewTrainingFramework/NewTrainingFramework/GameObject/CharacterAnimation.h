@@ -16,6 +16,14 @@ private:
     int m_lastAnimation;
     int m_objectId;
 
+    // Top overlay (head/weapon) layer
+    std::shared_ptr<AnimationManager> m_topAnimManager; // animations for head/weapon (e.g., ID 9)
+    std::unique_ptr<class Object> m_topObject;          // separate object drawn on top
+    int m_lastTopAnimation = -1;
+    bool m_gunMode = false; // when true: force body anim 29 and top anim pistol (1)
+    float m_topOffsetX = -0.02f; // temporary alignment tweak: shift head left by 0.02
+    float m_topOffsetY = -0.02f; // temporary alignment tweak: shift head down by 0.02
+
     // Leo thang: điều khiển frame step-by-step
     float m_climbHoldTimer = 0.0f;
     static constexpr float CLIMB_HOLD_STEP_INTERVAL = 0.12f; // giữ phím: tốc độ chuyển frame liên tục
@@ -44,6 +52,7 @@ public:
     
     // Animation control
     void PlayAnimation(int animIndex, bool loop);
+    void PlayTopAnimation(int animIndex, bool loop);
     int GetCurrentAnimation() const;
     bool IsAnimationPlaying() const;
     void GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const;
@@ -54,4 +63,9 @@ public:
     
     // Facing direction (needed for hitbox calculations)
     bool IsFacingLeft(CharacterMovement* movement) const;
+
+    // Gun/overlay control
+    void SetGunMode(bool enabled) { m_gunMode = enabled; }
+    bool IsGunMode() const { return m_gunMode; }
+    void SetTopOffset(float ox, float oy) { m_topOffsetX = ox; m_topOffsetY = oy; }
 }; 

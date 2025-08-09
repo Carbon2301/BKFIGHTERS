@@ -4,6 +4,7 @@
 #include "CharacterCombat.h"
 #include "AnimationManager.h"
 #include "SceneManager.h"
+#include "../GameManager/ResourceManager.h"
 #include "Object.h"
 #include <SDL.h>
 #include <iostream>
@@ -38,12 +39,36 @@ void CharacterAnimation::Initialize(std::shared_ptr<AnimationManager> animManage
     if (m_animManager) {
         m_animManager->Play(0, true);
     }
+
+    // Initialize top overlay (head/weapon) using texture ID 9
+    const TextureData* headTex = ResourceManager::GetInstance()->GetTextureData(9);
+    if (headTex && headTex->spriteWidth > 0 && headTex->spriteHeight > 0) {
+        m_topAnimManager = std::make_shared<AnimationManager>();
+        std::vector<AnimationData> topAnims;
+        topAnims.reserve(headTex->animations.size());
+        for (const auto& a : headTex->animations) {
+            topAnims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_topAnimManager->Initialize(headTex->spriteWidth, headTex->spriteHeight, topAnims);
+        m_topAnimManager->Play(0, true);
+
+        m_topObject = std::make_unique<Object>(objectId + 10000); // unique id for overlay
+        if (originalObj) {
+            m_topObject->SetModel(originalObj->GetModelId());
+            m_topObject->SetShader(originalObj->GetShaderId());
+            m_topObject->SetScale(originalObj->GetScale());
+        }
+        m_topObject->SetTexture(9, 0);
+    }
 }
 
 void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, CharacterCombat* combat) {
     if (m_animManager) {
         m_animManager->Update(deltaTime);
         UpdateAnimationState(movement, combat);
+    }
+    if (m_topAnimManager) {
+        m_topAnimManager->Update(deltaTime);
     }
 }
 
@@ -66,10 +91,32 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
             m_characterObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
+
+    // Draw top overlay (aligned center with body) only in gun mode
+    if (m_gunMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_topAnimManager->GetUV(u0, v0, u1, v1);
+        if (movement && movement->IsFacingLeft()) {
+            std::swap(u0, u1);
+        }
+        m_topObject->SetCustomUV(u0, v0, u1, v1);
+        Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
+        // Mirror X offset when facing left so overlay stays aligned in both directions
+        float mirroredOffsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
+        m_topObject->SetPosition(position.x + mirroredOffsetX, position.y + m_topOffsetY, position.z);
+        if (camera) {
+            m_topObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
 }
 
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement || !combat) return;
+
+    // In gun mode we lock body animation externally (e.g., Body Shoot 29)
+    if (m_gunMode) {
+        return;
+    }
     
     if (movement->IsSitting()) {
         return;
@@ -131,6 +178,19 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
+
+    // Gun overlay mode: lock body to Body Shoot (29) and top to Pistol (1)
+    if (m_gunMode) {
+        PlayAnimation(29, true);
+        if (m_topAnimManager) {
+            if (m_lastTopAnimation != 1) {
+                m_topAnimManager->Play(1, true);
+                m_lastTopAnimation = 1;
+            }
+            m_topAnimManager->Update(0.0f); // ensure UV available immediately
+        }
+        return;
+    }
     
     if (movement->IsDying()) {
         float dieTimer = movement->GetDieTimer();
@@ -253,6 +313,15 @@ void CharacterAnimation::PlayAnimation(int animIndex, bool loop) {
         if (m_lastAnimation != animIndex || allowReplay) {
             m_animManager->Play(animIndex, loop);
             m_lastAnimation = animIndex;
+        }
+    }
+}
+
+void CharacterAnimation::PlayTopAnimation(int animIndex, bool loop) {
+    if (m_topAnimManager) {
+        if (m_lastTopAnimation != animIndex) {
+            m_topAnimManager->Play(animIndex, loop);
+            m_lastTopAnimation = animIndex;
         }
     }
 }

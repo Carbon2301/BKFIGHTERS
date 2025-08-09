@@ -8,6 +8,7 @@
 #include "Object.h"
 #include "Texture2D.h"
 #include "../GameManager/GSPlay.h"
+#include "InputManager.h"
 #include <GLES3/gl3.h>
 #include <iostream>
 #include <cstdlib>
@@ -68,6 +69,11 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
                                   GetHurtboxOffsetX(), GetHurtboxOffsetY());
     
     if (m_animation) {
+        // Toggle gun mode with key 'M'
+        if (inputManager->IsKeyJustPressed('M')) {
+            bool enable = !m_animation->IsGunMode();
+            m_animation->SetGunMode(enable);
+        }
         m_animation->HandleMovementAnimations(keyStates, m_movement.get(), m_combat.get());
     }
     
