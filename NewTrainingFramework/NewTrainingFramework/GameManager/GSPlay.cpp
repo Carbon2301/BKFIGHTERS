@@ -664,8 +664,10 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
     int slot = CreateOrAcquireBulletObject();
     bool isP1 = (&ch == &m_player);
     int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
-    float speedMul = (gunTex == 45) ? 1.5f : 1.0f;
-    float damage = (gunTex == 45) ? 20.0f : 10.0f;
+    float speedMul = 1.0f;
+    float damage = 10.0f;
+    if (gunTex == 45) { speedMul = 1.5f; damage = 20.0f; }
+    else if (gunTex == 46) { speedMul = 2.0f; damage = 50.0f; }
     Bullet b;
     b.x = spawn.x; b.y = spawn.y;
     b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul;
@@ -707,8 +709,10 @@ void GSPlay::SpawnBulletFromCharacterWithJitter(const Character& ch, float jitte
     int slot = CreateOrAcquireBulletObject();
     bool isP1 = (&ch == &m_player);
     int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
-    float speedMul = (gunTex == 45) ? 1.5f : 1.0f;
-    float damage = (gunTex == 45) ? 20.0f : 10.0f;
+    float speedMul = 1.0f;
+    float damage = 10.0f;
+    if (gunTex == 45) { speedMul = 1.5f; damage = 20.0f; }
+    else if (gunTex == 46) { speedMul = 2.0f; damage = 50.0f; }
     Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign; b.ownerId = isP1 ? 1 : 2; b.damage = damage;
     m_bullets.push_back(b);
 }
