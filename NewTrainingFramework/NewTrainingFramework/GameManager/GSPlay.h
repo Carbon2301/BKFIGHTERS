@@ -30,8 +30,9 @@ private:
     
     // Cloud movement system
     float m_cloudSpeed;
-    struct Bullet { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; int ownerId; float damage; };
+    struct Bullet { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; int ownerId; float damage; bool isBazoka = false; float trailTimer = 0.0f; };
     std::vector<Bullet> m_bullets;
+    static constexpr int MAX_BULLETS = 1024;
     const float BULLET_SPEED = 3.5f;
     const float BULLET_LIFETIME = 2.0f;
     const float BULLET_SPAWN_OFFSET_X = 0.12f;
@@ -51,6 +52,21 @@ private:
     void UpdateBullets(float dt);
     void UpdateGunBursts();
     void UpdateGunReloads();
+
+    // Bazoka trail ghosts
+    struct Trail { float x; float y; float life; int objIndex; float angle; float alpha; };
+    std::vector<Trail> m_bazokaTrails;
+    static constexpr int MAX_BAZOKA_TRAILS = 2048;
+    std::vector<std::unique_ptr<Object>> m_bazokaTrailObjs;
+    std::vector<int> m_freeBazokaTrailSlots;
+    int CreateOrAcquireBazokaTrailObject();
+    const float BAZOKA_TRAIL_LIFETIME = 0.35f;
+    const float BAZOKA_TRAIL_SPAWN_INTERVAL = 0.002f;
+    const float BAZOKA_TRAIL_SCALE_X = 0.6f;
+    const float BAZOKA_TRAIL_SCALE_Y = 0.6f;
+    const float BAZOKA_TRAIL_BACK_OFFSET = 0.01f;
+    void EnsureBazokaTrailTextures();
+    std::vector<std::shared_ptr<class Texture2D>> m_bazokaTrailTextures;
 
     std::unique_ptr<WallCollision> m_wallCollision;
 

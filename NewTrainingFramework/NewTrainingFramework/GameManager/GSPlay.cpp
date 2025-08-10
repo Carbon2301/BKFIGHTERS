@@ -737,6 +737,20 @@ void GSPlay::UpdateBullets(float dt) {
         it->x += it->vx * dt;
         it->y += it->vy * dt;
 
+        if (it->isBazoka) {
+            it->trailTimer += dt;
+            if (it->trailTimer >= BAZOKA_TRAIL_SPAWN_INTERVAL) {
+                it->trailTimer = 0.0f;
+                if ((int)m_bazokaTrails.size() < MAX_BAZOKA_TRAILS) {
+                    int idx = CreateOrAcquireBazokaTrailObject();
+                float backX = it->x - cosf(it->angleRad) * BAZOKA_TRAIL_BACK_OFFSET;
+                float backY = it->y - sinf(it->angleRad) * BAZOKA_TRAIL_BACK_OFFSET;
+                Trail t; t.x = backX; t.y = backY; t.life = BAZOKA_TRAIL_LIFETIME; t.objIndex = idx; t.angle = it->angleRad; t.alpha = 1.0f;
+                    m_bazokaTrails.push_back(t);
+                }
+            }
+        }
+
         if (it->life <= 0.0f) { removeBullet(it); continue; }
 
         if (m_wallCollision) {
@@ -778,6 +792,31 @@ void GSPlay::UpdateBullets(float dt) {
         }
 
         ++it;
+    }
+
+    for (size_t i = 0; i < m_bazokaTrails.size(); ) {
+        Trail& tr = m_bazokaTrails[i];
+        tr.life -= dt;
+        tr.alpha = (tr.life > 0.0f) ? (tr.life / BAZOKA_TRAIL_LIFETIME) : 0.0f;
+        if (tr.life <= 0.0f) {
+            if (tr.objIndex >= 0 && tr.objIndex < (int)m_bazokaTrailObjs.size() && m_bazokaTrailObjs[tr.objIndex]) {
+                m_freeBazokaTrailSlots.push_back(tr.objIndex);
+                m_bazokaTrailObjs[tr.objIndex]->SetVisible(false);
+            }
+            m_bazokaTrails[i] = m_bazokaTrails.back();
+            m_bazokaTrails.pop_back();
+        } else {
+            if (tr.objIndex >= 0 && tr.objIndex < (int)m_bazokaTrailObjs.size() && !m_bazokaTrailTextures.empty()) {
+                float ratio = tr.alpha;
+                int idxTex = (ratio > 0.75f) ? 0 : (ratio > 0.5f) ? 1 : (ratio > 0.25f) ? 2 : 3;
+                if (idxTex >= (int)m_bazokaTrailTextures.size()) {
+                    idxTex = (int)m_bazokaTrailTextures.size() - 1;
+                }
+                if (idxTex < 0) idxTex = 0;
+                m_bazokaTrailObjs[tr.objIndex]->SetDynamicTexture(m_bazokaTrailTextures[idxTex]);
+            }
+            ++i;
+        }
     }
 }
 
@@ -838,6 +877,38 @@ int GSPlay::CreateOrAcquireBulletObjectFromProto(int protoObjectId) {
     return (int)m_bulletObjs.size() - 1;
 }
 
+int GSPlay::CreateOrAcquireBazokaTrailObject() {
+    if (m_bazokaTrailTextures.empty()) {
+        for (int i = 0; i < 4; ++i) {
+            int alpha = 220 - i * 60; if (alpha < 40) alpha = 40;
+            auto tex = std::make_shared<Texture2D>();
+            if (tex->CreateColorTexture(32, 32, 255, 215, 0, alpha)) {
+                m_bazokaTrailTextures.push_back(tex);
+            }
+        }
+    }
+
+    if (!m_freeBazokaTrailSlots.empty()) {
+        int idx = m_freeBazokaTrailSlots.back();
+        m_freeBazokaTrailSlots.pop_back();
+        if (m_bazokaTrailObjs[idx]) {
+            m_bazokaTrailObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    std::unique_ptr<Object> obj = std::make_unique<Object>(30000 + (int)m_bazokaTrailObjs.size());
+    if (Object* proto = SceneManager::GetInstance()->GetObject(m_bulletObjectId)) {
+        obj->SetModel(proto->GetModelId());
+        obj->SetShader(proto->GetShaderId());
+        const Vector3& sc = proto->GetScale();
+        obj->SetScale(sc.x * BAZOKA_TRAIL_SCALE_X, sc.y * BAZOKA_TRAIL_SCALE_Y, sc.z);
+        if (!m_bazokaTrailTextures.empty()) obj->SetDynamicTexture(m_bazokaTrailTextures[0]);
+    }
+    obj->SetVisible(true);
+    m_bazokaTrailObjs.push_back(std::move(obj));
+    return (int)m_bazokaTrailObjs.size() - 1;
+}
+
 void GSPlay::DrawBullets(Camera* cam) {
     for (const Bullet& b : m_bullets) {
         int idx = b.objIndex;
@@ -854,6 +925,15 @@ void GSPlay::DrawBullets(Camera* cam) {
             float compensated = atan2f(k * s, c);
             m_bulletObjs[idx]->SetRotation(0.0f, 0.0f, compensated);
             m_bulletObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
+    }
+
+    for (const Trail& t : m_bazokaTrails) {
+        int idx = t.objIndex;
+        if (idx >= 0 && idx < (int)m_bazokaTrailObjs.size() && m_bazokaTrailObjs[idx]) {
+            m_bazokaTrailObjs[idx]->SetPosition(t.x, t.y, 0.0f);
+            m_bazokaTrailObjs[idx]->SetRotation(0.0f, 0.0f, t.angle);
+            m_bazokaTrailObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
         }
     }
 }
@@ -918,10 +998,12 @@ void GSPlay::TryCompletePendingShots() {
 
             int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
             Bullet b; b.x = spawn.x; b.y = spawn.y;
-            b.vx = dir.x * BULLET_SPEED * 0.5f; b.vy = dir.y * BULLET_SPEED * 0.5f; // slower rocket
+            b.vx = dir.x * BULLET_SPEED * 0.8f; b.vy = dir.y * BULLET_SPEED * 0.8f;
             b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
-            b.ownerId = isP1 ? 1 : 2; b.damage = 100.0f;
-            m_bullets.push_back(b);
+            b.ownerId = isP1 ? 1 : 2; b.damage = 100.0f; b.isBazoka = true; b.trailTimer = 0.0f;
+            if ((int)m_bullets.size() < MAX_BULLETS) {
+                m_bullets.push_back(b);
+            }
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
