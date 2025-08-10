@@ -1,12 +1,19 @@
 #include "stdafx.h"
 #include "CharacterAnimation.h"
 #include "CharacterMovement.h"
+#include "CharacterMovement.h" // ensure PlayerInputConfig is visible
 #include "CharacterCombat.h"
 #include "AnimationManager.h"
 #include "SceneManager.h"
+#include "../GameManager/ResourceManager.h"
 #include "Object.h"
 #include <SDL.h>
 #include <iostream>
+#include <cmath>
+
+static inline float ClampFloat(float v, float mn, float mx) {
+    return v < mn ? mn : (v > mx ? mx : v);
+}
 
 CharacterAnimation::CharacterAnimation() 
     : m_lastAnimation(-1), m_objectId(1000),
@@ -38,12 +45,67 @@ void CharacterAnimation::Initialize(std::shared_ptr<AnimationManager> animManage
     if (m_animManager) {
         m_animManager->Play(0, true);
     }
+
+    // Initialize top overlay (head/weapon) using texture ID 9
+    const TextureData* headTex = ResourceManager::GetInstance()->GetTextureData(9);
+    if (headTex && headTex->spriteWidth > 0 && headTex->spriteHeight > 0) {
+        m_topAnimManager = std::make_shared<AnimationManager>();
+        std::vector<AnimationData> topAnims;
+        topAnims.reserve(headTex->animations.size());
+        for (const auto& a : headTex->animations) {
+            topAnims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_topAnimManager->Initialize(headTex->spriteWidth, headTex->spriteHeight, topAnims);
+        m_topAnimManager->Play(0, true);
+
+        m_topObject = std::make_unique<Object>(objectId + 10000); // unique id for overlay
+        if (originalObj) {
+            m_topObject->SetModel(originalObj->GetModelId());
+            m_topObject->SetShader(originalObj->GetShaderId());
+            m_topObject->SetScale(originalObj->GetScale());
+        }
+        m_topObject->SetTexture(9, 0);
+    }
 }
 
 void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, CharacterCombat* combat) {
     if (m_animManager) {
         m_animManager->Update(deltaTime);
         UpdateAnimationState(movement, combat);
+    }
+    if (m_topAnimManager) {
+        m_topAnimManager->Update(deltaTime);
+    }
+
+    // Handle turn timing
+    if (m_gunMode && movement && m_isTurning) {
+        m_turnTimer += deltaTime;
+        if (m_turnTimer >= TURN_DURATION) {
+            m_isTurning = false;
+            m_prevFacingLeft = m_turnTargetLeft;
+            movement->SetFacingLeft(m_turnTargetLeft);
+            PlayTopAnimation(1, true);
+        }
+    }
+    
+    if (m_recoilActive) {
+        m_recoilTimer += deltaTime;
+        if (m_recoilTimer >= RECOIL_DURATION) {
+            m_recoilActive = false;
+            m_recoilOffsetX = 0.0f;
+            m_recoilOffsetY = 0.0f;
+        } else {
+            float progress = m_recoilTimer / RECOIL_DURATION;
+            float easingFactor = 1.0f - powf(1.0f - progress, 3.0f);
+            float currentStrength = (1.0f - easingFactor);
+            
+            float aimRad = m_lastShotAimDeg * 3.14159265f / 180.0f;
+            float angleWorld = m_recoilFaceSign * aimRad;
+            float muzzleX = cosf(angleWorld);
+            float muzzleY = sinf(angleWorld);
+            m_recoilOffsetX = muzzleX * RECOIL_STRENGTH * currentStrength;
+            m_recoilOffsetY = muzzleY * RECOIL_STRENGTH * currentStrength;
+        }
     }
 }
 
@@ -66,10 +128,53 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
             m_characterObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
+
+    if ((m_gunMode || m_recoilActive) && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_topAnimManager->GetUV(u0, v0, u1, v1);
+        
+        bool shouldFlipUV = m_gunMode ? 
+                           (movement && movement->IsFacingLeft()) : 
+                           (m_recoilFaceSign < 0.0f);
+        if (shouldFlipUV) {
+            std::swap(u0, u1);
+        }
+        m_topObject->SetCustomUV(u0, v0, u1, v1);
+        Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
+        
+        bool isLeftFacing = m_gunMode ? 
+                           (movement && movement->IsFacingLeft()) : 
+                           (m_recoilFaceSign < 0.0f);
+        float offsetX = isLeftFacing ? -m_topOffsetX : m_topOffsetX;
+        
+        float finalOffsetX = offsetX + m_recoilOffsetX;
+        float finalOffsetY = m_topOffsetY + m_recoilOffsetY;
+        m_topObject->SetPosition(position.x + finalOffsetX, position.y + finalOffsetY, position.z);
+        
+        float faceSign = m_gunMode ? 
+                        ((movement && movement->IsFacingLeft()) ? -1.0f : 1.0f) : 
+                        m_recoilFaceSign;
+        float aimAngle = m_gunMode ? m_aimAngleDeg : m_lastShotAimDeg;
+        m_topObject->SetRotation(0.0f, 0.0f, faceSign * aimAngle * 3.14159265f / 180.0f);
+        if (camera) {
+            m_topObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+}
+
+Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) const {
+    Vector3 base = movement ? movement->GetPosition() : Vector3(0, 0, 0);
+    float offsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
+    return Vector3(base.x + offsetX, base.y + m_topOffsetY, base.z);
 }
 
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement || !combat) return;
+
+    // In gun mode we lock body animation externally (e.g., Body Shoot 29)
+    if (m_gunMode) {
+        return;
+    }
     
     if (movement->IsSitting()) {
         return;
@@ -131,6 +236,59 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
+
+    if (m_gunMode) {
+        if (m_syncFacingOnEnter) {
+            m_prevFacingLeft = movement->IsFacingLeft();
+            m_syncFacingOnEnter = false;
+        }
+        bool facingLeft = m_prevFacingLeft;
+        const PlayerInputConfig& ic = movement->GetInputConfig();
+        bool wantLeft = keyStates[ic.moveLeftKey];
+        bool wantRight = keyStates[ic.moveRightKey];
+        if (!m_isTurning) {
+            if (wantLeft && !facingLeft) {
+                m_turnTargetLeft = true;
+                m_isTurning = true;
+                m_turnTimer = 0.0f;
+                m_aimAngleDeg = 0.0f;
+                m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+                m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+                m_prevAimUp = m_prevAimDown = false;
+                PlayTopAnimation(0, false);
+            } else if (wantRight && facingLeft) {
+                m_turnTargetLeft = false;
+                m_isTurning = true;
+                m_turnTimer = 0.0f;
+                m_aimAngleDeg = 0.0f;
+                m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+                m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+                m_prevAimUp = m_prevAimDown = false;
+                PlayTopAnimation(0, false);
+            }
+        }
+
+        if (m_isTurning || m_gunEntering) {
+            if (m_gunEntering) {
+                PlayTopAnimation(0, false);
+            }
+            PlayAnimation(29, true);
+            if (m_gunEntering) {
+                unsigned int nowMs = SDL_GetTicks();
+                float elapsed = (nowMs - m_gunEnterStartMs) / 1000.0f;
+                if (elapsed >= GUN_ENTER_DURATION) {
+                    m_gunEntering = false;
+                }
+            }
+            return;
+        }
+
+        HandleGunAim(keyStates, movement->GetInputConfig());
+
+        PlayAnimation(29, true);
+        PlayTopAnimation(1, true);
+        return;
+    }
     
     if (movement->IsDying()) {
         float dieTimer = movement->GetDieTimer();
@@ -148,7 +306,6 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     }
     
     if (!combat->IsInCombo() && !combat->IsInAxeCombo() && !combat->IsKicking() && !combat->IsHit()) {
-        // Ưu tiên animation leo thang khi đang ở trên ladder
         if (movement->IsOnLadder()) {
             if (GetCurrentAnimation() != 6) {
                 PlayAnimation(6, true);
@@ -166,7 +323,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
                 const AnimationData* anim = m_animManager->GetAnimation(6);
                 if (anim) {
                     int frame = m_animManager->GetCurrentFrame();
-                    frame = (frame + 1) % anim->numFrames; // 1->2->3->4->1
+                    frame = (frame + 1) % anim->numFrames;
                     m_animManager->SetCurrentFrame(frame);
                 }
             }
@@ -175,7 +332,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
                 if (anim) {
                     int frame = m_animManager->GetCurrentFrame();
                     frame = (frame - 1);
-                    if (frame < 0) frame = anim->numFrames - 1; // 4->3->2->1->4
+                    if (frame < 0) frame = anim->numFrames - 1;
                     m_animManager->SetCurrentFrame(frame);
                 }
             }
@@ -257,6 +414,15 @@ void CharacterAnimation::PlayAnimation(int animIndex, bool loop) {
     }
 }
 
+void CharacterAnimation::PlayTopAnimation(int animIndex, bool loop) {
+    if (m_topAnimManager) {
+        if (m_lastTopAnimation != animIndex) {
+            m_topAnimManager->Play(animIndex, loop);
+            m_lastTopAnimation = animIndex;
+        }
+    }
+}
+
 int CharacterAnimation::GetCurrentAnimation() const {
     return m_animManager ? m_animManager->GetCurrentAnimation() : -1;
 }
@@ -269,10 +435,126 @@ bool CharacterAnimation::IsFacingLeft(CharacterMovement* movement) const {
     return movement ? movement->IsFacingLeft() : false;
 } 
 
+void CharacterAnimation::SetGunMode(bool enabled) {
+    if (enabled && !m_gunMode) {
+        unsigned int nowMsEnter = SDL_GetTicks();
+        bool isSticky = (m_lastShotTickMs != 0 && (nowMsEnter - m_lastShotTickMs) <= STICKY_AIM_WINDOW_MS);
+        if (isSticky) {
+            m_aimAngleDeg = m_lastShotAimDeg;
+        } else {
+            m_aimAngleDeg = 0.0f;
+        }
+        m_prevAimUp = m_prevAimDown = false;
+        m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+        m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+        m_gunEntering = !isSticky;
+        m_gunEnterStartMs = nowMsEnter;
+        m_syncFacingOnEnter = true;
+        m_aimHoldBlockUntilMs = m_gunEnterStartMs + (unsigned int)(AIM_HOLD_INITIAL_DELAY * 1000.0f);
+        m_lastAimTickMs = m_gunEnterStartMs;
+    }
+    m_gunMode = enabled;
+}
+
 void CharacterAnimation::GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const {
     if (m_animManager) {
         m_animManager->GetUV(u0, v0, u1, v1);
     } else {
         u0 = 0.0f; v0 = 0.0f; u1 = 1.0f; v1 = 1.0f;
     }
+}
+
+void CharacterAnimation::StartTurn(bool toLeft, bool initialLeft) {
+    m_isTurning = true;
+    m_turnTargetLeft = toLeft;
+    m_turnTimer = 0.0f;
+    m_turnInitialLeft = initialLeft;
+    PlayTopAnimation(0, false);
+}
+
+void CharacterAnimation::HandleGunAim(const bool* keyStates, const PlayerInputConfig& inputConfig) {
+    if (!keyStates) return;
+    const int aimUpKey = inputConfig.jumpKey;
+    const int aimDownKey = inputConfig.sitKey;
+
+    unsigned int nowMs = SDL_GetTicks();
+    float dt = 0.0f;
+    if (m_lastAimTickMs == 0) {
+        dt = 0.0f;
+    } else {
+        unsigned int diff = nowMs - m_lastAimTickMs;
+        dt = diff / 1000.0f;
+        if (dt > 0.05f) dt = 0.05f;
+        if (dt < 0.0f) dt = 0.0f;
+    }
+    m_lastAimTickMs = nowMs;
+
+    bool upHeld = keyStates[aimUpKey];
+    bool downHeld = keyStates[aimDownKey];
+    bool upJust = upHeld && !this->m_prevAimUp;
+    bool downJust = downHeld && !this->m_prevAimDown;
+
+    if (upJust && nowMs >= m_aimHoldBlockUntilMs) {
+        this->m_aimAngleDeg = ClampFloat(this->m_aimAngleDeg + 6.0f, -90.0f, 90.0f);
+        m_aimSincePressUp = 0.0f;
+    }
+    if (downJust && nowMs >= m_aimHoldBlockUntilMs) {
+        this->m_aimAngleDeg = ClampFloat(this->m_aimAngleDeg - 6.0f, -90.0f, 90.0f);
+        m_aimSincePressDown = 0.0f;
+    }
+
+    if (upJust && downJust) {
+        m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+        m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+    }
+
+    if (upHeld && nowMs >= m_aimHoldBlockUntilMs) {
+        m_aimSincePressUp += dt;
+        if (m_aimSincePressUp >= AIM_HOLD_INITIAL_DELAY) {
+            m_aimHoldTimerUp += dt;
+            while (m_aimHoldTimerUp >= AIM_HOLD_STEP_INTERVAL) {
+                m_aimHoldTimerUp -= AIM_HOLD_STEP_INTERVAL;
+                this->m_aimAngleDeg = ClampFloat(this->m_aimAngleDeg + 6.0f, -90.0f, 90.0f);
+            }
+        }
+    } else {
+        m_aimHoldTimerUp = 0.0f;
+        m_aimSincePressUp = 0.0f;
+    }
+
+    if (downHeld && nowMs >= m_aimHoldBlockUntilMs) {
+        m_aimSincePressDown += dt;
+        if (m_aimSincePressDown >= AIM_HOLD_INITIAL_DELAY) {
+            m_aimHoldTimerDown += dt;
+            while (m_aimHoldTimerDown >= AIM_HOLD_STEP_INTERVAL) {
+                m_aimHoldTimerDown -= AIM_HOLD_STEP_INTERVAL;
+                this->m_aimAngleDeg = ClampFloat(this->m_aimAngleDeg - 6.0f, -90.0f, 90.0f);
+            }
+        }
+    } else {
+        m_aimHoldTimerDown = 0.0f;
+        m_aimSincePressDown = 0.0f;
+    }
+
+    this->m_prevAimUp = upHeld;
+    this->m_prevAimDown = downHeld;
+}
+
+void CharacterAnimation::OnGunShotFired(CharacterMovement* movement) {
+    m_lastShotAimDeg = m_aimAngleDeg;
+    m_lastShotTickMs = SDL_GetTicks();
+    
+    m_recoilActive = true;
+    m_recoilTimer = 0.0f;
+    
+    m_recoilFaceSign = (movement && movement->IsFacingLeft()) ? -1.0f : 1.0f;
+    
+    float aimRad = m_aimAngleDeg * 3.14159265f / 180.0f;
+    float angleWorld = m_recoilFaceSign * aimRad;
+    
+    float muzzleX = cosf(angleWorld);
+    float muzzleY = sinf(angleWorld);
+    
+    m_recoilOffsetX = muzzleX * RECOIL_STRENGTH;
+    m_recoilOffsetY = muzzleY * RECOIL_STRENGTH;
 }

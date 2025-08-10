@@ -37,9 +37,10 @@ public:
     Character();
     ~Character();
     
-    // Initialization
     void Initialize(std::shared_ptr<AnimationManager> animManager, int objectId);
     void SetInputConfig(const PlayerInputConfig& config);
+    void SetGunMode(bool enabled);
+    bool IsGunMode() const;
     
     // Core update
     void Update(float deltaTime);
@@ -129,5 +130,10 @@ public:
     void TakeDamage(float damage);
     void Heal(float amount);
     void ResetHealth();
+
+     // Gun helpers
+     Vector3 GetGunTopWorldPosition() const;
+     float GetAimAngleDeg() const;
+     void MarkGunShotFired();
 
 }; 

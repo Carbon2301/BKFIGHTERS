@@ -8,6 +8,7 @@
 #include "Object.h"
 #include "Texture2D.h"
 #include "../GameManager/GSPlay.h"
+#include "InputManager.h"
 #include <GLES3/gl3.h>
 #include <iostream>
 #include <cstdlib>
@@ -22,6 +23,15 @@ Character::Character()
 }
 
 Character::~Character() {
+}
+void Character::SetGunMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetGunMode(enabled);
+    }
+}
+
+bool Character::IsGunMode() const {
+    return m_animation ? m_animation->IsGunMode() : false;
 }
 
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
@@ -60,6 +70,10 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     if (m_movement && m_combat) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+        if (m_animation && m_animation->IsGunMode()) lock = true;
+        if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
+            m_movement->ForceSit(false);
+        }
         m_movement->SetInputLocked(lock);
     }
     
@@ -98,6 +112,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     }
     if (m_movement && m_combat) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+        if (m_animation && m_animation->IsGunMode()) lock = true;
         m_movement->SetInputLocked(lock);
     }
 }
@@ -400,3 +415,23 @@ void Character::ResetHealth() {
     m_health = MAX_HEALTH;
     m_isDead = false;
 } 
+
+Vector3 Character::GetGunTopWorldPosition() const {
+    if (m_animation && m_movement) {
+        return m_animation->GetTopWorldPosition(m_movement.get());
+    }
+    return GetPosition();
+}
+
+float Character::GetAimAngleDeg() const {
+    if (m_animation) {
+        return m_animation->GetAimAngleDeg();
+    }
+    return 0.0f;
+}
+
+void Character::MarkGunShotFired() {
+    if (m_animation) {
+        m_animation->OnGunShotFired(m_movement.get());
+    }
+}

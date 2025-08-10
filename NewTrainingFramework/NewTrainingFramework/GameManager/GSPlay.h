@@ -4,6 +4,7 @@
 #include "../GameObject/AnimationManager.h"
 #include "../GameObject/Character.h"
 #include "../GameObject/InputManager.h"
+#include "../GameObject/WallCollision.h"
 #include "../../Utilities/Math.h"
 #include <vector>
 
@@ -29,10 +30,37 @@ private:
     
     // Cloud movement system
     float m_cloudSpeed;
-    const float CLOUD_MOVE_SPEED = 0.2f; // Tốc độ di chuyển mây (units per second) - đã giảm từ 0.5f xuống 0.2f
-    const float CLOUD_SPACING = 1.74f; // Khoảng cách giữa các mây
-    const float CLOUD_LEFT_BOUNDARY = -6.0f; // Vị trí mây biến mất (bên trái màn hình)
-    const int TOTAL_CLOUDS = 10; // Tổng số mây
+    struct Bullet { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; int ownerId; };
+    std::vector<Bullet> m_bullets;
+    const float BULLET_SPEED = 3.5f;
+    const float BULLET_LIFETIME = 2.0f;
+    const float BULLET_SPAWN_OFFSET_X = 0.12f;
+    const float BULLET_SPAWN_OFFSET_Y = -0.01f;
+    const float BULLET_COLLISION_WIDTH  = 0.02f;
+    const float BULLET_COLLISION_HEIGHT = 0.02f;
+    int m_bulletObjectId = 1300; // from scene
+    std::vector<std::unique_ptr<Object>> m_bulletObjs;
+    std::vector<int> m_freeBulletSlots;
+    int CreateOrAcquireBulletObject();
+    void DrawBullets(Camera* cam);
+    
+    void SpawnBulletFromCharacter(const Character& ch);
+    void UpdateBullets(float dt);
+
+    std::unique_ptr<WallCollision> m_wallCollision;
+
+    bool m_p1ShotPending = false;
+    bool m_p2ShotPending = false;
+    float m_p1GunStartTime = -1.0f;
+    float m_p2GunStartTime = -1.0f;
+    static constexpr float GUN_MIN_REVERSE_TIME = 0.15f;
+    static constexpr float GUN_MIN_HOLD_ANIM1   = 0.15f;
+    float GetGunRequiredTime() const { return GUN_MIN_REVERSE_TIME + GUN_MIN_HOLD_ANIM1; }
+    void TryCompletePendingShots();
+    const float CLOUD_MOVE_SPEED = 0.2f;
+    const float CLOUD_SPACING = 1.74f;
+    const float CLOUD_LEFT_BOUNDARY = -6.0f;
+    const int TOTAL_CLOUDS = 10;
     
 public:
     GSPlay();

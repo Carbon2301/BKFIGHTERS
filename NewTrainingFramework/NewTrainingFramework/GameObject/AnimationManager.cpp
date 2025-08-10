@@ -15,12 +15,11 @@ void AnimationManager::Initialize(int spriteWidth, int spriteHeight, const std::
     m_spriteHeight = spriteHeight;
     m_animations = animations;
     
-    // Calculate frame time for each animation
     for (auto& anim : m_animations) {
         if (anim.numFrames > 1) {
-            anim.frameTime = (float)anim.duration / (anim.numFrames - 1) / 1000.0f; // Convert to seconds
+            anim.frameTime = (float)anim.duration / (anim.numFrames - 1) / 1000.0f;
         } else {
-            anim.frameTime = 0.1f; // Default frame time
+            anim.frameTime = 0.1f;
         }
     }
 }
@@ -88,7 +87,6 @@ void AnimationManager::Update(float deltaTime) {
 
 void AnimationManager::GetUV(float& u0, float& v0, float& u1, float& v1) const {
     if (m_currentAnimation < 0 || m_currentAnimation >= static_cast<int>(m_animations.size())) {
-        // Return default UV if no animation
         u0 = 0.0f; v0 = 0.0f; u1 = 1.0f; v1 = 1.0f;
         return;
     }
@@ -96,9 +94,6 @@ void AnimationManager::GetUV(float& u0, float& v0, float& u1, float& v1) const {
     const AnimationData& currentAnim = m_animations[m_currentAnimation];
     int frameIndex = currentAnim.startFrame + m_currentFrame;
     
-    // Calculate UV coordinates
-    // Note: UV coordinates start from bottom-left (0,0) to top-right (1,1)
-    // Frame reading order: left to right, bottom to top
     int frameX = frameIndex % m_spriteWidth;
     int frameY = frameIndex / m_spriteWidth;
     
@@ -106,16 +101,9 @@ void AnimationManager::GetUV(float& u0, float& v0, float& u1, float& v1) const {
     float dv = 1.0f / m_spriteHeight;
     
     u0 = frameX * du;
-    v0 = (m_spriteHeight - 1 - frameY) * dv; // Flip Y coordinate
+    v0 = (m_spriteHeight - 1 - frameY) * dv;
     u1 = u0 + du;
     v1 = v0 + dv;
-    
-                    // Debug output (tắt để giảm spam)
-                // static int lastFrame = -1;
-                // if (frameIndex != lastFrame) {
-                //     std::cout << "Frame " << frameIndex << " -> UV: (" << u0 << "," << v0 << ") to (" << u1 << "," << v1 << ")" << std::endl;
-                //     lastFrame = frameIndex;
-                // }
 }
 
 const AnimationData* AnimationManager::GetAnimation(int index) const {

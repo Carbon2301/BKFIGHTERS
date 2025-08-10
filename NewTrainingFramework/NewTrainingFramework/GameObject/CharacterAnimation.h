@@ -7,6 +7,7 @@ class AnimationManager;
 class Camera;
 class Object;
 class CharacterMovement;
+struct PlayerInputConfig;
 class CharacterCombat;
 
 class CharacterAnimation {
@@ -16,15 +17,57 @@ private:
     int m_lastAnimation;
     int m_objectId;
 
-    // Leo thang: điều khiển frame step-by-step
+    std::shared_ptr<AnimationManager> m_topAnimManager;
+    std::unique_ptr<class Object> m_topObject;
+    int m_lastTopAnimation = -1;
+    bool m_gunMode = false;
+    bool m_gunEntering = false;
+    unsigned int m_gunEnterStartMs = 0;
+    static constexpr float GUN_ENTER_DURATION = 0.12f;
+    bool m_syncFacingOnEnter = false;
+    float m_topOffsetX = -0.019f;
+    float m_topOffsetY = -0.025f;
+
     float m_climbHoldTimer = 0.0f;
-    static constexpr float CLIMB_HOLD_STEP_INTERVAL = 0.12f; // giữ phím: tốc độ chuyển frame liên tục
-    int m_lastClimbDir = 0; // 1: lên, -1: xuống, 0: đứng yên
+    static constexpr float CLIMB_HOLD_STEP_INTERVAL = 0.12f;
+    int m_lastClimbDir = 0;
     bool m_prevClimbUpPressed = false;
     bool m_prevClimbDownPressed = false;
-    // Phân biệt nhấn-nhả vs giữ khi đi xuống
-    float m_downPressStartTime = -1.0f; // giây
-    static constexpr float CLIMB_DOWN_HOLD_THRESHOLD = 0.15f; // > 150ms coi như giữ
+    float m_downPressStartTime = -1.0f;
+    static constexpr float CLIMB_DOWN_HOLD_THRESHOLD = 0.15f;
+
+    // Turning control for gun mode
+    bool m_isTurning = false;
+    bool m_turnTargetLeft = false;
+    float m_turnTimer = 0.0f;
+    static constexpr float TURN_DURATION = 0.12f;
+    bool m_turnInitialLeft = false;
+    bool m_prevFacingLeft = false;
+
+    float m_aimAngleDeg = 0.0f;
+    bool m_prevAimUp = false;
+    bool m_prevAimDown = false;
+    float m_aimHoldTimerUp = 0.0f;
+    float m_aimHoldTimerDown = 0.0f;
+    static constexpr float AIM_HOLD_STEP_INTERVAL = 0.03f;
+    static constexpr float AIM_HOLD_INITIAL_DELAY = 0.10f;
+    float m_aimSincePressUp = 0.0f;
+    float m_aimSincePressDown = 0.0f;
+    unsigned int m_lastAimTickMs = 0;
+    unsigned int m_aimHoldBlockUntilMs = 0;
+
+    // Sticky aim after shot
+    float m_lastShotAimDeg = 0.0f;
+    unsigned int m_lastShotTickMs = 0;
+    static constexpr unsigned int STICKY_AIM_WINDOW_MS = 600;
+
+    bool m_recoilActive = false;
+    float m_recoilTimer = 0.0f;
+    float m_recoilOffsetX = 0.0f;
+    float m_recoilOffsetY = 0.0f;
+    float m_recoilFaceSign = 1.0f;
+    static constexpr float RECOIL_DURATION = 0.09f;
+    static constexpr float RECOIL_STRENGTH = 0.03f;
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
@@ -44,9 +87,13 @@ public:
     
     // Animation control
     void PlayAnimation(int animIndex, bool loop);
+    void PlayTopAnimation(int animIndex, bool loop);
     int GetCurrentAnimation() const;
     bool IsAnimationPlaying() const;
     void GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const;
+    // Gun helpers
+    Vector3 GetTopWorldPosition(CharacterMovement* movement) const;
+    float GetAimAngleDeg() const { return m_aimAngleDeg; }
     
     // Getters
     int GetObjectId() const { return m_objectId; }
@@ -54,4 +101,15 @@ public:
     
     // Facing direction (needed for hitbox calculations)
     bool IsFacingLeft(CharacterMovement* movement) const;
+
+    // Gun/overlay control
+    void SetGunMode(bool enabled);
+    bool IsGunMode() const { return m_gunMode; }
+    void SetTopOffset(float ox, float oy) { m_topOffsetX = ox; m_topOffsetY = oy; }
+
+    void OnGunShotFired(CharacterMovement* movement = nullptr);
+
+private:
+    void StartTurn(bool toLeft, bool initialLeft);
+    void HandleGunAim(const bool* keyStates, const PlayerInputConfig& inputConfig);
 }; 

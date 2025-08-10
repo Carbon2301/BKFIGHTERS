@@ -57,7 +57,6 @@ void CharacterCombat::Update(float deltaTime) {
     if (m_isInAxeCombo && m_weaponComboQueued && m_weaponComboCooldown <= 0.0f && m_axeComboTimer > 0.0f) {
     }
     
-    // Update hit timer
     if (m_isHit) {
         m_hitTimer -= deltaTime;
         if (m_hitTimer <= 0.0f) {
@@ -331,7 +330,6 @@ void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Charact
     CancelAllCombos();
     
     bool attackerFacingLeft = attacker.IsFacingLeft();
-    // Note: Character facing direction should be set by the Character class
     
     m_isHit = true;
     m_hitTimer = HIT_DURATION;
@@ -343,7 +341,7 @@ void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Charact
     // Apply damage to target
     if (target) {
         float currentHealth = target->GetHealth();
-        target->TakeDamage(10.0f); // Mỗi cú đấm mất 10 máu
+        target->TakeDamage(10.0f);
         
         if (currentHealth > 0.0f && target->GetHealth() <= 0.0f) {
             target->TriggerDieFromAttack(attacker);

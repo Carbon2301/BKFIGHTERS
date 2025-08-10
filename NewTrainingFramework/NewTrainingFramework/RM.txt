@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 22
+# 2DTexture 25
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -27,6 +27,90 @@ TILING GL_CLAMP_TO_EDGE
 ID 4
 FILE "../Resources/Textures/btn_close.tga"
 TILING GL_CLAMP_TO_EDGE
+
+ID 8
+FILE "../Resources/Fighter/Characters/Player1_Head.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 8 3
+ANINUM 18
+* Animation 0: Reverse Pistol
+0 1 300
+* Animation 1: Pistol 
+1 1 300
+* Animation 2: Reverse M4A1
+2 1 300
+* Animation 3: M4A1
+3 1 300
+* Animation 4: Reverse Shotgun
+4 1 100
+* Animation 5: Shotgun
+5 1 300
+* Animation 6: Shotgun Reload 
+6 1 300
+* Animation 7: Throwing Hand
+7 1 300
+* Animation 8: Reverse Bazoka
+8 1 300
+* Animation 9: Bazoka
+9 1 300
+* Animation 10: Reverse FlameGun
+10 1 300
+* Animation 11: FlameGun
+11 1 300
+* Animation 12: Reverse Deagle
+12 1 300
+* Animation 13: Deagle
+13 1 300
+* Animation 14: Reverse Snipper
+14 1 300
+* Animation 15: Snipper
+15 1 300
+* Animation 16: Reverse Uzi
+16 1 300
+* Animation 17: Uzi 
+17 1 300
+
+ID 9
+FILE "../Resources/Fighter/Characters/Player1_Head.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 8 3
+ANINUM 18
+* Animation 0: Reverse Pistol
+0 1 300
+* Animation 1: Pistol 
+1 1 300
+* Animation 2: Reverse M4A1
+2 1 300
+* Animation 3: M4A1
+3 1 300
+* Animation 4: Reverse Shotgun
+4 1 100
+* Animation 5: Shotgun
+5 1 300
+* Animation 6: Shotgun Reload 
+6 1 300
+* Animation 7: Throwing Hand
+7 1 300
+* Animation 8: Reverse Bazoka
+8 1 300
+* Animation 9: Bazoka
+9 1 300
+* Animation 10: Reverse FlameGun
+10 1 300
+* Animation 11: FlameGun
+11 1 300
+* Animation 12: Reverse Deagle
+12 1 300
+* Animation 13: Deagle
+13 1 300
+* Animation 14: Reverse Snipper
+14 1 300
+* Animation 15: Snipper
+15 1 300
+* Animation 16: Reverse Uzi
+16 1 300
+* Animation 17: Uzi 
+17 1 300
 
 ID 10
 FILE "../Resources/Fighter/Characters/Player1_Body.tga"
@@ -246,6 +330,10 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 32
 FILE "../Resources/Fighter/Weapons/Pipe.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 33
+FILE "../Resources/Fighter/Weapons/Bullet.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1
