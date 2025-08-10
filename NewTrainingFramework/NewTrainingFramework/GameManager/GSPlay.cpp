@@ -213,6 +213,17 @@ void GSPlay::Init() {
         hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
     }
 
+    if (Object* hudGun1 = sceneManager->GetObject(920)) {
+        m_hudGun1BaseScale = hudGun1->GetScale();
+        hudGun1->SetScale(m_hudGun1BaseScale);
+        hudGun1->SetTexture(m_player1GunTexId, 0);
+    }
+    if (Object* hudGun2 = sceneManager->GetObject(921)) {
+        m_hudGun2BaseScale = hudGun2->GetScale();
+        hudGun2->SetScale(m_hudGun2BaseScale);
+        hudGun2->SetTexture(m_player2GunTexId, 0);
+    }
+
     m_wallCollision = std::make_unique<WallCollision>();
     if (m_wallCollision) {
         m_wallCollision->LoadWallsFromScene();
@@ -462,6 +473,15 @@ void GSPlay::UpdateHudWeapons() {
         } else {
             hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
         }
+    }
+
+    if (Object* hudGun1 = scene->GetObject(920)) {
+        hudGun1->SetScale(m_hudGun1BaseScale);
+        hudGun1->SetTexture(m_player1GunTexId, 0);
+    }
+    if (Object* hudGun2 = scene->GetObject(921)) {
+        hudGun2->SetScale(m_hudGun2BaseScale);
+        hudGun2->SetTexture(m_player2GunTexId, 0);
     }
 }
 
@@ -950,6 +970,15 @@ void GSPlay::HandleItemPickup() {
     Object* axe   = scene->GetObject(AXE_OBJECT_ID);
     Object* sword = scene->GetObject(SWORD_OBJECT_ID);
     Object* pipe  = scene->GetObject(PIPE_OBJECT_ID);
+    // Guns
+    Object* gun_pistol  = scene->GetObject(1200);
+    Object* gun_m4a1    = scene->GetObject(1201);
+    Object* gun_shotgun = scene->GetObject(1202);
+    Object* gun_bazoka  = scene->GetObject(1203);
+    Object* gun_flame   = scene->GetObject(1204);
+    Object* gun_deagle  = scene->GetObject(1205);
+    Object* gun_sniper  = scene->GetObject(1206);
+    Object* gun_uzi     = scene->GetObject(1207);
 
     const bool* keys = m_inputManager->GetKeyStates();
     if (!keys) return;
@@ -998,13 +1027,52 @@ void GSPlay::HandleItemPickup() {
         return false;
     };
 
-    // Check Player 1
+    auto tryPickupGun = [&](int texId, Object*& gunObj, Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
+        if (!sitHeld || !pickupJust || !gunObj) return false;
+        const Vector3& objPos = gunObj->GetPosition();
+        const Vector3& objScale = gunObj->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = gunObj->GetId();
+            scene->RemoveObject(removedId);
+            gunObj = nullptr;
+            if (isPlayer1) m_player1GunTexId = texId; else m_player2GunTexId = texId;
+            player.SuppressNextPunch();
+            std::cout << "Picked up gun ID " << removedId << " (tex=" << texId << ")" << std::endl;
+            return true;
+        }
+        return false;
+    };
+
+    // Check Player 1 melee
     if ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
          tryPickup(m_player,  p1Sit, p1PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
          tryPickup(m_player,  p1Sit, p1PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+    // Check Player 1 guns
+    if ( tryPickupGun(40, gun_pistol,  m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(41, gun_m4a1,    m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(42, gun_shotgun, m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(43, gun_bazoka,  m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(44, gun_flame,   m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(45, gun_deagle,  m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(46, gun_sniper,  m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(47, gun_uzi,     m_player, p1Sit, p1PickupJust, true) ) { return; }
 
     // Check Player 2
     if ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
          tryPickup(m_player2, p2Sit, p2PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
          tryPickup(m_player2, p2Sit, p2PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+    // Check Player 2 guns
+    if ( tryPickupGun(40, gun_pistol,  m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(41, gun_m4a1,    m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(42, gun_shotgun, m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(43, gun_bazoka,  m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(44, gun_flame,   m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(45, gun_deagle,  m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(46, gun_sniper,  m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) { return; }
 }

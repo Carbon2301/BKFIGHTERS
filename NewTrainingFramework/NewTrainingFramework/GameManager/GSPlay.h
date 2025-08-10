@@ -62,6 +62,12 @@ private:
     const float CLOUD_LEFT_BOUNDARY = -6.0f;
     const int TOTAL_CLOUDS = 10;
     
+    // HUD gun display
+    int m_player1GunTexId = 40;
+    int m_player2GunTexId = 40;
+    Vector3 m_hudGun1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudGun2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    
 public:
     GSPlay();
     ~GSPlay();
