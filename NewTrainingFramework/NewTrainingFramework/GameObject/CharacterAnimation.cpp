@@ -92,6 +92,10 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         m_recoilTimer += deltaTime;
         if (m_recoilTimer >= RECOIL_DURATION) {
             m_recoilActive = false;
+            if (m_gunTopAnimReload >= 0) {
+                m_reloadActive = true;
+                m_reloadTimer = 0.0f;
+            }
             m_recoilOffsetX = 0.0f;
             m_recoilOffsetY = 0.0f;
         } else {
@@ -105,6 +109,14 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             float muzzleY = sinf(angleWorld);
             m_recoilOffsetX = muzzleX * RECOIL_STRENGTH * currentStrength;
             m_recoilOffsetY = muzzleY * RECOIL_STRENGTH * currentStrength;
+        }
+    }
+
+    if (m_reloadActive) {
+        m_reloadTimer += deltaTime;
+        if (m_reloadTimer >= RELOAD_DURATION) {
+            m_reloadActive = false;
+            m_reloadTimer = 0.0f;
         }
     }
 }
@@ -286,7 +298,11 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         HandleGunAim(keyStates, movement->GetInputConfig());
 
         PlayAnimation(29, true);
-        PlayTopAnimation(m_gunTopAnimHold, true);
+        if (m_reloadActive && m_gunTopAnimReload >= 0) {
+            PlayTopAnimation(m_gunTopAnimReload, false);
+        } else {
+            PlayTopAnimation(m_gunTopAnimHold, true);
+        }
         return;
     }
     
@@ -568,6 +584,7 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
         case 42: // Shotgun
             m_gunTopAnimReverse = 4;
             m_gunTopAnimHold    = 5;
+            m_gunTopAnimReload  = 6;
             break;
         case 43: // Bazoka
             m_gunTopAnimReverse = 8;
@@ -593,6 +610,7 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
         default:
             m_gunTopAnimReverse = 0;
             m_gunTopAnimHold    = 1;
+            m_gunTopAnimReload  = -1;
             break;
     }
 }

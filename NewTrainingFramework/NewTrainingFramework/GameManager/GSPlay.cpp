@@ -301,6 +301,7 @@ void GSPlay::Update(float deltaTime) {
     m_player2.Update(deltaTime);
     UpdateBullets(deltaTime);
     UpdateGunBursts();
+    UpdateGunReloads();
     TryCompletePendingShots();
     UpdateHudWeapons();
     
@@ -832,6 +833,24 @@ void GSPlay::TryCompletePendingShots() {
             }
             ch.MarkGunShotFired();
             pendingFlag = false;
+        } else if (currentGunTex == 42) {
+            const int pellets = 5;
+            const float totalSpreadDeg = 6.0f;
+            for (int i = 0; i < pellets; ++i) {
+                float t = (pellets == 1) ? 0.0f : (float)i / (float)(pellets - 1);
+                float jitter = (t - 0.5f) * totalSpreadDeg;
+                SpawnBulletFromCharacterWithJitter(ch, jitter);
+            }
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+            if (isP1) {
+                m_p1ReloadPending = true;
+                m_p1ReloadExitTime = m_gameTime + SHOTGUN_RELOAD_TIME;
+            } else {
+                m_p2ReloadPending = true;
+                m_p2ReloadExitTime = m_gameTime + SHOTGUN_RELOAD_TIME;
+            }
+            if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(true);
         } else {
             SpawnBulletFromCharacter(ch);
             ch.MarkGunShotFired();
@@ -870,6 +889,19 @@ void GSPlay::UpdateGunBursts() {
     };
     stepBurst(m_player,  m_p1BurstActive, m_p1BurstRemaining, m_p1NextBurstTime);
     stepBurst(m_player2, m_p2BurstActive, m_p2BurstRemaining, m_p2NextBurstTime);
+}
+
+void GSPlay::UpdateGunReloads() {
+    if (m_p1ReloadPending && m_gameTime >= m_p1ReloadExitTime) {
+        m_p1ReloadPending = false;
+        m_player.SetGunMode(false);
+        if (m_player.GetMovement()) m_player.GetMovement()->SetInputLocked(false);
+    }
+    if (m_p2ReloadPending && m_gameTime >= m_p2ReloadExitTime) {
+        m_p2ReloadPending = false;
+        m_player2.SetGunMode(false);
+        if (m_player2.GetMovement()) m_player2.GetMovement()->SetInputLocked(false);
+    }
 }
 
 static float MousePixelToWorldX(int x, Camera* cam) {

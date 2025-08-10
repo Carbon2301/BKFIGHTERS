@@ -48,6 +48,7 @@ private:
     void SpawnBulletFromCharacterWithJitter(const Character& ch, float jitterDeg);
     void UpdateBullets(float dt);
     void UpdateGunBursts();
+    void UpdateGunReloads();
 
     std::unique_ptr<WallCollision> m_wallCollision;
 
@@ -78,6 +79,12 @@ private:
     bool  m_p2BurstActive = false;
     int   m_p2BurstRemaining = 0;
     float m_p2NextBurstTime = 0.0f;
+
+    static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
+    bool  m_p1ReloadPending = false;
+    float m_p1ReloadExitTime = -1.0f;
+    bool  m_p2ReloadPending = false;
+    float m_p2ReloadExitTime = -1.0f;
     
 public:
     GSPlay();
