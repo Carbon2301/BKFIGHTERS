@@ -300,6 +300,7 @@ void GSPlay::Update(float deltaTime) {
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
     UpdateBullets(deltaTime);
+    UpdateGunBursts();
     TryCompletePendingShots();
     UpdateHudWeapons();
     
@@ -669,6 +670,40 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
     m_bullets.push_back(b);
 }
 
+void GSPlay::SpawnBulletFromCharacterWithJitter(const Character& ch, float jitterDeg) {
+    Vector3 pivot = ch.GetGunTopWorldPosition();
+    Vector3 base  = ch.GetPosition();
+    const float aimDeg = ch.GetAimAngleDeg();
+    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+    const float aimRad = (aimDeg + jitterDeg) * 3.14159265f / 180.0f;
+    const float angleWorld = faceSign * aimRad;
+
+    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                       base.y + BULLET_SPAWN_OFFSET_Y,
+                       0.0f);
+    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+
+    float cosA = cosf(angleWorld);
+    float sinA = sinf(angleWorld);
+    Vector3 vRot(vLocal0.x * cosA - vLocal0.y * sinA,
+                 vLocal0.x * sinA + vLocal0.y * cosA,
+                 0.0f);
+    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+
+    const float forwardStep = 0.02f;
+    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+    Vector3 vRotForward(vLocalForward.x * cosA - vLocalForward.y * sinA,
+                        vLocalForward.x * sinA + vLocalForward.y * cosA,
+                        0.0f);
+    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+    int slot = CreateOrAcquireBulletObject();
+    Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign; b.ownerId = (&ch == &m_player) ? 1 : 2;
+    m_bullets.push_back(b);
+}
+
 void GSPlay::UpdateBullets(float dt) {
     auto removeBullet = [&](decltype(m_bullets.begin())& it){
         if (it->objIndex >= 0 && it->objIndex < (int)m_bulletObjs.size() && m_bulletObjs[it->objIndex]) {
@@ -783,15 +818,58 @@ void GSPlay::TryCompletePendingShots() {
         // Require minimum time for anim0 + anim1 display
         float elapsed = m_gameTime - startTime;
         if (elapsed < GetGunRequiredTime()) return;
-        // Fire then exit gun mode
-        SpawnBulletFromCharacter(ch);
-        ch.MarkGunShotFired();
-        pendingFlag = false;
-        ch.SetGunMode(false);
-        ch.GetMovement()->SetInputLocked(false);
+        const bool isP1 = (&ch == &m_player);
+        int currentGunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
+        if (currentGunTex == 41) {
+            if (isP1) {
+                m_p1BurstActive = true;
+                m_p1BurstRemaining = M4A1_BURST_COUNT;
+                m_p1NextBurstTime = m_gameTime;
+            } else {
+                m_p2BurstActive = true;
+                m_p2BurstRemaining = M4A1_BURST_COUNT;
+                m_p2NextBurstTime = m_gameTime;
+            }
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+        } else {
+            SpawnBulletFromCharacter(ch);
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+            ch.SetGunMode(false);
+            ch.GetMovement()->SetInputLocked(false);
+        }
     };
     tryFinish(m_player,  m_p1ShotPending, m_p1GunStartTime);
     tryFinish(m_player2, m_p2ShotPending, m_p2GunStartTime);
+}
+
+void GSPlay::UpdateGunBursts() {
+    auto stepBurst = [&](Character& ch, bool& active, int& remain, float& nextTime){
+        if (!active) return;
+        if (m_gameTime < nextTime) return;
+        const bool isP1Local = (&ch == &m_player);
+        int gunTex = isP1Local ? m_player1GunTexId : m_player2GunTexId;
+        if (gunTex == 41) {
+            // random jitter in [-1.5, +1.5] degrees
+            float r = (float)rand() / (float)RAND_MAX; // [0,1]
+            float jitter = (r * 2.0f - 1.0f) * 1.5f;
+            SpawnBulletFromCharacterWithJitter(ch, jitter);
+        } else {
+            SpawnBulletFromCharacter(ch);
+        }
+        ch.MarkGunShotFired();
+        remain -= 1;
+        if (remain > 0) {
+            nextTime += M4A1_BURST_INTERVAL;
+        } else {
+            active = false;
+            ch.SetGunMode(false);
+            if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false);
+        }
+    };
+    stepBurst(m_player,  m_p1BurstActive, m_p1BurstRemaining, m_p1NextBurstTime);
+    stepBurst(m_player2, m_p2BurstActive, m_p2BurstRemaining, m_p2NextBurstTime);
 }
 
 static float MousePixelToWorldX(int x, Camera* cam) {

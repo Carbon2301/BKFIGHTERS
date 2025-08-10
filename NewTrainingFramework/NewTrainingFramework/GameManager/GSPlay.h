@@ -45,7 +45,9 @@ private:
     void DrawBullets(Camera* cam);
     
     void SpawnBulletFromCharacter(const Character& ch);
+    void SpawnBulletFromCharacterWithJitter(const Character& ch, float jitterDeg);
     void UpdateBullets(float dt);
+    void UpdateGunBursts();
 
     std::unique_ptr<WallCollision> m_wallCollision;
 
@@ -67,6 +69,15 @@ private:
     int m_player2GunTexId = 40;
     Vector3 m_hudGun1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     Vector3 m_hudGun2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+
+    static constexpr int   M4A1_BURST_COUNT = 5;
+    static constexpr float M4A1_BURST_INTERVAL = 0.08f;
+    bool  m_p1BurstActive = false;
+    int   m_p1BurstRemaining = 0;
+    float m_p1NextBurstTime = 0.0f;
+    bool  m_p2BurstActive = false;
+    int   m_p2BurstRemaining = 0;
+    float m_p2NextBurstTime = 0.0f;
     
 public:
     GSPlay();
