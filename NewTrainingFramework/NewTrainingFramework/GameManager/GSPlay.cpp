@@ -12,6 +12,7 @@
 #include <memory>
 #include "../GameObject/AnimationManager.h"
 #include "../GameObject/Character.h"
+#include "../GameObject/CharacterAnimation.h"
 #include "../GameObject/CharacterMovement.h"
 #include "../GameObject/InputManager.h"
 #include "ResourceManager.h"
@@ -1065,6 +1066,10 @@ void GSPlay::HandleItemPickup() {
             scene->RemoveObject(removedId);
             gunObj = nullptr;
             if (isPlayer1) m_player1GunTexId = texId; else m_player2GunTexId = texId;
+            // Also switch top overlay animations to this gun
+            if (CharacterAnimation* a1 = player.GetAnimation()) {
+                a1->SetGunByTextureId(texId);
+            }
             player.SuppressNextPunch();
             std::cout << "Picked up gun ID " << removedId << " (tex=" << texId << ")" << std::endl;
             return true;

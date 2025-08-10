@@ -270,7 +270,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
 
         if (m_isTurning || m_gunEntering) {
             if (m_gunEntering) {
-                PlayTopAnimation(0, false);
+                PlayTopAnimation(m_gunTopAnimReverse, false);
             }
             PlayAnimation(29, true);
             if (m_gunEntering) {
@@ -286,7 +286,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         HandleGunAim(keyStates, movement->GetInputConfig());
 
         PlayAnimation(29, true);
-        PlayTopAnimation(1, true);
+        PlayTopAnimation(m_gunTopAnimHold, true);
         return;
     }
     
@@ -557,4 +557,42 @@ void CharacterAnimation::OnGunShotFired(CharacterMovement* movement) {
     
     m_recoilOffsetX = muzzleX * RECOIL_STRENGTH;
     m_recoilOffsetY = muzzleY * RECOIL_STRENGTH;
+}
+
+void CharacterAnimation::SetGunByTextureId(int texId) {
+    switch (texId) {
+        case 41: // M4A1
+            m_gunTopAnimReverse = 2;
+            m_gunTopAnimHold    = 3;
+            break;
+        case 42: // Shotgun
+            m_gunTopAnimReverse = 4;
+            m_gunTopAnimHold    = 5;
+            break;
+        case 43: // Bazoka
+            m_gunTopAnimReverse = 8;
+            m_gunTopAnimHold    = 9;
+            break;
+        case 44: // FlameGun
+            m_gunTopAnimReverse = 10;
+            m_gunTopAnimHold    = 11;
+            break;
+        case 45: // Deagle
+            m_gunTopAnimReverse = 12;
+            m_gunTopAnimHold    = 13;
+            break;
+        case 46: // Sniper
+            m_gunTopAnimReverse = 14;
+            m_gunTopAnimHold    = 15;
+            break;
+        case 47: // Uzi
+            m_gunTopAnimReverse = 16;
+            m_gunTopAnimHold    = 17;
+            break;
+        case 40: // Pistol (default)
+        default:
+            m_gunTopAnimReverse = 0;
+            m_gunTopAnimHold    = 1;
+            break;
+    }
 }

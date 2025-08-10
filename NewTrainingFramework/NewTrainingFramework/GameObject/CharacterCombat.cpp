@@ -204,6 +204,11 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
     m_weaponComboQueued = false;
 }
 
+void CharacterCombat::AdvanceQueuedWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement) {
+    (void)animation;
+    (void)movement;
+}
+
 void CharacterCombat::HandleKick(CharacterAnimation* animation, CharacterMovement* movement) {
     if (!animation || !movement) return;
     

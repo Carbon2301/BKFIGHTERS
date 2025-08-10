@@ -138,5 +138,6 @@ public:
      void MarkGunShotFired();
 
      void SuppressNextPunch() { m_suppressNextPunch = true; }
+     CharacterAnimation* GetAnimation() const { return m_animation.get(); }
 
 }; 
