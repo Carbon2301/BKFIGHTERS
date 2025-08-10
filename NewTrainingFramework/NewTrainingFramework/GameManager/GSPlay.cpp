@@ -475,13 +475,37 @@ void GSPlay::UpdateHudWeapons() {
         }
     }
 
+    auto worldGunSizeForTex = [](int texId)->std::pair<float,float> {
+        switch (texId) {
+            case 40: return {0.07f,   0.05f};   // Pistol (7x5)
+            case 41: return {0.132f,  0.042f}; // M4A1 (22x7)
+            case 42: return {0.114f, 0.03f}; // Shotgun (19x5)
+            case 43: return {0.138f, 0.054f}; // Bazoka (23x9)
+            case 44: return {0.1275f, 0.0675f}; // Flamegun (17x9)
+            case 45: return {0.09f,   0.05f};   // Deagle (9x5)
+            case 46: return {0.13125f, 0.042f};   // Sniper (25x8)
+            case 47: return {0.0675f, 0.06f};   // Uzi (9x8)
+            default: return {0.07f,   0.05f};   // fallback pistol
+        }
+    };
+    auto computeHudGunScale = [&](int texId, const Vector3& baseScale)->Vector3 {
+        const float pistolWorldH = 0.05f;
+        float baseAbsH = fabsf(baseScale.y);
+        if (baseAbsH < 1e-6f) return Vector3(baseScale.x, baseScale.y, baseScale.z);
+        float k = baseAbsH / pistolWorldH;
+        auto wh = worldGunSizeForTex(texId);
+        float sx = (wh.first  * k) * (baseScale.x < 0.0f ? -1.0f : 1.0f);
+        float sy = (wh.second * k) * (baseScale.y < 0.0f ? -1.0f : 1.0f);
+        return Vector3(sx, sy, baseScale.z);
+    };
+
     if (Object* hudGun1 = scene->GetObject(920)) {
-        hudGun1->SetScale(m_hudGun1BaseScale);
         hudGun1->SetTexture(m_player1GunTexId, 0);
+        hudGun1->SetScale(computeHudGunScale(m_player1GunTexId, m_hudGun1BaseScale));
     }
     if (Object* hudGun2 = scene->GetObject(921)) {
-        hudGun2->SetScale(m_hudGun2BaseScale);
         hudGun2->SetTexture(m_player2GunTexId, 0);
+        hudGun2->SetScale(computeHudGunScale(m_player2GunTexId, m_hudGun2BaseScale));
     }
 }
 
