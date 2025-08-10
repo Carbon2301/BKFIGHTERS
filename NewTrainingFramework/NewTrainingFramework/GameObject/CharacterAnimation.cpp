@@ -269,7 +269,9 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         }
 
         if (m_isTurning || m_gunEntering) {
-            PlayTopAnimation(0, false);
+            if (m_gunEntering) {
+                PlayTopAnimation(0, false);
+            }
             PlayAnimation(29, true);
             if (m_gunEntering) {
                 unsigned int nowMs = SDL_GetTicks();
@@ -436,7 +438,8 @@ bool CharacterAnimation::IsFacingLeft(CharacterMovement* movement) const {
 void CharacterAnimation::SetGunMode(bool enabled) {
     if (enabled && !m_gunMode) {
         unsigned int nowMsEnter = SDL_GetTicks();
-        if (m_lastShotTickMs != 0 && (nowMsEnter - m_lastShotTickMs) <= STICKY_AIM_WINDOW_MS) {
+        bool isSticky = (m_lastShotTickMs != 0 && (nowMsEnter - m_lastShotTickMs) <= STICKY_AIM_WINDOW_MS);
+        if (isSticky) {
             m_aimAngleDeg = m_lastShotAimDeg;
         } else {
             m_aimAngleDeg = 0.0f;
@@ -444,7 +447,7 @@ void CharacterAnimation::SetGunMode(bool enabled) {
         m_prevAimUp = m_prevAimDown = false;
         m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
         m_aimSincePressUp = m_aimSincePressDown = 0.0f;
-        m_gunEntering = true;
+        m_gunEntering = !isSticky;
         m_gunEnterStartMs = nowMsEnter;
         m_syncFacingOnEnter = true;
         m_aimHoldBlockUntilMs = m_gunEnterStartMs + (unsigned int)(AIM_HOLD_INITIAL_DELAY * 1000.0f);

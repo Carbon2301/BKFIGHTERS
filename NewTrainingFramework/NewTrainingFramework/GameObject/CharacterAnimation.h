@@ -59,7 +59,7 @@ private:
     // Sticky aim after shot
     float m_lastShotAimDeg = 0.0f;
     unsigned int m_lastShotTickMs = 0;
-    static constexpr unsigned int STICKY_AIM_WINDOW_MS = 500;
+    static constexpr unsigned int STICKY_AIM_WINDOW_MS = 600;
 
     bool m_recoilActive = false;
     float m_recoilTimer = 0.0f;
