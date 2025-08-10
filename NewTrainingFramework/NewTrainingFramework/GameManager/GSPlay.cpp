@@ -717,6 +717,78 @@ void GSPlay::SpawnBulletFromCharacterWithJitter(const Character& ch, float jitte
     m_bullets.push_back(b);
 }
 
+void GSPlay::SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg, float speedMul, float damage) {
+    Vector3 pivot = ch.GetGunTopWorldPosition();
+    Vector3 base  = ch.GetPosition();
+    const float aimDeg = ch.GetAimAngleDeg() + jitterDeg;
+    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+    const float aimRad = aimDeg * 3.14159265f / 180.0f;
+    const float angleWorld = faceSign * aimRad;
+
+    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                       base.y + BULLET_SPAWN_OFFSET_Y,
+                       0.0f);
+    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+    float c = cosf(angleWorld), s = sinf(angleWorld);
+    Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
+    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+
+    const float forwardStep = 0.02f;
+    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+    Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
+                        vLocalForward.x * s + vLocalForward.y * c, 0.0f);
+    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+    int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
+    const bool isP1 = (&ch == &m_player);
+    Bullet b; b.x = spawn.x; b.y = spawn.y;
+    b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul;
+    b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+    b.ownerId = isP1 ? 1 : 2; b.damage = damage; b.isBazoka = true; b.trailTimer = 0.0f;
+    if ((int)m_bullets.size() < MAX_BULLETS) {
+        m_bullets.push_back(b);
+    }
+}
+
+void GSPlay::SpawnFlamegunBulletFromCharacter(const Character& ch, float jitterDeg) {
+    // Reuse bazoka visual (bullet + trail), but slower and with gravity after a distance
+    Vector3 pivot = ch.GetGunTopWorldPosition();
+    Vector3 base  = ch.GetPosition();
+    const float aimDeg = ch.GetAimAngleDeg() + jitterDeg;
+    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+    const float aimRad = aimDeg * 3.14159265f / 180.0f;
+    const float angleWorld = faceSign * aimRad;
+
+    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                       base.y + BULLET_SPAWN_OFFSET_Y,
+                       0.0f);
+    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+    float c = cosf(angleWorld), s = sinf(angleWorld);
+    Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
+    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+
+    const float forwardStep = 0.02f;
+    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+    Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
+                        vLocalForward.x * s + vLocalForward.y * c, 0.0f);
+    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+    int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
+    const bool isP1 = (&ch == &m_player);
+    Bullet b; b.x = spawn.x; b.y = spawn.y;
+    b.vx = dir.x * BULLET_SPEED * FLAMEGUN_SPEED_MUL; b.vy = dir.y * BULLET_SPEED * FLAMEGUN_SPEED_MUL;
+    b.life = FLAMEGUN_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+    b.ownerId = isP1 ? 1 : 2; b.damage = FLAMEGUN_DAMAGE; b.isBazoka = true; b.trailTimer = 0.0f;
+    b.isFlamegun = true; b.distanceTraveled = 0.0f; b.dropAfterDistance = FLAMEGUN_DROP_DISTANCE; b.gravityAccel = FLAMEGUN_GRAVITY;
+    if ((int)m_bullets.size() < MAX_BULLETS) {
+        m_bullets.push_back(b);
+    }
+}
+
 void GSPlay::UpdateBullets(float dt) {
     auto removeBullet = [&](decltype(m_bullets.begin())& it){
         if (it->objIndex >= 0 && it->objIndex < (int)m_bulletObjs.size() && m_bulletObjs[it->objIndex]) {
@@ -733,9 +805,19 @@ void GSPlay::UpdateBullets(float dt) {
 
     // Update all bullets
     for (auto it = m_bullets.begin(); it != m_bullets.end(); ) {
+        float dx = it->vx * dt;
+        float dy = it->vy * dt;
+        it->x += dx;
+        it->y += dy;
         it->life -= dt;
-        it->x += it->vx * dt;
-        it->y += it->vy * dt;
+
+        if (it->isFlamegun) {
+            it->distanceTraveled += std::sqrt(dx*dx + dy*dy);
+            if (it->distanceTraveled >= it->dropAfterDistance) {
+                it->vy -= it->gravityAccel * dt;
+                it->angleRad = atan2f(it->vy, it->vx);
+            }
+        }
 
         if (it->isBazoka) {
             it->trailTimer += dt;
@@ -1003,6 +1085,19 @@ void GSPlay::TryCompletePendingShots() {
             b.ownerId = isP1 ? 1 : 2; b.damage = 100.0f; b.isBazoka = true; b.trailTimer = 0.0f;
             if ((int)m_bullets.size() < MAX_BULLETS) {
                 m_bullets.push_back(b);
+            }
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+            ch.SetGunMode(false);
+            ch.GetMovement()->SetInputLocked(false);
+        } else if (currentGunTex == 44) { // FlameGun
+            const int count = FLAMEGUN_BULLET_COUNT;
+            for (int i = 0; i < count; ++i) {
+                float r1 = (float)rand() / (float)RAND_MAX;
+                float r2 = (float)rand() / (float)RAND_MAX;
+                float r = r1 - r2;
+                float jitter = r * (FLAMEGUN_SPREAD_DEG * 0.6f);
+                SpawnFlamegunBulletFromCharacter(ch, jitter);
             }
             ch.MarkGunShotFired();
             pendingFlag = false;

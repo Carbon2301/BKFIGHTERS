@@ -30,7 +30,20 @@ private:
     
     // Cloud movement system
     float m_cloudSpeed;
-    struct Bullet { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; int ownerId; float damage; bool isBazoka = false; float trailTimer = 0.0f; };
+    struct Bullet {
+        float x; float y;
+        float vx; float vy;
+        float life; int objIndex;
+        float angleRad; float faceSign;
+        int ownerId; float damage;
+        bool isBazoka = false;
+        float trailTimer = 0.0f;
+        // FlameGun behavior
+        bool  isFlamegun = false;
+        float distanceTraveled = 0.0f;
+        float dropAfterDistance = 0.0f;
+        float gravityAccel = 0.0f;
+    };
     std::vector<Bullet> m_bullets;
     static constexpr int MAX_BULLETS = 1024;
     const float BULLET_SPEED = 3.5f;
@@ -49,6 +62,10 @@ private:
     
     void SpawnBulletFromCharacter(const Character& ch);
     void SpawnBulletFromCharacterWithJitter(const Character& ch, float jitterDeg);
+    // Spawn a Bazoka-like projectile (uses bazoka bullet object and trail)
+    void SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg, float speedMul, float damage);
+    // Spawn FlameGun projectile: slower, bazoka trail, falls after a short distance
+    void SpawnFlamegunBulletFromCharacter(const Character& ch, float jitterDeg);
     void UpdateBullets(float dt);
     void UpdateGunBursts();
     void UpdateGunReloads();
@@ -97,6 +114,15 @@ private:
     bool  m_p2BurstActive = false;
     int   m_p2BurstRemaining = 0;
     float m_p2NextBurstTime = 0.0f;
+
+    // FlameGun
+    static constexpr int   FLAMEGUN_BULLET_COUNT = 10;
+    static constexpr float FLAMEGUN_SPREAD_DEG   = 15.0f;
+    static constexpr float FLAMEGUN_SPEED_MUL    = 0.4f;
+    static constexpr float FLAMEGUN_DAMAGE       = 20.0f;
+    static constexpr float FLAMEGUN_DROP_DISTANCE= 0.20f;
+    static constexpr float FLAMEGUN_GRAVITY      = 3.2f;
+    static constexpr float FLAMEGUN_LIFETIME     = 1.2f;
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
     bool  m_p1ReloadPending = false;
