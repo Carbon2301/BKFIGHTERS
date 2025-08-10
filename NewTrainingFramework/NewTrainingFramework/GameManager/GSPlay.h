@@ -85,6 +85,26 @@ private:
     void EnsureBazokaTrailTextures();
     std::vector<std::shared_ptr<class Texture2D>> m_bazokaTrailTextures;
 
+    struct BloodDrop {
+        float x; float y;
+        float vx; float vy;
+        float angle;
+        int objIdx;
+    };
+    std::vector<BloodDrop> m_bloodDrops;
+    std::vector<std::unique_ptr<Object>> m_bloodObjs;
+    std::vector<int> m_freeBloodSlots;
+    static constexpr float BLOOD_GRAVITY = 3.8f;
+    static constexpr float BLOOD_COLLISION_WIDTH  = 0.015f;
+    static constexpr float BLOOD_COLLISION_HEIGHT = 0.015f;
+    int m_bloodProtoIdA = 1400;
+    int m_bloodProtoIdB = 1401;
+    int m_bloodProtoIdC = 1402;
+    int CreateOrAcquireBloodObjectFromProto(int protoObjectId);
+    void SpawnBloodAt(float x, float y, float baseAngleRad);
+    void UpdateBloods(float dt);
+    void DrawBloods(class Camera* cam);
+
     std::unique_ptr<WallCollision> m_wallCollision;
 
     bool m_p1ShotPending = false;
@@ -185,3 +205,4 @@ private:
     struct ItemLife { int id; float timer; };
     std::vector<ItemLife> m_itemLives;
 }; 
+

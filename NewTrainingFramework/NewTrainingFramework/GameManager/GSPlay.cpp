@@ -230,6 +230,10 @@ void GSPlay::Init() {
         m_wallCollision->LoadWallsFromScene();
     }
 
+    if (Object* bA = sceneManager->GetObject(m_bloodProtoIdA)) { bA->SetVisible(false); }
+    if (Object* bB = sceneManager->GetObject(m_bloodProtoIdB)) { bB->SetVisible(false); }
+    if (Object* bC = sceneManager->GetObject(m_bloodProtoIdC)) { bC->SetVisible(false); }
+
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
@@ -360,6 +364,8 @@ void GSPlay::Update(float deltaTime) {
             ++it;
         }
     }
+
+    UpdateBloods(deltaTime);
 }
 
 void GSPlay::Draw() {
@@ -374,6 +380,7 @@ void GSPlay::Draw() {
     // Draw HUD portraits with independent UVs
     DrawHudPortraits();
     if (cam) { DrawBullets(cam); }
+    if (cam) { DrawBloods(cam); }
     
     static float lastPosX = m_player.GetPosition().x;
     static int lastAnim = m_player.GetCurrentAnimation();
@@ -869,6 +876,7 @@ void GSPlay::UpdateBullets(float dt) {
                 if (prev > 0.0f && target->GetHealth() <= 0.0f && attacker) {
                     target->TriggerDieFromAttack(*attacker);
                 }
+                SpawnBloodAt(it->x, it->y, it->angleRad);
                 removeBullet(it); continue;
             }
         }
@@ -908,6 +916,14 @@ int GSPlay::CreateOrAcquireBulletObject() {
         int idx = m_freeBulletSlots.back();
         m_freeBulletSlots.pop_back();
         if (m_bulletObjs[idx]) {
+            SceneManager* scene = SceneManager::GetInstance();
+            if (Object* proto = scene->GetObject(m_bulletObjectId)) {
+                m_bulletObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_bulletObjs[idx]->SetTexture(texIds[0], 0);
+                m_bulletObjs[idx]->SetShader(proto->GetShaderId());
+                m_bulletObjs[idx]->SetScale(proto->GetScale());
+            }
             m_bulletObjs[idx]->SetVisible(true);
         }
         return idx;
@@ -1016,6 +1032,116 @@ void GSPlay::DrawBullets(Camera* cam) {
             m_bazokaTrailObjs[idx]->SetPosition(t.x, t.y, 0.0f);
             m_bazokaTrailObjs[idx]->SetRotation(0.0f, 0.0f, t.angle);
             m_bazokaTrailObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
+    }
+}
+
+int GSPlay::CreateOrAcquireBloodObjectFromProto(int protoObjectId) {
+    if (!m_freeBloodSlots.empty()) {
+        int idx = m_freeBloodSlots.back();
+        m_freeBloodSlots.pop_back();
+        if (m_bloodObjs[idx]) {
+            SceneManager* scene = SceneManager::GetInstance();
+            if (Object* proto = scene->GetObject(protoObjectId)) {
+                m_bloodObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_bloodObjs[idx]->SetTexture(texIds[0], 0);
+                m_bloodObjs[idx]->SetShader(proto->GetShaderId());
+                m_bloodObjs[idx]->SetScale(proto->GetScale());
+            }
+            m_bloodObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* proto = scene->GetObject(protoObjectId);
+    std::unique_ptr<Object> obj = std::make_unique<Object>(40000 + (int)m_bloodObjs.size());
+    if (proto) {
+        obj->SetModel(proto->GetModelId());
+        const std::vector<int>& texIds = proto->GetTextureIds();
+        if (!texIds.empty()) obj->SetTexture(texIds[0], 0);
+        obj->SetShader(proto->GetShaderId());
+        obj->SetScale(proto->GetScale());
+    }
+    obj->SetVisible(true);
+    m_bloodObjs.push_back(std::move(obj));
+    return (int)m_bloodObjs.size() - 1;
+}
+
+void GSPlay::SpawnBloodAt(float x, float y, float baseAngleRad) {
+    float backX = cosf(baseAngleRad) * -0.15f;
+    float backY = sinf(baseAngleRad) * -0.05f;
+
+    int protos[3] = { m_bloodProtoIdA, m_bloodProtoIdB, m_bloodProtoIdC };
+    for (int i = 0; i < 3; ++i) {
+        int idx = CreateOrAcquireBloodObjectFromProto(protos[i]);
+        float rx = ((float)rand() / (float)RAND_MAX - 0.5f) * 0.02f;
+        float ry = ((float)rand() / (float)RAND_MAX - 0.5f) * 0.02f;
+        float angJitter = ((float)rand() / (float)RAND_MAX - 0.5f) * 0.6f;
+        float speedMul = 0.6f + ((float)rand() / (float)RAND_MAX) * 0.6f; // [0.6,1.2]
+
+        if (idx >= 0 && idx < (int)m_bloodObjs.size() && m_bloodObjs[idx]) {
+            m_bloodObjs[idx]->SetPosition(x + rx, y + ry, 0.0f);
+            m_bloodObjs[idx]->SetRotation(0.0f, 0.0f, baseAngleRad + angJitter);
+        }
+
+        BloodDrop d;
+        d.x = x + rx; d.y = y + ry;
+        // initial velocity: slight backward arc, plus small outward component
+        float dirX = cosf(baseAngleRad + angJitter);
+        float dirY = sinf(baseAngleRad + angJitter);
+        d.vx = backX * speedMul + dirX * 0.05f;
+        d.vy = backY * speedMul + dirY * 0.03f + 0.05f; // give a tad upward kick
+        d.angle = baseAngleRad + angJitter;
+        d.objIdx = idx;
+        m_bloodDrops.push_back(d);
+    }
+}
+
+void GSPlay::UpdateBloods(float dt) {
+    auto removeDrop = [&](size_t idx){
+        BloodDrop& d = m_bloodDrops[idx];
+        if (d.objIdx >= 0 && d.objIdx < (int)m_bloodObjs.size() && m_bloodObjs[d.objIdx]) {
+            m_bloodObjs[d.objIdx]->SetVisible(false);
+            m_freeBloodSlots.push_back(d.objIdx);
+        }
+        m_bloodDrops[idx] = m_bloodDrops.back();
+        m_bloodDrops.pop_back();
+    };
+
+    for (size_t i = 0; i < m_bloodDrops.size(); ) {
+        BloodDrop& d = m_bloodDrops[i];
+        d.vy -= BLOOD_GRAVITY * dt;
+        float dx = d.vx * dt;
+        float dy = d.vy * dt;
+        d.x += dx;
+        d.y += dy;
+
+        d.angle += 2.0f * dt;
+
+        if (d.objIdx >= 0 && d.objIdx < (int)m_bloodObjs.size() && m_bloodObjs[d.objIdx]) {
+            m_bloodObjs[d.objIdx]->SetPosition(d.x, d.y, 0.0f);
+            m_bloodObjs[d.objIdx]->SetRotation(0.0f, 0.0f, d.angle);
+        }
+
+        bool collided = false;
+        if (m_wallCollision) {
+            Vector3 pos(d.x, d.y, 0.0f);
+            collided = m_wallCollision->CheckWallCollision(pos, BLOOD_COLLISION_WIDTH, BLOOD_COLLISION_HEIGHT, 0.0f, 0.0f);
+        }
+        if (collided) {
+            removeDrop(i);
+        } else {
+            ++i;
+        }
+    }
+}
+
+void GSPlay::DrawBloods(Camera* cam) {
+    for (const BloodDrop& d : m_bloodDrops) {
+        int idx = d.objIdx;
+        if (idx >= 0 && idx < (int)m_bloodObjs.size() && m_bloodObjs[idx]) {
+            m_bloodObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
         }
     }
 }
