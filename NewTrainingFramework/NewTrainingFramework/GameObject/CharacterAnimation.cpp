@@ -571,8 +571,9 @@ void CharacterAnimation::OnGunShotFired(CharacterMovement* movement) {
     float muzzleX = cosf(angleWorld);
     float muzzleY = sinf(angleWorld);
     
-    m_recoilOffsetX = muzzleX * RECOIL_STRENGTH;
-    m_recoilOffsetY = muzzleY * RECOIL_STRENGTH;
+    float k = RECOIL_STRENGTH * m_recoilStrengthMul;
+    m_recoilOffsetX = muzzleX * k;
+    m_recoilOffsetY = muzzleY * k;
 }
 
 void CharacterAnimation::SetGunByTextureId(int texId) {
@@ -605,12 +606,14 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
         case 47: // Uzi
             m_gunTopAnimReverse = 16;
             m_gunTopAnimHold    = 17;
+            m_recoilStrengthMul  = 1.8f;
             break;
         case 40: // Pistol (default)
         default:
             m_gunTopAnimReverse = 0;
             m_gunTopAnimHold    = 1;
             m_gunTopAnimReload  = -1;
+            m_recoilStrengthMul  = 1.0f;
             break;
     }
 }

@@ -821,7 +821,7 @@ void GSPlay::TryCompletePendingShots() {
         if (elapsed < GetGunRequiredTime()) return;
         const bool isP1 = (&ch == &m_player);
         int currentGunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
-        if (currentGunTex == 41) {
+        if (currentGunTex == 41 || currentGunTex == 47) { // M4A1 or Uzi
             if (isP1) {
                 m_p1BurstActive = true;
                 m_p1BurstRemaining = M4A1_BURST_COUNT;
@@ -869,10 +869,11 @@ void GSPlay::UpdateGunBursts() {
         if (m_gameTime < nextTime) return;
         const bool isP1Local = (&ch == &m_player);
         int gunTex = isP1Local ? m_player1GunTexId : m_player2GunTexId;
-        if (gunTex == 41) {
-            // random jitter in [-1.5, +1.5] degrees
+        if (gunTex == 41 || gunTex == 47) {
             float r = (float)rand() / (float)RAND_MAX; // [0,1]
-            float jitter = (r * 2.0f - 1.0f) * 1.5f;
+            float baseJitter = 1.0f;
+            if (gunTex == 47) baseJitter = 3.0f;
+            float jitter = (r * 2.0f - 1.0f) * baseJitter;
             SpawnBulletFromCharacterWithJitter(ch, jitter);
         } else {
             SpawnBulletFromCharacter(ch);
