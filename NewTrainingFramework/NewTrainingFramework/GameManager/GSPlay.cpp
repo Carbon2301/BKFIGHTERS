@@ -277,9 +277,9 @@ void GSPlay::Update(float deltaTime) {
     SceneManager::GetInstance()->Update(deltaTime);
     
     if (m_inputManager) {
+        HandleItemPickup();
         m_player.ProcessInput(deltaTime, m_inputManager);
         m_player2.ProcessInput(deltaTime, m_inputManager);
-        HandleItemPickup();
         m_inputManager->Update();
     } else {
         m_inputManager = InputManager::GetInstance();
@@ -944,7 +944,6 @@ void GSPlay::UpdateFanRotation(float deltaTime) {
     }
 } 
 
-// Item pickup: sit + kick
 void GSPlay::HandleItemPickup() {
     if (!m_inputManager) return;
     SceneManager* scene = SceneManager::GetInstance();
@@ -955,15 +954,13 @@ void GSPlay::HandleItemPickup() {
     const bool* keys = m_inputManager->GetKeyStates();
     if (!keys) return;
 
-    // Player 1 input gates: sit + kick
     const PlayerInputConfig& cfg1 = m_player.GetMovement()->GetInputConfig();
     bool p1Sit = keys[cfg1.sitKey];
-    bool p1KickJust = m_inputManager->IsKeyJustPressed(cfg1.kickKey);
+    bool p1PickupJust = m_inputManager->IsKeyJustPressed('1');
 
-    // Player 2 input gates: sit + kick
     const PlayerInputConfig& cfg2 = m_player2.GetMovement()->GetInputConfig();
     bool p2Sit = keys[cfg2.sitKey];
-    bool p2KickJust = m_inputManager->IsKeyJustPressed(cfg2.kickKey);
+    bool p2PickupJust = m_inputManager->IsKeyJustPressed('N') || m_inputManager->IsKeyJustPressed('n');
 
     auto isOverlapping = [](const Vector3& pos, float w, float h, const Vector3& objPos, const Vector3& objScale) {
         float halfW = w * 0.5f;
@@ -978,8 +975,8 @@ void GSPlay::HandleItemPickup() {
         return overlapX && overlapY;
     };
 
-    auto tryPickup = [&](Character& player, bool sitHeld, bool kickJust, Object*& objRef, bool& availFlag, Character::WeaponType weaponType){
-        if (!sitHeld || !kickJust || !objRef) return false;
+    auto tryPickup = [&](Character& player, bool sitHeld, bool pickupJust, Object*& objRef, bool& availFlag, Character::WeaponType weaponType){
+        if (!sitHeld || !pickupJust || !objRef) return false;
         const Vector3& objPos = objRef->GetPosition();
         const Vector3& objScale = objRef->GetScale();
         Vector3 pPos = player.GetPosition();
@@ -992,7 +989,9 @@ void GSPlay::HandleItemPickup() {
             scene->RemoveObject(removedId);
             objRef = nullptr;
             availFlag = false;
+            player.CancelAllCombos();
             player.SetWeapon(weaponType);
+            player.SuppressNextPunch();
             std::cout << "Picked up weapon ID " << removedId << " (type=" << (int)weaponType << ")" << std::endl;
             return true;
         }
@@ -1000,12 +999,12 @@ void GSPlay::HandleItemPickup() {
     };
 
     // Check Player 1
-    if ( tryPickup(m_player,  p1Sit, p1KickJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
-         tryPickup(m_player,  p1Sit, p1KickJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
-         tryPickup(m_player,  p1Sit, p1KickJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+    if ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+         tryPickup(m_player,  p1Sit, p1PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
+         tryPickup(m_player,  p1Sit, p1PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
 
     // Check Player 2
-    if ( tryPickup(m_player2, p2Sit, p2KickJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
-         tryPickup(m_player2, p2Sit, p2KickJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
-         tryPickup(m_player2, p2Sit, p2KickJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+    if ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+         tryPickup(m_player2, p2Sit, p2PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
+         tryPickup(m_player2, p2Sit, p2PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
 }

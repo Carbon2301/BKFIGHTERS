@@ -88,6 +88,9 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     
     if (inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
+        if (m_suppressNextPunch) {
+            m_suppressNextPunch = false;
+        } else {
         if (m_movement->IsJumping()) {
             HandleAirKick();
         } else {
@@ -97,6 +100,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
             case WeaponType::Pipe:  HandlePipeCombo(); break;
             case WeaponType::None:
             default: HandlePunchCombo(); break;
+        }
         }
         }
     }
