@@ -12,6 +12,7 @@
 #include <memory>
 #include "../GameObject/AnimationManager.h"
 #include "../GameObject/Character.h"
+#include "../GameObject/CharacterAnimation.h"
 #include "../GameObject/CharacterMovement.h"
 #include "../GameObject/InputManager.h"
 #include "ResourceManager.h"
@@ -213,6 +214,17 @@ void GSPlay::Init() {
         hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
     }
 
+    if (Object* hudGun1 = sceneManager->GetObject(920)) {
+        m_hudGun1BaseScale = hudGun1->GetScale();
+        hudGun1->SetScale(m_hudGun1BaseScale);
+        hudGun1->SetTexture(m_player1GunTexId, 0);
+    }
+    if (Object* hudGun2 = sceneManager->GetObject(921)) {
+        m_hudGun2BaseScale = hudGun2->GetScale();
+        hudGun2->SetScale(m_hudGun2BaseScale);
+        hudGun2->SetTexture(m_player2GunTexId, 0);
+    }
+
     m_wallCollision = std::make_unique<WallCollision>();
     if (m_wallCollision) {
         m_wallCollision->LoadWallsFromScene();
@@ -277,9 +289,9 @@ void GSPlay::Update(float deltaTime) {
     SceneManager::GetInstance()->Update(deltaTime);
     
     if (m_inputManager) {
+        HandleItemPickup();
         m_player.ProcessInput(deltaTime, m_inputManager);
         m_player2.ProcessInput(deltaTime, m_inputManager);
-        HandleItemPickup();
         m_inputManager->Update();
     } else {
         m_inputManager = InputManager::GetInstance();
@@ -462,6 +474,39 @@ void GSPlay::UpdateHudWeapons() {
         } else {
             hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
         }
+    }
+
+    auto worldGunSizeForTex = [](int texId)->std::pair<float,float> {
+        switch (texId) {
+            case 40: return {0.07f,   0.05f};   // Pistol (7x5)
+            case 41: return {0.132f,  0.042f}; // M4A1 (22x7)
+            case 42: return {0.114f, 0.03f}; // Shotgun (19x5)
+            case 43: return {0.138f, 0.054f}; // Bazoka (23x9)
+            case 44: return {0.1275f, 0.0675f}; // Flamegun (17x9)
+            case 45: return {0.09f,   0.05f};   // Deagle (9x5)
+            case 46: return {0.13125f, 0.042f};   // Sniper (25x8)
+            case 47: return {0.0675f, 0.06f};   // Uzi (9x8)
+            default: return {0.07f,   0.05f};   // fallback pistol
+        }
+    };
+    auto computeHudGunScale = [&](int texId, const Vector3& baseScale)->Vector3 {
+        const float pistolWorldH = 0.05f;
+        float baseAbsH = fabsf(baseScale.y);
+        if (baseAbsH < 1e-6f) return Vector3(baseScale.x, baseScale.y, baseScale.z);
+        float k = baseAbsH / pistolWorldH;
+        auto wh = worldGunSizeForTex(texId);
+        float sx = (wh.first  * k) * (baseScale.x < 0.0f ? -1.0f : 1.0f);
+        float sy = (wh.second * k) * (baseScale.y < 0.0f ? -1.0f : 1.0f);
+        return Vector3(sx, sy, baseScale.z);
+    };
+
+    if (Object* hudGun1 = scene->GetObject(920)) {
+        hudGun1->SetTexture(m_player1GunTexId, 0);
+        hudGun1->SetScale(computeHudGunScale(m_player1GunTexId, m_hudGun1BaseScale));
+    }
+    if (Object* hudGun2 = scene->GetObject(921)) {
+        hudGun2->SetTexture(m_player2GunTexId, 0);
+        hudGun2->SetScale(computeHudGunScale(m_player2GunTexId, m_hudGun2BaseScale));
     }
 }
 
@@ -944,26 +989,32 @@ void GSPlay::UpdateFanRotation(float deltaTime) {
     }
 } 
 
-// Item pickup: sit + kick
 void GSPlay::HandleItemPickup() {
     if (!m_inputManager) return;
     SceneManager* scene = SceneManager::GetInstance();
     Object* axe   = scene->GetObject(AXE_OBJECT_ID);
     Object* sword = scene->GetObject(SWORD_OBJECT_ID);
     Object* pipe  = scene->GetObject(PIPE_OBJECT_ID);
+    // Guns
+    Object* gun_pistol  = scene->GetObject(1200);
+    Object* gun_m4a1    = scene->GetObject(1201);
+    Object* gun_shotgun = scene->GetObject(1202);
+    Object* gun_bazoka  = scene->GetObject(1203);
+    Object* gun_flame   = scene->GetObject(1204);
+    Object* gun_deagle  = scene->GetObject(1205);
+    Object* gun_sniper  = scene->GetObject(1206);
+    Object* gun_uzi     = scene->GetObject(1207);
 
     const bool* keys = m_inputManager->GetKeyStates();
     if (!keys) return;
 
-    // Player 1 input gates: sit + kick
     const PlayerInputConfig& cfg1 = m_player.GetMovement()->GetInputConfig();
     bool p1Sit = keys[cfg1.sitKey];
-    bool p1KickJust = m_inputManager->IsKeyJustPressed(cfg1.kickKey);
+    bool p1PickupJust = m_inputManager->IsKeyJustPressed('1');
 
-    // Player 2 input gates: sit + kick
     const PlayerInputConfig& cfg2 = m_player2.GetMovement()->GetInputConfig();
     bool p2Sit = keys[cfg2.sitKey];
-    bool p2KickJust = m_inputManager->IsKeyJustPressed(cfg2.kickKey);
+    bool p2PickupJust = m_inputManager->IsKeyJustPressed('N') || m_inputManager->IsKeyJustPressed('n');
 
     auto isOverlapping = [](const Vector3& pos, float w, float h, const Vector3& objPos, const Vector3& objScale) {
         float halfW = w * 0.5f;
@@ -978,8 +1029,8 @@ void GSPlay::HandleItemPickup() {
         return overlapX && overlapY;
     };
 
-    auto tryPickup = [&](Character& player, bool sitHeld, bool kickJust, Object*& objRef, bool& availFlag, Character::WeaponType weaponType){
-        if (!sitHeld || !kickJust || !objRef) return false;
+    auto tryPickup = [&](Character& player, bool sitHeld, bool pickupJust, Object*& objRef, bool& availFlag, Character::WeaponType weaponType){
+        if (!sitHeld || !pickupJust || !objRef) return false;
         const Vector3& objPos = objRef->GetPosition();
         const Vector3& objScale = objRef->GetScale();
         Vector3 pPos = player.GetPosition();
@@ -992,20 +1043,65 @@ void GSPlay::HandleItemPickup() {
             scene->RemoveObject(removedId);
             objRef = nullptr;
             availFlag = false;
+            player.CancelAllCombos();
             player.SetWeapon(weaponType);
+            player.SuppressNextPunch();
             std::cout << "Picked up weapon ID " << removedId << " (type=" << (int)weaponType << ")" << std::endl;
             return true;
         }
         return false;
     };
 
-    // Check Player 1
-    if ( tryPickup(m_player,  p1Sit, p1KickJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
-         tryPickup(m_player,  p1Sit, p1KickJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
-         tryPickup(m_player,  p1Sit, p1KickJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+    auto tryPickupGun = [&](int texId, Object*& gunObj, Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
+        if (!sitHeld || !pickupJust || !gunObj) return false;
+        const Vector3& objPos = gunObj->GetPosition();
+        const Vector3& objScale = gunObj->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = gunObj->GetId();
+            scene->RemoveObject(removedId);
+            gunObj = nullptr;
+            if (isPlayer1) m_player1GunTexId = texId; else m_player2GunTexId = texId;
+            // Also switch top overlay animations to this gun
+            if (CharacterAnimation* a1 = player.GetAnimation()) {
+                a1->SetGunByTextureId(texId);
+            }
+            player.SuppressNextPunch();
+            std::cout << "Picked up gun ID " << removedId << " (tex=" << texId << ")" << std::endl;
+            return true;
+        }
+        return false;
+    };
+
+    // Check Player 1 melee
+    if ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+         tryPickup(m_player,  p1Sit, p1PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
+         tryPickup(m_player,  p1Sit, p1PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+    // Check Player 1 guns
+    if ( tryPickupGun(40, gun_pistol,  m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(41, gun_m4a1,    m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(42, gun_shotgun, m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(43, gun_bazoka,  m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(44, gun_flame,   m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(45, gun_deagle,  m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(46, gun_sniper,  m_player, p1Sit, p1PickupJust, true)  ||
+         tryPickupGun(47, gun_uzi,     m_player, p1Sit, p1PickupJust, true) ) { return; }
 
     // Check Player 2
-    if ( tryPickup(m_player2, p2Sit, p2KickJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
-         tryPickup(m_player2, p2Sit, p2KickJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
-         tryPickup(m_player2, p2Sit, p2KickJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+    if ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+         tryPickup(m_player2, p2Sit, p2PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
+         tryPickup(m_player2, p2Sit, p2PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+    // Check Player 2 guns
+    if ( tryPickupGun(40, gun_pistol,  m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(41, gun_m4a1,    m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(42, gun_shotgun, m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(43, gun_bazoka,  m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(44, gun_flame,   m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(45, gun_deagle,  m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(46, gun_sniper,  m_player2, p2Sit, p2PickupJust, false) ||
+         tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) { return; }
 }

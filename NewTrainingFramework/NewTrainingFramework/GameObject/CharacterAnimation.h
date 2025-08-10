@@ -28,6 +28,9 @@ private:
     float m_topOffsetX = -0.019f;
     float m_topOffsetY = -0.025f;
 
+    int m_gunTopAnimReverse = 0; 
+    int m_gunTopAnimHold    = 1; 
+
     float m_climbHoldTimer = 0.0f;
     static constexpr float CLIMB_HOLD_STEP_INTERVAL = 0.12f;
     int m_lastClimbDir = 0;
@@ -108,6 +111,9 @@ public:
     void SetTopOffset(float ox, float oy) { m_topOffsetX = ox; m_topOffsetY = oy; }
 
     void OnGunShotFired(CharacterMovement* movement = nullptr);
+
+    // Set current gun by texture id
+    void SetGunByTextureId(int texId);
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);

@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 25
+# 2DTexture 33
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -334,6 +334,38 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 33
 FILE "../Resources/Fighter/Weapons/Bullet.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 40
+FILE "../Resources/Fighter/Gun/Pistol.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 41
+FILE "../Resources/Fighter/Gun/M4A1.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 42
+FILE "../Resources/Fighter/Gun/Shotgun.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 43
+FILE "../Resources/Fighter/Gun/Bazoka.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 44
+FILE "../Resources/Fighter/Gun/Flamegun.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 45
+FILE "../Resources/Fighter/Gun/Deagle.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 46
+FILE "../Resources/Fighter/Gun/Snipper.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 47
+FILE "../Resources/Fighter/Gun/Uzi.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1

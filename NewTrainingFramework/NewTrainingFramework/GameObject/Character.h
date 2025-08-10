@@ -33,6 +33,8 @@ private:
     // Inventory/state
     WeaponType m_weapon = WeaponType::None;
 
+    bool m_suppressNextPunch = false;
+
 public:
     Character();
     ~Character();
@@ -131,9 +133,11 @@ public:
     void Heal(float amount);
     void ResetHealth();
 
-     // Gun helpers
      Vector3 GetGunTopWorldPosition() const;
      float GetAimAngleDeg() const;
      void MarkGunShotFired();
+
+     void SuppressNextPunch() { m_suppressNextPunch = true; }
+     CharacterAnimation* GetAnimation() const { return m_animation.get(); }
 
 }; 
