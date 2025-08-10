@@ -38,10 +38,12 @@ private:
     const float BULLET_SPAWN_OFFSET_Y = -0.01f;
     const float BULLET_COLLISION_WIDTH  = 0.02f;
     const float BULLET_COLLISION_HEIGHT = 0.02f;
-    int m_bulletObjectId = 1300; // from scene
+    int m_bulletObjectId = 1300;
+    int m_bazokaBulletObjectId = 1301;
     std::vector<std::unique_ptr<Object>> m_bulletObjs;
     std::vector<int> m_freeBulletSlots;
     int CreateOrAcquireBulletObject();
+    int CreateOrAcquireBulletObjectFromProto(int protoObjectId);
     void DrawBullets(Camera* cam);
     
     void SpawnBulletFromCharacter(const Character& ch);

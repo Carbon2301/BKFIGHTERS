@@ -806,6 +806,38 @@ int GSPlay::CreateOrAcquireBulletObject() {
     return (int)m_bulletObjs.size() - 1;
 }
 
+int GSPlay::CreateOrAcquireBulletObjectFromProto(int protoObjectId) {
+    if (!m_freeBulletSlots.empty()) {
+        int idx = m_freeBulletSlots.back();
+        m_freeBulletSlots.pop_back();
+        if (m_bulletObjs[idx]) {
+            SceneManager* scene = SceneManager::GetInstance();
+            if (Object* proto = scene->GetObject(protoObjectId)) {
+                m_bulletObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_bulletObjs[idx]->SetTexture(texIds[0], 0);
+                m_bulletObjs[idx]->SetShader(proto->GetShaderId());
+                m_bulletObjs[idx]->SetScale(proto->GetScale());
+            }
+            m_bulletObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* proto = scene->GetObject(protoObjectId);
+    std::unique_ptr<Object> obj = std::make_unique<Object>(20000 + (int)m_bulletObjs.size());
+    if (proto) {
+        obj->SetModel(proto->GetModelId());
+        const std::vector<int>& texIds = proto->GetTextureIds();
+        if (!texIds.empty()) obj->SetTexture(texIds[0], 0);
+        obj->SetShader(proto->GetShaderId());
+        obj->SetScale(proto->GetScale());
+    }
+    obj->SetVisible(true);
+    m_bulletObjs.push_back(std::move(obj));
+    return (int)m_bulletObjs.size() - 1;
+}
+
 void GSPlay::DrawBullets(Camera* cam) {
     for (const Bullet& b : m_bullets) {
         int idx = b.objIndex;
@@ -864,6 +896,36 @@ void GSPlay::TryCompletePendingShots() {
                 m_p2ReloadExitTime = m_gameTime + SHOTGUN_RELOAD_TIME;
             }
             if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(true);
+        } else if (currentGunTex == 43) { // Bazoka
+            Vector3 pivot = ch.GetGunTopWorldPosition();
+            Vector3 base  = ch.GetPosition();
+            const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+            const float aimRad = ch.GetAimAngleDeg() * 3.14159265f / 180.0f;
+            const float angleWorld = faceSign * aimRad;
+            Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                               base.y + BULLET_SPAWN_OFFSET_Y, 0.0f);
+            Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+            float c = cosf(angleWorld), s = sinf(angleWorld);
+            Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
+            Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+            const float forwardStep = 0.02f;
+            Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+            Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
+                                vLocalForward.x * s + vLocalForward.y * c, 0.0f);
+            Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+            float len = dir.Length();
+            if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+            int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
+            Bullet b; b.x = spawn.x; b.y = spawn.y;
+            b.vx = dir.x * BULLET_SPEED * 0.5f; b.vy = dir.y * BULLET_SPEED * 0.5f; // slower rocket
+            b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+            b.ownerId = isP1 ? 1 : 2; b.damage = 100.0f;
+            m_bullets.push_back(b);
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+            ch.SetGunMode(false);
+            ch.GetMovement()->SetInputLocked(false);
         } else {
             SpawnBulletFromCharacter(ch);
             ch.MarkGunShotFired();

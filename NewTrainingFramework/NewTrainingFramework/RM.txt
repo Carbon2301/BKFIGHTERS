@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 33
+# 2DTexture 34
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -334,6 +334,10 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 33
 FILE "../Resources/Fighter/Weapons/Bullet.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 34
+FILE "../Resources/Fighter/Weapons/Bullet_Bazoka.tga"
 TILING GL_CLAMP_TO_EDGE
 
 ID 40
