@@ -30,22 +30,80 @@ private:
     
     // Cloud movement system
     float m_cloudSpeed;
-    struct Bullet { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; int ownerId; };
+    struct Bullet {
+        float x; float y;
+        float vx; float vy;
+        float life; int objIndex;
+        float angleRad; float faceSign;
+        int ownerId; float damage;
+        bool isBazoka = false;
+        float trailTimer = 0.0f;
+        // FlameGun behavior
+        bool  isFlamegun = false;
+        float distanceTraveled = 0.0f;
+        float dropAfterDistance = 0.0f;
+        float gravityAccel = 0.0f;
+    };
     std::vector<Bullet> m_bullets;
+    static constexpr int MAX_BULLETS = 1024;
     const float BULLET_SPEED = 3.5f;
     const float BULLET_LIFETIME = 2.0f;
     const float BULLET_SPAWN_OFFSET_X = 0.12f;
     const float BULLET_SPAWN_OFFSET_Y = -0.01f;
     const float BULLET_COLLISION_WIDTH  = 0.02f;
     const float BULLET_COLLISION_HEIGHT = 0.02f;
-    int m_bulletObjectId = 1300; // from scene
+    int m_bulletObjectId = 1300;
+    int m_bazokaBulletObjectId = 1301;
     std::vector<std::unique_ptr<Object>> m_bulletObjs;
     std::vector<int> m_freeBulletSlots;
     int CreateOrAcquireBulletObject();
+    int CreateOrAcquireBulletObjectFromProto(int protoObjectId);
     void DrawBullets(Camera* cam);
     
     void SpawnBulletFromCharacter(const Character& ch);
+    void SpawnBulletFromCharacterWithJitter(const Character& ch, float jitterDeg);
+    // Spawn a Bazoka-like projectile (uses bazoka bullet object and trail)
+    void SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg, float speedMul, float damage);
+    // Spawn FlameGun projectile: slower, bazoka trail, falls after a short distance
+    void SpawnFlamegunBulletFromCharacter(const Character& ch, float jitterDeg);
     void UpdateBullets(float dt);
+    void UpdateGunBursts();
+    void UpdateGunReloads();
+
+    // Bazoka trail ghosts
+    struct Trail { float x; float y; float life; int objIndex; float angle; float alpha; };
+    std::vector<Trail> m_bazokaTrails;
+    static constexpr int MAX_BAZOKA_TRAILS = 2048;
+    std::vector<std::unique_ptr<Object>> m_bazokaTrailObjs;
+    std::vector<int> m_freeBazokaTrailSlots;
+    int CreateOrAcquireBazokaTrailObject();
+    const float BAZOKA_TRAIL_LIFETIME = 0.35f;
+    const float BAZOKA_TRAIL_SPAWN_INTERVAL = 0.002f;
+    const float BAZOKA_TRAIL_SCALE_X = 0.6f;
+    const float BAZOKA_TRAIL_SCALE_Y = 0.6f;
+    const float BAZOKA_TRAIL_BACK_OFFSET = 0.01f;
+    void EnsureBazokaTrailTextures();
+    std::vector<std::shared_ptr<class Texture2D>> m_bazokaTrailTextures;
+
+    struct BloodDrop {
+        float x; float y;
+        float vx; float vy;
+        float angle;
+        int objIdx;
+    };
+    std::vector<BloodDrop> m_bloodDrops;
+    std::vector<std::unique_ptr<Object>> m_bloodObjs;
+    std::vector<int> m_freeBloodSlots;
+    static constexpr float BLOOD_GRAVITY = 3.8f;
+    static constexpr float BLOOD_COLLISION_WIDTH  = 0.015f;
+    static constexpr float BLOOD_COLLISION_HEIGHT = 0.015f;
+    int m_bloodProtoIdA = 1400;
+    int m_bloodProtoIdB = 1401;
+    int m_bloodProtoIdC = 1402;
+    int CreateOrAcquireBloodObjectFromProto(int protoObjectId);
+    void SpawnBloodAt(float x, float y, float baseAngleRad);
+    void UpdateBloods(float dt);
+    void DrawBloods(class Camera* cam);
 
     std::unique_ptr<WallCollision> m_wallCollision;
 
@@ -67,6 +125,30 @@ private:
     int m_player2GunTexId = 40;
     Vector3 m_hudGun1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     Vector3 m_hudGun2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+
+    static constexpr int   M4A1_BURST_COUNT = 5;
+    static constexpr float M4A1_BURST_INTERVAL = 0.08f;
+    bool  m_p1BurstActive = false;
+    int   m_p1BurstRemaining = 0;
+    float m_p1NextBurstTime = 0.0f;
+    bool  m_p2BurstActive = false;
+    int   m_p2BurstRemaining = 0;
+    float m_p2NextBurstTime = 0.0f;
+
+    // FlameGun
+    static constexpr int   FLAMEGUN_BULLET_COUNT = 10;
+    static constexpr float FLAMEGUN_SPREAD_DEG   = 15.0f;
+    static constexpr float FLAMEGUN_SPEED_MUL    = 0.4f;
+    static constexpr float FLAMEGUN_DAMAGE       = 20.0f;
+    static constexpr float FLAMEGUN_DROP_DISTANCE= 0.20f;
+    static constexpr float FLAMEGUN_GRAVITY      = 3.2f;
+    static constexpr float FLAMEGUN_LIFETIME     = 1.2f;
+
+    static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
+    bool  m_p1ReloadPending = false;
+    float m_p1ReloadExitTime = -1.0f;
+    bool  m_p2ReloadPending = false;
+    float m_p2ReloadExitTime = -1.0f;
     
 public:
     GSPlay();
@@ -123,3 +205,4 @@ private:
     struct ItemLife { int id; float timer; };
     std::vector<ItemLife> m_itemLives;
 }; 
+

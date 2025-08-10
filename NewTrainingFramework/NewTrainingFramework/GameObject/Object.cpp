@@ -125,9 +125,7 @@ void Object::SetModel(int modelId) {
 }
 
 void Object::SetTexture(int textureId, int index) {
-    std::cout << "Object ID " << m_id << " setting texture ID " << textureId << " at index " << index << std::endl;
     
-    // Resize texture arrays if needed
     if (index >= (int)m_textureIds.size()) {
         m_textureIds.resize(index + 1, -1);
         m_textures.resize(index + 1, nullptr);
@@ -137,11 +135,6 @@ void Object::SetTexture(int textureId, int index) {
     auto texture = ResourceManager::GetInstance()->GetTexture(textureId);
     m_textures[index] = texture;
     
-    if (texture) {
-        std::cout << "Object ID " << m_id << " successfully assigned texture ID " << textureId << std::endl;
-    } else {
-        std::cout << "Object ID " << m_id << " FAILED to get texture ID " << textureId << " from ResourceManager!" << std::endl;
-    }
 }
 
 void Object::AddTexture(int textureId) {

@@ -230,6 +230,10 @@ void GSPlay::Init() {
         m_wallCollision->LoadWallsFromScene();
     }
 
+    if (Object* bA = sceneManager->GetObject(m_bloodProtoIdA)) { bA->SetVisible(false); }
+    if (Object* bB = sceneManager->GetObject(m_bloodProtoIdB)) { bB->SetVisible(false); }
+    if (Object* bC = sceneManager->GetObject(m_bloodProtoIdC)) { bC->SetVisible(false); }
+
     std::cout << "Gameplay initialized" << std::endl;
     std::cout << "Controls:" << std::endl;
     std::cout << "- Z: Toggle camera auto zoom" << std::endl;
@@ -300,6 +304,8 @@ void GSPlay::Update(float deltaTime) {
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
     UpdateBullets(deltaTime);
+    UpdateGunBursts();
+    UpdateGunReloads();
     TryCompletePendingShots();
     UpdateHudWeapons();
     
@@ -358,6 +364,8 @@ void GSPlay::Update(float deltaTime) {
             ++it;
         }
     }
+
+    UpdateBloods(deltaTime);
 }
 
 void GSPlay::Draw() {
@@ -372,6 +380,7 @@ void GSPlay::Draw() {
     // Draw HUD portraits with independent UVs
     DrawHudPortraits();
     if (cam) { DrawBullets(cam); }
+    if (cam) { DrawBloods(cam); }
     
     static float lastPosX = m_player.GetPosition().x;
     static int lastAnim = m_player.GetCurrentAnimation();
@@ -660,13 +669,131 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
     }
 
     int slot = CreateOrAcquireBulletObject();
+    bool isP1 = (&ch == &m_player);
+    int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
+    float speedMul = 1.0f;
+    float damage = 10.0f;
+    if (gunTex == 45) { speedMul = 1.5f; damage = 20.0f; }
+    else if (gunTex == 46) { speedMul = 2.0f; damage = 50.0f; }
     Bullet b;
     b.x = spawn.x; b.y = spawn.y;
-    b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED;
+    b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul;
     b.life = BULLET_LIFETIME; b.objIndex = slot;
     b.angleRad = angleWorld; b.faceSign = faceSign;
-    b.ownerId = (&ch == &m_player) ? 1 : 2;
+    b.ownerId = isP1 ? 1 : 2; b.damage = damage;
     m_bullets.push_back(b);
+}
+
+void GSPlay::SpawnBulletFromCharacterWithJitter(const Character& ch, float jitterDeg) {
+    Vector3 pivot = ch.GetGunTopWorldPosition();
+    Vector3 base  = ch.GetPosition();
+    const float aimDeg = ch.GetAimAngleDeg();
+    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+    const float aimRad = (aimDeg + jitterDeg) * 3.14159265f / 180.0f;
+    const float angleWorld = faceSign * aimRad;
+
+    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                       base.y + BULLET_SPAWN_OFFSET_Y,
+                       0.0f);
+    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+
+    float cosA = cosf(angleWorld);
+    float sinA = sinf(angleWorld);
+    Vector3 vRot(vLocal0.x * cosA - vLocal0.y * sinA,
+                 vLocal0.x * sinA + vLocal0.y * cosA,
+                 0.0f);
+    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+
+    const float forwardStep = 0.02f;
+    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+    Vector3 vRotForward(vLocalForward.x * cosA - vLocalForward.y * sinA,
+                        vLocalForward.x * sinA + vLocalForward.y * cosA,
+                        0.0f);
+    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+    int slot = CreateOrAcquireBulletObject();
+    bool isP1 = (&ch == &m_player);
+    int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
+    float speedMul = 1.0f;
+    float damage = 10.0f;
+    if (gunTex == 45) { speedMul = 1.5f; damage = 20.0f; }
+    else if (gunTex == 46) { speedMul = 2.0f; damage = 50.0f; }
+    Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign; b.ownerId = isP1 ? 1 : 2; b.damage = damage;
+    m_bullets.push_back(b);
+}
+
+void GSPlay::SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg, float speedMul, float damage) {
+    Vector3 pivot = ch.GetGunTopWorldPosition();
+    Vector3 base  = ch.GetPosition();
+    const float aimDeg = ch.GetAimAngleDeg() + jitterDeg;
+    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+    const float aimRad = aimDeg * 3.14159265f / 180.0f;
+    const float angleWorld = faceSign * aimRad;
+
+    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                       base.y + BULLET_SPAWN_OFFSET_Y,
+                       0.0f);
+    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+    float c = cosf(angleWorld), s = sinf(angleWorld);
+    Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
+    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+
+    const float forwardStep = 0.02f;
+    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+    Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
+                        vLocalForward.x * s + vLocalForward.y * c, 0.0f);
+    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+    int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
+    const bool isP1 = (&ch == &m_player);
+    Bullet b; b.x = spawn.x; b.y = spawn.y;
+    b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul;
+    b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+    b.ownerId = isP1 ? 1 : 2; b.damage = damage; b.isBazoka = true; b.trailTimer = 0.0f;
+    if ((int)m_bullets.size() < MAX_BULLETS) {
+        m_bullets.push_back(b);
+    }
+}
+
+void GSPlay::SpawnFlamegunBulletFromCharacter(const Character& ch, float jitterDeg) {
+    // Reuse bazoka visual (bullet + trail), but slower and with gravity after a distance
+    Vector3 pivot = ch.GetGunTopWorldPosition();
+    Vector3 base  = ch.GetPosition();
+    const float aimDeg = ch.GetAimAngleDeg() + jitterDeg;
+    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+    const float aimRad = aimDeg * 3.14159265f / 180.0f;
+    const float angleWorld = faceSign * aimRad;
+
+    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                       base.y + BULLET_SPAWN_OFFSET_Y,
+                       0.0f);
+    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+    float c = cosf(angleWorld), s = sinf(angleWorld);
+    Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
+    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+
+    const float forwardStep = 0.02f;
+    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+    Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
+                        vLocalForward.x * s + vLocalForward.y * c, 0.0f);
+    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+    int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
+    const bool isP1 = (&ch == &m_player);
+    Bullet b; b.x = spawn.x; b.y = spawn.y;
+    b.vx = dir.x * BULLET_SPEED * FLAMEGUN_SPEED_MUL; b.vy = dir.y * BULLET_SPEED * FLAMEGUN_SPEED_MUL;
+    b.life = FLAMEGUN_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+    b.ownerId = isP1 ? 1 : 2; b.damage = FLAMEGUN_DAMAGE; b.isBazoka = true; b.trailTimer = 0.0f;
+    b.isFlamegun = true; b.distanceTraveled = 0.0f; b.dropAfterDistance = FLAMEGUN_DROP_DISTANCE; b.gravityAccel = FLAMEGUN_GRAVITY;
+    if ((int)m_bullets.size() < MAX_BULLETS) {
+        m_bullets.push_back(b);
+    }
 }
 
 void GSPlay::UpdateBullets(float dt) {
@@ -685,9 +812,33 @@ void GSPlay::UpdateBullets(float dt) {
 
     // Update all bullets
     for (auto it = m_bullets.begin(); it != m_bullets.end(); ) {
+        float dx = it->vx * dt;
+        float dy = it->vy * dt;
+        it->x += dx;
+        it->y += dy;
         it->life -= dt;
-        it->x += it->vx * dt;
-        it->y += it->vy * dt;
+
+        if (it->isFlamegun) {
+            it->distanceTraveled += std::sqrt(dx*dx + dy*dy);
+            if (it->distanceTraveled >= it->dropAfterDistance) {
+                it->vy -= it->gravityAccel * dt;
+                it->angleRad = atan2f(it->vy, it->vx);
+            }
+        }
+
+        if (it->isBazoka) {
+            it->trailTimer += dt;
+            if (it->trailTimer >= BAZOKA_TRAIL_SPAWN_INTERVAL) {
+                it->trailTimer = 0.0f;
+                if ((int)m_bazokaTrails.size() < MAX_BAZOKA_TRAILS) {
+                    int idx = CreateOrAcquireBazokaTrailObject();
+                float backX = it->x - cosf(it->angleRad) * BAZOKA_TRAIL_BACK_OFFSET;
+                float backY = it->y - sinf(it->angleRad) * BAZOKA_TRAIL_BACK_OFFSET;
+                Trail t; t.x = backX; t.y = backY; t.life = BAZOKA_TRAIL_LIFETIME; t.objIndex = idx; t.angle = it->angleRad; t.alpha = 1.0f;
+                    m_bazokaTrails.push_back(t);
+                }
+            }
+        }
 
         if (it->life <= 0.0f) { removeBullet(it); continue; }
 
@@ -720,15 +871,42 @@ void GSPlay::UpdateBullets(float dt) {
 
             if (aabbOverlap(bLeft, bRight, bBottom, bTop, tLeft, tRight, tBottom, tTop)) {
                 float prev = target->GetHealth();
-                target->TakeDamage(10.0f);
+                float dmg = it->damage > 0.0f ? it->damage : 10.0f;
+                target->TakeDamage(dmg);
                 if (prev > 0.0f && target->GetHealth() <= 0.0f && attacker) {
                     target->TriggerDieFromAttack(*attacker);
                 }
+                SpawnBloodAt(it->x, it->y, it->angleRad);
                 removeBullet(it); continue;
             }
         }
 
         ++it;
+    }
+
+    for (size_t i = 0; i < m_bazokaTrails.size(); ) {
+        Trail& tr = m_bazokaTrails[i];
+        tr.life -= dt;
+        tr.alpha = (tr.life > 0.0f) ? (tr.life / BAZOKA_TRAIL_LIFETIME) : 0.0f;
+        if (tr.life <= 0.0f) {
+            if (tr.objIndex >= 0 && tr.objIndex < (int)m_bazokaTrailObjs.size() && m_bazokaTrailObjs[tr.objIndex]) {
+                m_freeBazokaTrailSlots.push_back(tr.objIndex);
+                m_bazokaTrailObjs[tr.objIndex]->SetVisible(false);
+            }
+            m_bazokaTrails[i] = m_bazokaTrails.back();
+            m_bazokaTrails.pop_back();
+        } else {
+            if (tr.objIndex >= 0 && tr.objIndex < (int)m_bazokaTrailObjs.size() && !m_bazokaTrailTextures.empty()) {
+                float ratio = tr.alpha;
+                int idxTex = (ratio > 0.75f) ? 0 : (ratio > 0.5f) ? 1 : (ratio > 0.25f) ? 2 : 3;
+                if (idxTex >= (int)m_bazokaTrailTextures.size()) {
+                    idxTex = (int)m_bazokaTrailTextures.size() - 1;
+                }
+                if (idxTex < 0) idxTex = 0;
+                m_bazokaTrailObjs[tr.objIndex]->SetDynamicTexture(m_bazokaTrailTextures[idxTex]);
+            }
+            ++i;
+        }
     }
 }
 
@@ -738,6 +916,14 @@ int GSPlay::CreateOrAcquireBulletObject() {
         int idx = m_freeBulletSlots.back();
         m_freeBulletSlots.pop_back();
         if (m_bulletObjs[idx]) {
+            SceneManager* scene = SceneManager::GetInstance();
+            if (Object* proto = scene->GetObject(m_bulletObjectId)) {
+                m_bulletObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_bulletObjs[idx]->SetTexture(texIds[0], 0);
+                m_bulletObjs[idx]->SetShader(proto->GetShaderId());
+                m_bulletObjs[idx]->SetScale(proto->GetScale());
+            }
             m_bulletObjs[idx]->SetVisible(true);
         }
         return idx;
@@ -755,6 +941,70 @@ int GSPlay::CreateOrAcquireBulletObject() {
     obj->SetVisible(true);
     m_bulletObjs.push_back(std::move(obj));
     return (int)m_bulletObjs.size() - 1;
+}
+
+int GSPlay::CreateOrAcquireBulletObjectFromProto(int protoObjectId) {
+    if (!m_freeBulletSlots.empty()) {
+        int idx = m_freeBulletSlots.back();
+        m_freeBulletSlots.pop_back();
+        if (m_bulletObjs[idx]) {
+            SceneManager* scene = SceneManager::GetInstance();
+            if (Object* proto = scene->GetObject(protoObjectId)) {
+                m_bulletObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_bulletObjs[idx]->SetTexture(texIds[0], 0);
+                m_bulletObjs[idx]->SetShader(proto->GetShaderId());
+                m_bulletObjs[idx]->SetScale(proto->GetScale());
+            }
+            m_bulletObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* proto = scene->GetObject(protoObjectId);
+    std::unique_ptr<Object> obj = std::make_unique<Object>(20000 + (int)m_bulletObjs.size());
+    if (proto) {
+        obj->SetModel(proto->GetModelId());
+        const std::vector<int>& texIds = proto->GetTextureIds();
+        if (!texIds.empty()) obj->SetTexture(texIds[0], 0);
+        obj->SetShader(proto->GetShaderId());
+        obj->SetScale(proto->GetScale());
+    }
+    obj->SetVisible(true);
+    m_bulletObjs.push_back(std::move(obj));
+    return (int)m_bulletObjs.size() - 1;
+}
+
+int GSPlay::CreateOrAcquireBazokaTrailObject() {
+    if (m_bazokaTrailTextures.empty()) {
+        for (int i = 0; i < 4; ++i) {
+            int alpha = 220 - i * 60; if (alpha < 40) alpha = 40;
+            auto tex = std::make_shared<Texture2D>();
+            if (tex->CreateColorTexture(32, 32, 255, 215, 0, alpha)) {
+                m_bazokaTrailTextures.push_back(tex);
+            }
+        }
+    }
+
+    if (!m_freeBazokaTrailSlots.empty()) {
+        int idx = m_freeBazokaTrailSlots.back();
+        m_freeBazokaTrailSlots.pop_back();
+        if (m_bazokaTrailObjs[idx]) {
+            m_bazokaTrailObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    std::unique_ptr<Object> obj = std::make_unique<Object>(30000 + (int)m_bazokaTrailObjs.size());
+    if (Object* proto = SceneManager::GetInstance()->GetObject(m_bulletObjectId)) {
+        obj->SetModel(proto->GetModelId());
+        obj->SetShader(proto->GetShaderId());
+        const Vector3& sc = proto->GetScale();
+        obj->SetScale(sc.x * BAZOKA_TRAIL_SCALE_X, sc.y * BAZOKA_TRAIL_SCALE_Y, sc.z);
+        if (!m_bazokaTrailTextures.empty()) obj->SetDynamicTexture(m_bazokaTrailTextures[0]);
+    }
+    obj->SetVisible(true);
+    m_bazokaTrailObjs.push_back(std::move(obj));
+    return (int)m_bazokaTrailObjs.size() - 1;
 }
 
 void GSPlay::DrawBullets(Camera* cam) {
@@ -775,6 +1025,125 @@ void GSPlay::DrawBullets(Camera* cam) {
             m_bulletObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
         }
     }
+
+    for (const Trail& t : m_bazokaTrails) {
+        int idx = t.objIndex;
+        if (idx >= 0 && idx < (int)m_bazokaTrailObjs.size() && m_bazokaTrailObjs[idx]) {
+            m_bazokaTrailObjs[idx]->SetPosition(t.x, t.y, 0.0f);
+            m_bazokaTrailObjs[idx]->SetRotation(0.0f, 0.0f, t.angle);
+            m_bazokaTrailObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
+    }
+}
+
+int GSPlay::CreateOrAcquireBloodObjectFromProto(int protoObjectId) {
+    if (!m_freeBloodSlots.empty()) {
+        int idx = m_freeBloodSlots.back();
+        m_freeBloodSlots.pop_back();
+        if (m_bloodObjs[idx]) {
+            SceneManager* scene = SceneManager::GetInstance();
+            if (Object* proto = scene->GetObject(protoObjectId)) {
+                m_bloodObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_bloodObjs[idx]->SetTexture(texIds[0], 0);
+                m_bloodObjs[idx]->SetShader(proto->GetShaderId());
+                m_bloodObjs[idx]->SetScale(proto->GetScale());
+            }
+            m_bloodObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* proto = scene->GetObject(protoObjectId);
+    std::unique_ptr<Object> obj = std::make_unique<Object>(40000 + (int)m_bloodObjs.size());
+    if (proto) {
+        obj->SetModel(proto->GetModelId());
+        const std::vector<int>& texIds = proto->GetTextureIds();
+        if (!texIds.empty()) obj->SetTexture(texIds[0], 0);
+        obj->SetShader(proto->GetShaderId());
+        obj->SetScale(proto->GetScale());
+    }
+    obj->SetVisible(true);
+    m_bloodObjs.push_back(std::move(obj));
+    return (int)m_bloodObjs.size() - 1;
+}
+
+void GSPlay::SpawnBloodAt(float x, float y, float baseAngleRad) {
+    float backX = cosf(baseAngleRad) * -0.15f;
+    float backY = sinf(baseAngleRad) * -0.05f;
+
+    int protos[3] = { m_bloodProtoIdA, m_bloodProtoIdB, m_bloodProtoIdC };
+    for (int i = 0; i < 3; ++i) {
+        int idx = CreateOrAcquireBloodObjectFromProto(protos[i]);
+        float rx = ((float)rand() / (float)RAND_MAX - 0.5f) * 0.02f;
+        float ry = ((float)rand() / (float)RAND_MAX - 0.5f) * 0.02f;
+        float angJitter = ((float)rand() / (float)RAND_MAX - 0.5f) * 0.6f;
+        float speedMul = 0.6f + ((float)rand() / (float)RAND_MAX) * 0.6f; // [0.6,1.2]
+
+        if (idx >= 0 && idx < (int)m_bloodObjs.size() && m_bloodObjs[idx]) {
+            m_bloodObjs[idx]->SetPosition(x + rx, y + ry, 0.0f);
+            m_bloodObjs[idx]->SetRotation(0.0f, 0.0f, baseAngleRad + angJitter);
+        }
+
+        BloodDrop d;
+        d.x = x + rx; d.y = y + ry;
+        // initial velocity: slight backward arc, plus small outward component
+        float dirX = cosf(baseAngleRad + angJitter);
+        float dirY = sinf(baseAngleRad + angJitter);
+        d.vx = backX * speedMul + dirX * 0.05f;
+        d.vy = backY * speedMul + dirY * 0.03f + 0.05f; // give a tad upward kick
+        d.angle = baseAngleRad + angJitter;
+        d.objIdx = idx;
+        m_bloodDrops.push_back(d);
+    }
+}
+
+void GSPlay::UpdateBloods(float dt) {
+    auto removeDrop = [&](size_t idx){
+        BloodDrop& d = m_bloodDrops[idx];
+        if (d.objIdx >= 0 && d.objIdx < (int)m_bloodObjs.size() && m_bloodObjs[d.objIdx]) {
+            m_bloodObjs[d.objIdx]->SetVisible(false);
+            m_freeBloodSlots.push_back(d.objIdx);
+        }
+        m_bloodDrops[idx] = m_bloodDrops.back();
+        m_bloodDrops.pop_back();
+    };
+
+    for (size_t i = 0; i < m_bloodDrops.size(); ) {
+        BloodDrop& d = m_bloodDrops[i];
+        d.vy -= BLOOD_GRAVITY * dt;
+        float dx = d.vx * dt;
+        float dy = d.vy * dt;
+        d.x += dx;
+        d.y += dy;
+
+        d.angle += 2.0f * dt;
+
+        if (d.objIdx >= 0 && d.objIdx < (int)m_bloodObjs.size() && m_bloodObjs[d.objIdx]) {
+            m_bloodObjs[d.objIdx]->SetPosition(d.x, d.y, 0.0f);
+            m_bloodObjs[d.objIdx]->SetRotation(0.0f, 0.0f, d.angle);
+        }
+
+        bool collided = false;
+        if (m_wallCollision) {
+            Vector3 pos(d.x, d.y, 0.0f);
+            collided = m_wallCollision->CheckWallCollision(pos, BLOOD_COLLISION_WIDTH, BLOOD_COLLISION_HEIGHT, 0.0f, 0.0f);
+        }
+        if (collided) {
+            removeDrop(i);
+        } else {
+            ++i;
+        }
+    }
+}
+
+void GSPlay::DrawBloods(Camera* cam) {
+    for (const BloodDrop& d : m_bloodDrops) {
+        int idx = d.objIdx;
+        if (idx >= 0 && idx < (int)m_bloodObjs.size() && m_bloodObjs[idx]) {
+            m_bloodObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
+    }
 }
 
 void GSPlay::TryCompletePendingShots() {
@@ -783,15 +1152,135 @@ void GSPlay::TryCompletePendingShots() {
         // Require minimum time for anim0 + anim1 display
         float elapsed = m_gameTime - startTime;
         if (elapsed < GetGunRequiredTime()) return;
-        // Fire then exit gun mode
-        SpawnBulletFromCharacter(ch);
-        ch.MarkGunShotFired();
-        pendingFlag = false;
-        ch.SetGunMode(false);
-        ch.GetMovement()->SetInputLocked(false);
+        const bool isP1 = (&ch == &m_player);
+        int currentGunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
+        if (currentGunTex == 41 || currentGunTex == 47) { // M4A1 or Uzi
+            if (isP1) {
+                m_p1BurstActive = true;
+                m_p1BurstRemaining = M4A1_BURST_COUNT;
+                m_p1NextBurstTime = m_gameTime;
+            } else {
+                m_p2BurstActive = true;
+                m_p2BurstRemaining = M4A1_BURST_COUNT;
+                m_p2NextBurstTime = m_gameTime;
+            }
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+        } else if (currentGunTex == 42) {
+            const int pellets = 5;
+            const float totalSpreadDeg = 6.0f;
+            for (int i = 0; i < pellets; ++i) {
+                float t = (pellets == 1) ? 0.0f : (float)i / (float)(pellets - 1);
+                float jitter = (t - 0.5f) * totalSpreadDeg;
+                SpawnBulletFromCharacterWithJitter(ch, jitter);
+            }
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+            if (isP1) {
+                m_p1ReloadPending = true;
+                m_p1ReloadExitTime = m_gameTime + SHOTGUN_RELOAD_TIME;
+            } else {
+                m_p2ReloadPending = true;
+                m_p2ReloadExitTime = m_gameTime + SHOTGUN_RELOAD_TIME;
+            }
+            if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(true);
+        } else if (currentGunTex == 43) { // Bazoka
+            Vector3 pivot = ch.GetGunTopWorldPosition();
+            Vector3 base  = ch.GetPosition();
+            const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+            const float aimRad = ch.GetAimAngleDeg() * 3.14159265f / 180.0f;
+            const float angleWorld = faceSign * aimRad;
+            Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                               base.y + BULLET_SPAWN_OFFSET_Y, 0.0f);
+            Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+            float c = cosf(angleWorld), s = sinf(angleWorld);
+            Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
+            Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+            const float forwardStep = 0.02f;
+            Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+            Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
+                                vLocalForward.x * s + vLocalForward.y * c, 0.0f);
+            Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+            float len = dir.Length();
+            if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+            int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
+            Bullet b; b.x = spawn.x; b.y = spawn.y;
+            b.vx = dir.x * BULLET_SPEED * 0.8f; b.vy = dir.y * BULLET_SPEED * 0.8f;
+            b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+            b.ownerId = isP1 ? 1 : 2; b.damage = 100.0f; b.isBazoka = true; b.trailTimer = 0.0f;
+            if ((int)m_bullets.size() < MAX_BULLETS) {
+                m_bullets.push_back(b);
+            }
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+            ch.SetGunMode(false);
+            ch.GetMovement()->SetInputLocked(false);
+        } else if (currentGunTex == 44) { // FlameGun
+            const int count = FLAMEGUN_BULLET_COUNT;
+            for (int i = 0; i < count; ++i) {
+                float r1 = (float)rand() / (float)RAND_MAX;
+                float r2 = (float)rand() / (float)RAND_MAX;
+                float r = r1 - r2;
+                float jitter = r * (FLAMEGUN_SPREAD_DEG * 0.6f);
+                SpawnFlamegunBulletFromCharacter(ch, jitter);
+            }
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+            ch.SetGunMode(false);
+            ch.GetMovement()->SetInputLocked(false);
+        } else {
+            SpawnBulletFromCharacter(ch);
+            ch.MarkGunShotFired();
+            pendingFlag = false;
+            ch.SetGunMode(false);
+            ch.GetMovement()->SetInputLocked(false);
+        }
     };
     tryFinish(m_player,  m_p1ShotPending, m_p1GunStartTime);
     tryFinish(m_player2, m_p2ShotPending, m_p2GunStartTime);
+}
+
+void GSPlay::UpdateGunBursts() {
+    auto stepBurst = [&](Character& ch, bool& active, int& remain, float& nextTime){
+        if (!active) return;
+        if (m_gameTime < nextTime) return;
+        const bool isP1Local = (&ch == &m_player);
+        int gunTex = isP1Local ? m_player1GunTexId : m_player2GunTexId;
+        if (gunTex == 41 || gunTex == 47) {
+            float r = (float)rand() / (float)RAND_MAX; // [0,1]
+            float baseJitter = 1.0f;
+            if (gunTex == 47) baseJitter = 3.0f;
+            float jitter = (r * 2.0f - 1.0f) * baseJitter;
+            SpawnBulletFromCharacterWithJitter(ch, jitter);
+        } else {
+            SpawnBulletFromCharacter(ch);
+        }
+        ch.MarkGunShotFired();
+        remain -= 1;
+        if (remain > 0) {
+            nextTime += M4A1_BURST_INTERVAL;
+        } else {
+            active = false;
+            ch.SetGunMode(false);
+            if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false);
+        }
+    };
+    stepBurst(m_player,  m_p1BurstActive, m_p1BurstRemaining, m_p1NextBurstTime);
+    stepBurst(m_player2, m_p2BurstActive, m_p2BurstRemaining, m_p2NextBurstTime);
+}
+
+void GSPlay::UpdateGunReloads() {
+    if (m_p1ReloadPending && m_gameTime >= m_p1ReloadExitTime) {
+        m_p1ReloadPending = false;
+        m_player.SetGunMode(false);
+        if (m_player.GetMovement()) m_player.GetMovement()->SetInputLocked(false);
+    }
+    if (m_p2ReloadPending && m_gameTime >= m_p2ReloadExitTime) {
+        m_p2ReloadPending = false;
+        m_player2.SetGunMode(false);
+        if (m_player2.GetMovement()) m_player2.GetMovement()->SetInputLocked(false);
+    }
 }
 
 static float MousePixelToWorldX(int x, Camera* cam) {

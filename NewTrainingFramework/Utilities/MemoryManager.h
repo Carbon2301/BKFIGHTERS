@@ -1,6 +1,6 @@
 #pragma once
 
-const int MAX_ALLOC = 1000;
+const int MAX_ALLOC = 20000;
 
 struct AllocBuffers
 {

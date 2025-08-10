@@ -30,6 +30,7 @@ private:
 
     int m_gunTopAnimReverse = 0; 
     int m_gunTopAnimHold    = 1; 
+    int m_gunTopAnimReload  = -1;
 
     float m_climbHoldTimer = 0.0f;
     static constexpr float CLIMB_HOLD_STEP_INTERVAL = 0.12f;
@@ -71,6 +72,10 @@ private:
     float m_recoilFaceSign = 1.0f;
     static constexpr float RECOIL_DURATION = 0.09f;
     static constexpr float RECOIL_STRENGTH = 0.03f;
+    float m_recoilStrengthMul = 1.0f;
+    bool m_reloadActive = false;
+    float m_reloadTimer = 0.0f;
+    static constexpr float RELOAD_DURATION = 0.30f;
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);

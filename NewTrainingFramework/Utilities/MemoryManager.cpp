@@ -24,16 +24,21 @@ void * MemoryManager::Alloc(unsigned int noBytes, char * fileName, unsigned int 
 		SanityCheck();
 	#endif
 
-	m_dataBuffers[m_noBuffers].pAddress = malloc(noBytes + 4);
-	m_dataBuffers[m_noBuffers].fileName = fileName;
+    if (m_noBuffers >= MAX_ALLOC) {
+        return malloc(noBytes + 4);
+    }
+    m_dataBuffers[m_noBuffers].pAddress = malloc(noBytes + 4);
+    m_dataBuffers[m_noBuffers].fileName = fileName;
 	m_dataBuffers[m_noBuffers].line = line;
 	m_dataBuffers[m_noBuffers].length = noBytes;
 
-	char * temp = (char *) m_dataBuffers[m_noBuffers].pAddress;
+    char * temp = (char *) m_dataBuffers[m_noBuffers].pAddress;
 	temp += noBytes;
 	memcpy(temp, &CHECK_CODE, 4);
 
-	return m_dataBuffers[m_noBuffers++].pAddress;
+    void* ret = m_dataBuffers[m_noBuffers].pAddress;
+    m_noBuffers++;
+    return ret;
 }
 
 void MemoryManager::Free(void * pAddress)
