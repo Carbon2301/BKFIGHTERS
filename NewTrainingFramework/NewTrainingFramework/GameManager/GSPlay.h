@@ -30,7 +30,7 @@ private:
     
     // Cloud movement system
     float m_cloudSpeed;
-    struct Bullet { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; int ownerId; };
+    struct Bullet { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; int ownerId; float damage; };
     std::vector<Bullet> m_bullets;
     const float BULLET_SPEED = 3.5f;
     const float BULLET_LIFETIME = 2.0f;

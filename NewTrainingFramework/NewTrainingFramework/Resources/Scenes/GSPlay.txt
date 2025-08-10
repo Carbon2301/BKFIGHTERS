@@ -805,7 +805,7 @@ POS -0.2 -0.935 0.0
 ROTATION 0.0 0.0 0.0
 SCALE 0.0675 -0.06 1.0
 
-# Bullet - Pistol - M4A1
+# Bullet - Pistol - M4A1 - Deagle- Uzi
 ID 1300
 MODEL_ID 0
 TEXTURE_ID 33

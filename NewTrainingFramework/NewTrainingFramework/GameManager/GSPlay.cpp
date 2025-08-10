@@ -662,12 +662,16 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
     }
 
     int slot = CreateOrAcquireBulletObject();
+    bool isP1 = (&ch == &m_player);
+    int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
+    float speedMul = (gunTex == 45) ? 1.5f : 1.0f;
+    float damage = (gunTex == 45) ? 20.0f : 10.0f;
     Bullet b;
     b.x = spawn.x; b.y = spawn.y;
-    b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED;
+    b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul;
     b.life = BULLET_LIFETIME; b.objIndex = slot;
     b.angleRad = angleWorld; b.faceSign = faceSign;
-    b.ownerId = (&ch == &m_player) ? 1 : 2;
+    b.ownerId = isP1 ? 1 : 2; b.damage = damage;
     m_bullets.push_back(b);
 }
 
@@ -701,7 +705,11 @@ void GSPlay::SpawnBulletFromCharacterWithJitter(const Character& ch, float jitte
     if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
 
     int slot = CreateOrAcquireBulletObject();
-    Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED; b.vy = dir.y * BULLET_SPEED; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign; b.ownerId = (&ch == &m_player) ? 1 : 2;
+    bool isP1 = (&ch == &m_player);
+    int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
+    float speedMul = (gunTex == 45) ? 1.5f : 1.0f;
+    float damage = (gunTex == 45) ? 20.0f : 10.0f;
+    Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign; b.ownerId = isP1 ? 1 : 2; b.damage = damage;
     m_bullets.push_back(b);
 }
 
@@ -756,7 +764,8 @@ void GSPlay::UpdateBullets(float dt) {
 
             if (aabbOverlap(bLeft, bRight, bBottom, bTop, tLeft, tRight, tBottom, tTop)) {
                 float prev = target->GetHealth();
-                target->TakeDamage(10.0f);
+                float dmg = it->damage > 0.0f ? it->damage : 10.0f;
+                target->TakeDamage(dmg);
                 if (prev > 0.0f && target->GetHealth() <= 0.0f && attacker) {
                     target->TriggerDieFromAttack(*attacker);
                 }
