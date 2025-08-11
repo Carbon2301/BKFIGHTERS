@@ -34,10 +34,18 @@ private:
     bool m_viewNeedsUpdate;
     bool m_projectionNeedsUpdate;
     bool m_vpMatrixNeedsUpdate;
+
+    // Screen shake
+    float m_shakeTimeRemaining = 0.0f;
+    float m_shakeDuration = 0.0f;
+    float m_shakeAmplitude = 0.0f;
+    float m_shakeFrequency = 20.0f;
+    Vector3 m_shakeOffset = Vector3(0.0f, 0.0f, 0.0f);
     
     void UpdateViewMatrix();
     void UpdateProjectionMatrix();
     void UpdateViewProjectionMatrix();
+    void UpdateShake(float dt);
     
 public:
     Camera();
@@ -67,6 +75,8 @@ public:
     
     void SetCharacterDimensions(float width, float height);
     void SetCameraPadding(float paddingX, float paddingY);
+
+    void AddShake(float amplitude, float duration, float frequency = 20.0f);
     
     const Matrix& GetViewMatrix();
     const Matrix& GetProjectionMatrix();

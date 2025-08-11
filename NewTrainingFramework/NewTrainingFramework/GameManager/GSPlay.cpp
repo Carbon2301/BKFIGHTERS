@@ -619,6 +619,9 @@ void GSPlay::UpdateBombs(float dt) {
 
         if (it->life <= 0.0f) {
             SpawnExplosionAt(it->x, it->y);
+            if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                cam->AddShake(0.04f, 0.4f, 18.0f);
+            }
             removeBomb(it);
             continue;
         }
