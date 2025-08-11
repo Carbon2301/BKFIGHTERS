@@ -75,7 +75,7 @@ ANINUM 18
 17 1 300
 
 ID 9
-FILE "../Resources/Fighter/Characters/Player1_Head.tga"
+FILE "../Resources/Fighter/Characters/Player2_Head.tga"
 TILING GL_CLAMP_TO_EDGE
 SIZE 8 3
 ANINUM 18

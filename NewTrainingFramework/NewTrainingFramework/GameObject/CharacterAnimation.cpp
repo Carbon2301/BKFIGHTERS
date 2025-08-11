@@ -46,8 +46,8 @@ void CharacterAnimation::Initialize(std::shared_ptr<AnimationManager> animManage
         m_animManager->Play(0, true);
     }
 
-    // Initialize top overlay (head/weapon) using texture ID 9
-    const TextureData* headTex = ResourceManager::GetInstance()->GetTextureData(9);
+    int headTexId = (m_objectId == 1000) ? 8 : 9;
+    const TextureData* headTex = ResourceManager::GetInstance()->GetTextureData(headTexId);
     if (headTex && headTex->spriteWidth > 0 && headTex->spriteHeight > 0) {
         m_topAnimManager = std::make_shared<AnimationManager>();
         std::vector<AnimationData> topAnims;
@@ -64,7 +64,7 @@ void CharacterAnimation::Initialize(std::shared_ptr<AnimationManager> animManage
             m_topObject->SetShader(originalObj->GetShaderId());
             m_topObject->SetScale(originalObj->GetScale());
         }
-        m_topObject->SetTexture(9, 0);
+        m_topObject->SetTexture(headTexId, 0);
     }
 }
 
@@ -577,6 +577,15 @@ void CharacterAnimation::OnGunShotFired(CharacterMovement* movement) {
 }
 
 void CharacterAnimation::SetGunByTextureId(int texId) {
+    m_gunTopAnimReverse = 0;
+    m_gunTopAnimHold    = 1;
+    m_gunTopAnimReload  = -1;   // default: no reload anim
+    m_recoilStrengthMul = 1.0f; // default recoil
+    m_reloadActive      = false;
+    m_reloadTimer       = 0.0f;
+    m_recoilActive      = false;
+    m_recoilTimer       = 0.0f;
+
     switch (texId) {
         case 41: // M4A1
             m_gunTopAnimReverse = 2;
