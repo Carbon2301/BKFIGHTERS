@@ -34,6 +34,16 @@ bool Character::IsGunMode() const {
     return m_animation ? m_animation->IsGunMode() : false;
 }
 
+void Character::SetGrenadeMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetGrenadeMode(enabled);
+    }
+}
+
+bool Character::IsGrenadeMode() const {
+    return m_animation ? m_animation->IsGrenadeMode() : false;
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);
@@ -71,6 +81,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (m_movement && m_combat) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
         if (m_animation && m_animation->IsGunMode()) lock = true;
+        if (m_animation && m_animation->IsGrenadeMode()) lock = true;
         if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
             m_movement->ForceSit(false);
         }
@@ -87,7 +98,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     
-    if (inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
+    if (!IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
         if (m_suppressNextPunch) {
             m_suppressNextPunch = false;
         } else {
@@ -105,7 +116,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         }
     }
     
-    if (inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
+    if (!IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         if (!m_movement->IsJumping()) {
         HandleKick();
         }
@@ -117,6 +128,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (m_movement && m_combat) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
         if (m_animation && m_animation->IsGunMode()) lock = true;
+        if (m_animation && m_animation->IsGrenadeMode()) lock = true;
         m_movement->SetInputLocked(lock);
     }
 }

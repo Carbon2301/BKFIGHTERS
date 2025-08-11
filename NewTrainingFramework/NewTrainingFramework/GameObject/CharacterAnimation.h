@@ -77,6 +77,9 @@ private:
     float m_reloadTimer = 0.0f;
     static constexpr float RELOAD_DURATION = 0.30f;
 
+    // Grenade throw visual mode
+    bool m_grenadeMode = false;
+
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
 
@@ -119,6 +122,9 @@ public:
 
     // Set current gun by texture id
     void SetGunByTextureId(int texId);
+
+    void SetGrenadeMode(bool enabled);
+    bool IsGrenadeMode() const { return m_grenadeMode; }
 
     void GetTopFrameUV(float& u0, float& v0, float& u1, float& v1) const;
     int GetHeadTextureId() const { return (m_objectId == 1000) ? 8 : 9; }

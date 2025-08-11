@@ -676,6 +676,23 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     
+    // Grenade visual state toggle (hold)
+    // P1: '3', P2: ','
+    if (key == '3') {
+        if (bIsPressed) {
+            m_player.SetGrenadeMode(true);
+        } else {
+            m_player.SetGrenadeMode(false);
+        }
+    }
+    if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
+        if (bIsPressed) {
+            m_player2.SetGrenadeMode(true);
+        } else {
+            m_player2.SetGrenadeMode(false);
+        }
+    }
+
     if (!bIsPressed) return;
     
     switch (key) {

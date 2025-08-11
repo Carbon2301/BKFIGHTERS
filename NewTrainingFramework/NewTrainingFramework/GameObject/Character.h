@@ -43,6 +43,8 @@ public:
     void SetInputConfig(const PlayerInputConfig& config);
     void SetGunMode(bool enabled);
     bool IsGunMode() const;
+    void SetGrenadeMode(bool enabled);
+    bool IsGrenadeMode() const;
     
     // Core update
     void Update(float deltaTime);

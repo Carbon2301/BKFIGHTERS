@@ -17,7 +17,7 @@ FAR 100.0
 # Background/Loading screen object
 ID 0
 MODEL_ID 0
-TEXTURE_ID 7
+TEXTURE_ID 5
 SHADER_ID 0
 POS 0.0 0.0 0.0
 ROTATION 0.0 0.0 0.0
