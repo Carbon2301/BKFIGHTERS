@@ -1,11 +1,18 @@
 #pragma once
 #include "GameStateBase.h"
 #include "SceneManager.h"
+class Object;
 
 class GSIntro : public GameStateBase {
 private:
     float m_loadingTimer;
     float m_loadingDuration;
+    Object* m_barBg = nullptr;
+    Object* m_barFill = nullptr;
+    float m_barWidth = 0.0f;
+    float m_barHeight = 0.0f;
+    float m_barLeftX = 0.0f;
+    float m_barY = 0.0f;
     
 public:
     GSIntro();
