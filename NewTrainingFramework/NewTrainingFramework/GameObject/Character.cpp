@@ -289,6 +289,34 @@ void Character::GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) co
     }
 }
 
+void Character::GetTopFrameUV(float& u0, float& v0, float& u1, float& v1) const {
+    if (m_animation) {
+        m_animation->GetTopFrameUV(u0, v0, u1, v1);
+    } else {
+        u0 = 0.0f; v0 = 0.0f; u1 = 1.0f; v1 = 1.0f;
+    }
+}
+
+int Character::GetHeadTextureId() const {
+    if (m_animation) return m_animation->GetHeadTextureId();
+    return 8;
+}
+
+int Character::GetBodyTextureId() const {
+    if (m_animation) return m_animation->GetBodyTextureId();
+    return 10;
+}
+
+float Character::GetHeadOffsetX() const {
+    if (m_animation) return m_animation->GetTopOffsetX();
+    return 0.0f;
+}
+
+float Character::GetHeadOffsetY() const {
+    if (m_animation) return m_animation->GetTopOffsetY();
+    return 0.0f;
+}
+
 bool Character::IsInCombo() const {
     return m_combat ? m_combat->IsInCombo() : false;
 }

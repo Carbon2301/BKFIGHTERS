@@ -111,6 +111,11 @@ public:
     int GetCurrentAnimation() const;
     bool IsAnimationPlaying() const;
     void GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const;
+    void GetTopFrameUV(float& u0, float& v0, float& u1, float& v1) const;
+    int GetHeadTextureId() const;
+    int GetBodyTextureId() const;
+    float GetHeadOffsetX() const;
+    float GetHeadOffsetY() const;
     
     // Combat getters
     bool IsInCombo() const;

@@ -556,22 +556,93 @@ void GSPlay::DrawHudPortraits() {
         float u0, v0, u1, v1;
         m_player.GetCurrentFrameUV(u0, v0, u1, v1);
         // Flip horizontally if player is facing left so HUD mirrors in the same direction
-        if (m_player.IsFacingLeft()) {
+        bool flip = m_player.IsFacingLeft();
+        if (flip) {
             std::swap(u0, u1);
         }
         hud1->SetCustomUV(u0, v0, u1, v1);
         hud1->Draw(uiView, uiProj);
+
+        if (m_player.IsGunMode()) {
+            float hu0, hv0, hu1, hv1;
+            m_player.GetTopFrameUV(hu0, hv0, hu1, hv1);
+            if (flip) {
+                std::swap(hu0, hu1);
+            }
+            float offX = m_player.GetHeadOffsetX();
+            float offY = m_player.GetHeadOffsetY();
+            float sign = flip ? -1.0f : 1.0f;
+            float hudOffsetX = sign * offX;
+            float hudOffsetY = offY;
+
+            const Vector3& _pos1 = hud1->GetPosition();
+            const Vector3& _rot1 = hud1->GetRotation();
+            float oldPosX1 = _pos1.x, oldPosY1 = _pos1.y, oldPosZ1 = _pos1.z;
+            float oldRotX1 = _rot1.x, oldRotY1 = _rot1.y, oldRotZ1 = _rot1.z;
+
+            float faceSign = flip ? -1.0f : 1.0f;
+            float aimDeg = m_player.GetAimAngleDeg();
+            float rotZ = faceSign * aimDeg * 3.14159265f / 180.0f;
+
+            hud1->SetPosition(oldPosX1 + hudOffsetX, oldPosY1 + hudOffsetY, oldPosZ1);
+            hud1->SetRotation(oldRotX1, oldRotY1, rotZ);
+
+            int headTex = m_player.GetHeadTextureId();
+            hud1->SetTexture(headTex, 0);
+            hud1->SetCustomUV(hu0, hv0, hu1, hv1);
+            hud1->Draw(uiView, uiProj);
+            // Restore body texture
+            hud1->SetTexture(m_player.GetBodyTextureId(), 0);
+            hud1->SetCustomUV(u0, v0, u1, v1);
+            hud1->SetPosition(oldPosX1, oldPosY1, oldPosZ1);
+            hud1->SetRotation(oldRotX1, oldRotY1, oldRotZ1);
+        }
     }
 
     // HUD Player 2 (ID 917)
     if (Object* hud2 = scene->GetObject(917)) {
         float u0, v0, u1, v1;
         m_player2.GetCurrentFrameUV(u0, v0, u1, v1);
-        if (m_player2.IsFacingLeft()) {
+        bool flip2 = m_player2.IsFacingLeft();
+        if (flip2) {
             std::swap(u0, u1);
         }
         hud2->SetCustomUV(u0, v0, u1, v1);
         hud2->Draw(uiView, uiProj);
+
+        if (m_player2.IsGunMode()) {
+            float hu0, hv0, hu1, hv1;
+            m_player2.GetTopFrameUV(hu0, hv0, hu1, hv1);
+            if (flip2) {
+                std::swap(hu0, hu1);
+            }
+            float offX = m_player2.GetHeadOffsetX();
+            float offY = m_player2.GetHeadOffsetY();
+            float sign2 = flip2 ? -1.0f : 1.0f;
+            float hudOffsetX = sign2 * offX;
+            float hudOffsetY = offY;
+
+            const Vector3& _pos2 = hud2->GetPosition();
+            const Vector3& _rot2 = hud2->GetRotation();
+            float oldPosX2 = _pos2.x, oldPosY2 = _pos2.y, oldPosZ2 = _pos2.z;
+            float oldRotX2 = _rot2.x, oldRotY2 = _rot2.y, oldRotZ2 = _rot2.z;
+
+            float faceSign2 = flip2 ? -1.0f : 1.0f;
+            float aimDeg2 = m_player2.GetAimAngleDeg();
+            float rotZ2 = faceSign2 * aimDeg2 * 3.14159265f / 180.0f;
+
+            hud2->SetPosition(oldPosX2 + hudOffsetX, oldPosY2 + hudOffsetY, oldPosZ2);
+            hud2->SetRotation(oldRotX2, oldRotY2, rotZ2);
+
+            int headTex = m_player2.GetHeadTextureId();
+            hud2->SetTexture(headTex, 0);
+            hud2->SetCustomUV(hu0, hv0, hu1, hv1);
+            hud2->Draw(uiView, uiProj);
+            hud2->SetTexture(m_player2.GetBodyTextureId(), 0);
+            hud2->SetCustomUV(u0, v0, u1, v1);
+            hud2->SetPosition(oldPosX2, oldPosY2, oldPosZ2);
+            hud2->SetRotation(oldRotX2, oldRotY2, oldRotZ2);
+        }
     }
 }
 
