@@ -33,36 +33,16 @@ FILE "../Resources/Fighter/UI/background_loading.tga"
 TILING GL_CLAMP_TO_EDGE
 
 ID 6
-FILE "../Resources/Fighter/Bomb/Bomb.tga"
+FILE "../Resources/Fighter/Bomb/Bomb1.tga"
 TILING GL_CLAMP_TO_EDGE
 
 ID 7
 FILE "../Resources/Fighter/Bomb/Exploding_Bomb.tga"
 TILING GL_CLAMP_TO_EDGE
 SIZE 11 1
-ANINUM 11
+ANINUM 1
 * Animation 0
-0 1 50
-* Animation 1
-1 1 50
-* Animation 2
-2 1 50
-* Animation 3
-3 1 50
-* Animation 4
-4 1 50
-* Animation 5
-5 1 50
-* Animation 6
-6 1 50
-* Animation 7
-7 1 50
-* Animation 8
-8 1 50
-* Animation 9
-9 1 50
-* Animation 10
-10 1 50
+0 11 50
 
 ID 8
 FILE "../Resources/Fighter/Characters/Player1_Head.tga"

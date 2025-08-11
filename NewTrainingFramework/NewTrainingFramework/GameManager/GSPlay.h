@@ -105,6 +105,26 @@ private:
     void UpdateBloods(float dt);
     void DrawBloods(class Camera* cam);
 
+     // Bomb system
+     struct Bomb { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; bool grounded = false; bool atRest = false; };
+     std::vector<Bomb> m_bombs;
+     std::vector<std::unique_ptr<Object>> m_bombObjs;
+     std::vector<int> m_freeBombSlots;
+     int m_bombObjectId = 1500;
+     int CreateOrAcquireBombObjectFromProto(int protoObjectId);
+     void SpawnBombFromCharacter(const Character& ch);
+     void UpdateBombs(float dt);
+     void DrawBombs(class Camera* cam);
+     static constexpr float BOMB_SPEED    = 0.8f;
+     static constexpr float BOMB_GRAVITY  = 1.2f;
+     static constexpr float BOMB_COLLISION_WIDTH  = 0.04f;
+     static constexpr float BOMB_COLLISION_HEIGHT = 0.04f;
+     static constexpr float BOMB_BOUNCE_DAMPING   = 0.55f;
+     static constexpr float BOMB_WALL_FRICTION    = 0.95f;
+     static constexpr float BOMB_GROUND_FRICTION  = 0.85f;
+     static constexpr float BOMB_GROUND_DRAG      = 2.0f;
+     static constexpr float BOMB_MIN_BOUNCE_SPEED = 0.15f;
+
     std::unique_ptr<WallCollision> m_wallCollision;
 
     bool m_p1ShotPending = false;
