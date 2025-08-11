@@ -332,6 +332,7 @@ void GSPlay::Update(float deltaTime) {
     UpdateBullets(deltaTime);
     UpdateBombs(deltaTime);
     UpdateExplosions(deltaTime);
+    UpdateGrenadeFuse();
     UpdateGunBursts();
     UpdateGunReloads();
     TryCompletePendingShots();
@@ -521,7 +522,7 @@ int GSPlay::CreateOrAcquireBombObjectFromProto(int protoObjectId) {
     return (int)m_bombObjs.size() - 1;
 }
 
-void GSPlay::SpawnBombFromCharacter(const Character& ch) {
+void GSPlay::SpawnBombFromCharacter(const Character& ch, float overrideLife) {
     Vector3 pivot = ch.GetGunTopWorldPosition();
     Vector3 base  = ch.GetPosition();
     const float aimDeg = ch.GetAimAngleDeg();
@@ -548,7 +549,7 @@ void GSPlay::SpawnBombFromCharacter(const Character& ch) {
     int slot = CreateOrAcquireBombObjectFromProto(m_bombObjectId);
     Bomb b; b.x = spawn.x; b.y = spawn.y;
     b.vx = dir.x * BOMB_SPEED; b.vy = dir.y * BOMB_SPEED;
-    b.life = BOMB_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+    b.life = (overrideLife > 0.0f) ? overrideLife : BOMB_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
     m_bombs.push_back(b);
 }
 
@@ -756,6 +757,25 @@ void GSPlay::SetSpriteUV(Object* obj, int cols, int rows, int frameIndex) {
     float u1 = u0 + du;
     float v1 = v0 + dv;
     obj->SetCustomUV(u0, v0, u1, v1);
+}
+
+void GSPlay::UpdateGrenadeFuse() {
+    auto checkFuse = [&](Character& ch, float& pressTime){
+        if (pressTime < 0.0f) return;
+        float held = m_gameTime - pressTime;
+        if (held >= BOMB_LIFETIME) {
+            Vector3 pos = ch.GetPosition();
+            SpawnExplosionAt(pos.x, pos.y);
+            if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                cam->AddShake(0.04f, 0.4f, 18.0f);
+            }
+            pressTime = -1.0f;
+            ch.SetGrenadeMode(false);
+            if (&ch == &m_player) { m_p1GrenadeExplodedInHand = true; } else { m_p2GrenadeExplodedInHand = true; }
+        }
+    };
+    checkFuse(m_player, m_p1GrenadePressTime);
+    checkFuse(m_player2, m_p2GrenadePressTime);
 }
 
 void GSPlay::DrawBombs(Camera* cam) {
@@ -971,12 +991,21 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             if (!m_player.IsGunMode()) {
                 m_player.SetGrenadeMode(true);
                 m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
+                if (m_p1GrenadePressTime < 0.0f) m_p1GrenadePressTime = m_gameTime;
             }
         } else {
             bool wasGrenade = m_player.IsGrenadeMode();
             m_player.SetGrenadeMode(false);
             if (wasGrenade) {
-                SpawnBombFromCharacter(m_player);
+                float held = (m_p1GrenadePressTime >= 0.0f) ? (m_gameTime - m_p1GrenadePressTime) : 0.0f;
+                float remain = BOMB_LIFETIME - held;
+                if (remain <= 0.0f || m_p1GrenadeExplodedInHand) {
+                } else {
+                    if (remain < 0.2f) remain = 0.2f;
+                    SpawnBombFromCharacter(m_player, remain);
+                }
+                m_p1GrenadePressTime = -1.0f;
+                m_p1GrenadeExplodedInHand = false;
             }
         }
     }
@@ -985,12 +1014,21 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             if (!m_player2.IsGunMode()) {
                 m_player2.SetGrenadeMode(true);
                 m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
+                if (m_p2GrenadePressTime < 0.0f) m_p2GrenadePressTime = m_gameTime;
             }
         } else {
             bool wasGrenade2 = m_player2.IsGrenadeMode();
             m_player2.SetGrenadeMode(false);
             if (wasGrenade2) {
-                SpawnBombFromCharacter(m_player2);
+                float held = (m_p2GrenadePressTime >= 0.0f) ? (m_gameTime - m_p2GrenadePressTime) : 0.0f;
+                float remain = BOMB_LIFETIME - held;
+                if (remain <= 0.0f || m_p2GrenadeExplodedInHand) {
+                } else {
+                    if (remain < 0.2f) remain = 0.2f;
+                    SpawnBombFromCharacter(m_player2, remain);
+                }
+                m_p2GrenadePressTime = -1.0f;
+                m_p2GrenadeExplodedInHand = false;
             }
         }
     }

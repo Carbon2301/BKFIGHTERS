@@ -111,7 +111,7 @@ private:
      std::vector<int> m_freeBombSlots;
      int m_bombObjectId = 1500;
      int CreateOrAcquireBombObjectFromProto(int protoObjectId);
-     void SpawnBombFromCharacter(const Character& ch);
+     void SpawnBombFromCharacter(const Character& ch, float overrideLife = -1.0f);
      void UpdateBombs(float dt);
      void DrawBombs(class Camera* cam);
     static constexpr float BOMB_SPEED    = 0.8f;
@@ -148,6 +148,18 @@ private:
      void ApplyExplosionDamageAt(float x, float y, float halfW, float halfH, Explosion* e = nullptr);
 
     std::unique_ptr<WallCollision> m_wallCollision;
+    // Grenade fuse tracking
+    float m_p1GrenadePressTime = -1.0f;
+    float m_p2GrenadePressTime = -1.0f;
+    int   m_p1HeldBombObj = -1;
+    int   m_p2HeldBombObj = -1;
+    bool  m_p1GrenadeExplodedInHand = false;
+    bool  m_p2GrenadeExplodedInHand = false;
+
+    void UpdateGrenadeFuse();
+    void UpdateHeldBombVisuals();
+    void CreateHeldBombVisualFor(const Character& ch, int& objSlot);
+    void RemoveHeldBombVisual(int& objSlot);
 
     bool m_p1ShotPending = false;
     bool m_p2ShotPending = false;
