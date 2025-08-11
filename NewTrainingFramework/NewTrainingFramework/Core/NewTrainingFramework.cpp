@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include <windows.h>
 #include "../GameObject/Vertex.h"
 #include "../GameObject/Shaders.h"
 #include "Globals.h"
@@ -49,7 +50,26 @@ int Init(ESContext* esContext)
 
 void Draw(ESContext* esContext)
 {
-	glClear(GL_COLOR_BUFFER_BIT);
+    RECT clientRect;
+    GetClientRect((HWND)esContext->hWnd, &clientRect);
+    int clientW = clientRect.right - clientRect.left;
+    int clientH = clientRect.bottom - clientRect.top;
+    const float logicalW = static_cast<float>(Globals::screenWidth);
+    const float logicalH = static_cast<float>(Globals::screenHeight);
+    float scale = 1.0f;
+    int vpX = 0, vpY = 0, vpW = clientW, vpH = clientH;
+    if (clientW > 0 && clientH > 0) {
+        const float scaleX = static_cast<float>(clientW) / logicalW;
+        const float scaleY = static_cast<float>(clientH) / logicalH;
+        scale = (scaleX < scaleY) ? scaleX : scaleY;
+        vpW = static_cast<int>(logicalW * scale + 0.5f);
+        vpH = static_cast<int>(logicalH * scale + 0.5f);
+        vpX = (clientW - vpW) / 2;
+        vpY = (clientH - vpH) / 2;
+    }
+
+    glViewport(vpX, vpY, vpW, vpH);
+    glClear(GL_COLOR_BUFFER_BIT);
 
 	if (g_gameStateMachine) {
 		g_gameStateMachine->Draw();
@@ -74,16 +94,61 @@ void Key(ESContext *esContext, unsigned char key, bool bIsPressed)
 
 void MouseClick(ESContext *esContext, int x, int y, bool bIsPressed)
 {
-	if (g_gameStateMachine) {
-		g_gameStateMachine->HandleMouseEvent(x, y, bIsPressed);
-	}
+    if (g_gameStateMachine) {
+        // Map from window pixels to logical coordinates (1280x720)
+        RECT clientRect;
+        GetClientRect((HWND)esContext->hWnd, &clientRect);
+        int clientW = clientRect.right - clientRect.left;
+        int clientH = clientRect.bottom - clientRect.top;
+        const float logicalW = static_cast<float>(Globals::screenWidth);
+        const float logicalH = static_cast<float>(Globals::screenHeight);
+        int vpX = 0, vpY = 0, vpW = clientW, vpH = clientH;
+        float scale = 1.0f;
+        if (clientW > 0 && clientH > 0) {
+            const float scaleX = static_cast<float>(clientW) / logicalW;
+            const float scaleY = static_cast<float>(clientH) / logicalH;
+            scale = (scaleX < scaleY) ? scaleX : scaleY;
+            vpW = static_cast<int>(logicalW * scale + 0.5f);
+            vpH = static_cast<int>(logicalH * scale + 0.5f);
+            vpX = (clientW - vpW) / 2;
+            vpY = (clientH - vpH) / 2;
+        }
+        if (x < vpX || y < vpY || x >= vpX + vpW || y >= vpY + vpH) {
+            return;
+        }
+        int lx = static_cast<int>((x - vpX) / scale);
+        int ly = static_cast<int>((y - vpY) / scale);
+        g_gameStateMachine->HandleMouseEvent(lx, ly, bIsPressed);
+    }
 }
 
 void OnMouseMove(ESContext *esContext, int x, int y)
 {
-	if (g_gameStateMachine) {
-		g_gameStateMachine->HandleMouseMove(x, y);
-	}
+    if (g_gameStateMachine) {
+        RECT clientRect;
+        GetClientRect((HWND)esContext->hWnd, &clientRect);
+        int clientW = clientRect.right - clientRect.left;
+        int clientH = clientRect.bottom - clientRect.top;
+        const float logicalW = static_cast<float>(Globals::screenWidth);
+        const float logicalH = static_cast<float>(Globals::screenHeight);
+        int vpX = 0, vpY = 0, vpW = clientW, vpH = clientH;
+        float scale = 1.0f;
+        if (clientW > 0 && clientH > 0) {
+            const float scaleX = static_cast<float>(clientW) / logicalW;
+            const float scaleY = static_cast<float>(clientH) / logicalH;
+            scale = (scaleX < scaleY) ? scaleX : scaleY;
+            vpW = static_cast<int>(logicalW * scale + 0.5f);
+            vpH = static_cast<int>(logicalH * scale + 0.5f);
+            vpX = (clientW - vpW) / 2;
+            vpY = (clientH - vpH) / 2;
+        }
+        if (x < vpX || y < vpY || x >= vpX + vpW || y >= vpY + vpH) {
+            return;
+        }
+        int lx = static_cast<int>((x - vpX) / scale);
+        int ly = static_cast<int>((y - vpY) / scale);
+        g_gameStateMachine->HandleMouseMove(lx, ly);
+    }
 }
 
 void CleanUp()
@@ -112,7 +177,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	esInitContext ( &esContext );
 
-	esCreateWindow ( &esContext, "New Training Framework - 2D Engine", Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB);
+    const char* baseTitle = "New Training Framework - 2D Engine";
+    const char* title = Globals::fullscreenScale ? "New Training Framework - 2D Engine [FS]" : baseTitle;
+    esCreateWindow ( &esContext, title, Globals::screenWidth, Globals::screenHeight, ES_WINDOW_RGB);
 
 	if ( Init ( &esContext ) != 0 )
 		return 0;

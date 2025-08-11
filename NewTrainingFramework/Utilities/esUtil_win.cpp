@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include <windows.h>
+#include <cstring>
 #include "esUtil.h"
 
 
@@ -135,6 +136,7 @@ GLboolean WinCreate ( ESContext *esContext, const char *title )
    if (!RegisterClass (&wndclass) ) 
       return FALSE; 
 
+   // Default style for windowed mode; may be overridden for fullscreen scaling
    wStyle = WS_VISIBLE | WS_POPUP | WS_BORDER | WS_SYSMENU | WS_CAPTION;
    
    // Adjust the window rectangle so that the client area has
@@ -150,10 +152,10 @@ GLboolean WinCreate ( ESContext *esContext, const char *title )
                          "opengles2.0",
                          title,
                          wStyle,
-                         0,
-                         0,
-                         windowRect.right - windowRect.left,
-                         windowRect.bottom - windowRect.top,
+                          0,
+                          0,
+                          windowRect.right - windowRect.left,
+                          windowRect.bottom - windowRect.top,
                          NULL,
                          NULL,
                          hInstance,
@@ -167,6 +169,27 @@ GLboolean WinCreate ( ESContext *esContext, const char *title )
       return GL_FALSE;
 
    ShowWindow ( esContext->hWnd, TRUE );
+
+   {
+       size_t titleLen = strlen(title);
+       bool wantFullscreenBorderless = (titleLen >= 4 && strcmp(title + (titleLen - 4), "[FS]") == 0);
+       if (wantFullscreenBorderless) {
+           RECT desktopRect;
+           const HWND hDesktop = GetDesktopWindow();
+           if (GetWindowRect(hDesktop, &desktopRect)) {
+               LONG fullWidth = desktopRect.right - desktopRect.left;
+               LONG fullHeight = desktopRect.bottom - desktopRect.top;
+
+               // Make window borderless and top-level
+               LONG style = GetWindowLong(esContext->hWnd, GWL_STYLE);
+               style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU | WS_BORDER | WS_OVERLAPPED | WS_OVERLAPPEDWINDOW);
+               style |= WS_POPUP | WS_VISIBLE;
+               SetWindowLong(esContext->hWnd, GWL_STYLE, style);
+
+               SetWindowPos(esContext->hWnd, HWND_TOP, 0, 0, fullWidth, fullHeight, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+           }
+       }
+   }
 
    return GL_TRUE;
 }
