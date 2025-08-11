@@ -2,10 +2,12 @@
 #include "GSIntro.h"
 #include "GameStateMachine.h"
 #include "../Core/Globals.h"
+#include "SceneManager.h"
+#include "../GameObject/Object.h"
 #include <iostream>
 
 GSIntro::GSIntro() 
-    : GameStateBase(StateType::INTRO), m_loadingTimer(0.0f), m_loadingDuration(1.0f) {
+    : GameStateBase(StateType::INTRO), m_loadingTimer(0.0f), m_loadingDuration(3.0f) {
 }
 
 GSIntro::~GSIntro() {
@@ -40,7 +42,32 @@ void GSIntro::Init() {
             backgroundObj->SetScale(Vector3(2.0f, 2.0f, 1.0f));
         }
     }
-    
+
+    float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+    m_barWidth = aspect * 1.2f;
+    m_barHeight = 0.08f;
+    m_barLeftX = -m_barWidth * 0.5f;
+    m_barY = -0.8f;
+
+    // Background bar (dark/black)
+    m_barBg = sceneManager->CreateObject(901);
+    if (m_barBg) {
+        m_barBg->SetModel(0);
+        m_barBg->SetTexture(21, 0);
+        m_barBg->SetShader(0);
+        m_barBg->SetPosition(0.0f, m_barY, 0.0f);
+        m_barBg->SetScale(m_barWidth, m_barHeight, 1.0f);
+    }
+
+    m_barFill = sceneManager->CreateObject(902);
+    if (m_barFill) {
+        m_barFill->SetModel(0);
+        m_barFill->SetTexture(13, 0);
+        m_barFill->SetShader(0);
+        m_barFill->SetPosition(m_barLeftX, m_barY, 0.0f);
+        m_barFill->SetScale(0.001f, m_barHeight - 0.02f, 1.0f); // tiny width to avoid zero scale
+    }
+
     m_loadingTimer = 0.0f;
     std::cout << "Loading screen initialized" << std::endl;
 }
@@ -50,12 +77,13 @@ void GSIntro::Update(float deltaTime) {
     
     SceneManager::GetInstance()->Update(deltaTime);
     
-    static float lastProgressTime = 0.0f;
-    if (m_loadingTimer - lastProgressTime > 0.5f) {
-        float progress = (m_loadingTimer / m_loadingDuration) * 100.0f;
-        if (progress > 100.0f) progress = 100.0f;
-        std::cout << "Loading... " << (int)progress << "%" << std::endl;
-        lastProgressTime = m_loadingTimer;
+    float t = m_loadingTimer / m_loadingDuration;
+    if (t > 1.0f) t = 1.0f;
+    float currentWidth = m_barWidth * t;
+    if (m_barFill) {
+        float centerX = m_barLeftX + currentWidth * 0.5f;
+        m_barFill->SetPosition(centerX, m_barY, 0.0f);
+        m_barFill->SetScale(currentWidth, m_barHeight - 0.02f, 1.0f);
     }
     
     if (m_loadingTimer >= m_loadingDuration) {
@@ -69,17 +97,15 @@ void GSIntro::Draw() {
 }
 
 void GSIntro::HandleKeyEvent(unsigned char key, bool bIsPressed) {
-    if (bIsPressed) {
-        if (key != 0) {
-            std::cout << "Loading skipped by user input" << std::endl;
-            GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
-        }
+    if (!bIsPressed) return;
+    if (m_loadingTimer >= m_loadingDuration) {
+        GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
     }
 }
 
 void GSIntro::HandleMouseEvent(int x, int y, bool bIsPressed) {
-    if (bIsPressed) {
-        std::cout << "Loading skipped by mouse click at (" << x << ", " << y << ")" << std::endl;
+    if (!bIsPressed) return;
+    if (m_loadingTimer >= m_loadingDuration) {
         GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
     }
 }
