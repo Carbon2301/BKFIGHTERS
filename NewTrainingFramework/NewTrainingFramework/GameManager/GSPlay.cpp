@@ -1218,6 +1218,12 @@ void GSPlay::UpdateBullets(float dt) {
         if (m_wallCollision) {
             Vector3 pos(it->x, it->y, 0.0f);
             if (m_wallCollision->CheckWallCollision(pos, BULLET_COLLISION_WIDTH, BULLET_COLLISION_HEIGHT, 0.0f, 0.0f)) {
+                if (it->isBazoka && !it->isFlamegun) {
+                    SpawnExplosionAt(it->x, it->y);
+                    if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                        cam->AddShake(0.03f, 0.35f, 18.0f);
+                    }
+                }
                 removeBullet(it); continue;
             }
         }
@@ -1254,6 +1260,12 @@ void GSPlay::UpdateBullets(float dt) {
                     target->TriggerDieFromAttack(*attacker);
                 }
                 SpawnBloodAt(it->x, it->y, it->angleRad);
+                if (it->isBazoka && !it->isFlamegun) {
+                    SpawnExplosionAt(it->x, it->y);
+                    if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                        cam->AddShake(0.03f, 0.35f, 18.0f);
+                    }
+                }
                 removeBullet(it); continue;
             }
         }
@@ -1288,7 +1300,6 @@ void GSPlay::UpdateBullets(float dt) {
 }
 
 int GSPlay::CreateOrAcquireBulletObject() {
-    // reuse slot if available
     if (!m_freeBulletSlots.empty()) {
         int idx = m_freeBulletSlots.back();
         m_freeBulletSlots.pop_back();
