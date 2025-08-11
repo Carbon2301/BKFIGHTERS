@@ -82,7 +82,6 @@ private:
     const float BAZOKA_TRAIL_SCALE_X = 0.6f;
     const float BAZOKA_TRAIL_SCALE_Y = 0.6f;
     const float BAZOKA_TRAIL_BACK_OFFSET = 0.01f;
-    void EnsureBazokaTrailTextures();
     std::vector<std::shared_ptr<class Texture2D>> m_bazokaTrailTextures;
 
     struct BloodDrop {
@@ -105,7 +104,62 @@ private:
     void UpdateBloods(float dt);
     void DrawBloods(class Camera* cam);
 
+     // Bomb system
+     struct Bomb { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; bool grounded = false; bool atRest = false; };
+     std::vector<Bomb> m_bombs;
+     std::vector<std::unique_ptr<Object>> m_bombObjs;
+     std::vector<int> m_freeBombSlots;
+     int m_bombObjectId = 1500;
+     int CreateOrAcquireBombObjectFromProto(int protoObjectId);
+     void SpawnBombFromCharacter(const Character& ch, float overrideLife = -1.0f);
+     void UpdateBombs(float dt);
+     void DrawBombs(class Camera* cam);
+    static constexpr float BOMB_SPEED    = 0.8f;
+    static constexpr float BOMB_GRAVITY  = 1.2f;
+    static constexpr float BOMB_LIFETIME = 3.0f;
+     static constexpr float BOMB_COLLISION_WIDTH  = 0.04f;
+     static constexpr float BOMB_COLLISION_HEIGHT = 0.04f;
+     static constexpr float BOMB_BOUNCE_DAMPING   = 0.55f;
+     static constexpr float BOMB_WALL_FRICTION    = 0.95f;
+     static constexpr float BOMB_GROUND_FRICTION  = 0.85f;
+     static constexpr float BOMB_GROUND_DRAG      = 2.0f;
+     static constexpr float BOMB_MIN_BOUNCE_SPEED = 0.15f;
+
+     // Explosion system
+     struct Explosion {
+         float x; float y;
+         int objIdx;
+         int cols; int rows;
+         int frameIndex; int frameCount;
+         float frameTimer; float frameDuration;
+         bool damagedP1 = false;
+         bool damagedP2 = false;
+     };
+     std::vector<Explosion> m_explosions;
+     std::vector<std::unique_ptr<Object>> m_explosionObjs;
+     std::vector<int> m_freeExplosionSlots;
+     int m_explosionObjectId = 1501;
+     int CreateOrAcquireExplosionObjectFromProto(int protoObjectId);
+     void SpawnExplosionAt(float x, float y);
+     void UpdateExplosions(float dt);
+     void DrawExplosions(class Camera* cam);
+     void SetSpriteUV(Object* obj, int cols, int rows, int frameIndex);
+     static constexpr float EXPLOSION_FRAME_DURATION = 0.05f; // seconds per frame
+     void ApplyExplosionDamageAt(float x, float y, float halfW, float halfH, Explosion* e = nullptr);
+
     std::unique_ptr<WallCollision> m_wallCollision;
+    // Grenade fuse tracking
+    float m_p1GrenadePressTime = -1.0f;
+    float m_p2GrenadePressTime = -1.0f;
+    int   m_p1HeldBombObj = -1;
+    int   m_p2HeldBombObj = -1;
+    bool  m_p1GrenadeExplodedInHand = false;
+    bool  m_p2GrenadeExplodedInHand = false;
+
+    void UpdateGrenadeFuse();
+    void UpdateHeldBombVisuals();
+    void CreateHeldBombVisualFor(const Character& ch, int& objSlot);
+    void RemoveHeldBombVisual(int& objSlot);
 
     bool m_p1ShotPending = false;
     bool m_p2ShotPending = false;

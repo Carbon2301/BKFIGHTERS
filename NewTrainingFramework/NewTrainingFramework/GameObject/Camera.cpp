@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Camera.h"
 #include <cmath>
+#include <SDL.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -99,6 +100,22 @@ void Camera::SetPosition2D(float x, float y) {
     m_target.y += deltaY;
     m_viewNeedsUpdate = true;
     m_vpMatrixNeedsUpdate = true;
+}
+
+void Camera::UpdateShake(float dt) {
+    if (m_shakeTimeRemaining <= 0.0f) {
+        m_shakeOffset.x = 0.0f; m_shakeOffset.y = 0.0f; m_shakeOffset.z = 0.0f;
+        return;
+    }
+    m_shakeTimeRemaining -= dt;
+    float t = m_shakeTimeRemaining / (m_shakeDuration > 0.0f ? m_shakeDuration : 1.0f);
+    if (t < 0.0f) t = 0.0f;
+    float amp = m_shakeAmplitude * (0.5f + 0.5f * t);
+    float time = SDL_GetTicks() / 1000.0f;
+    float ox = sinf(time * m_shakeFrequency * 6.2831853f) * amp;
+    float oy = cosf(time * (m_shakeFrequency * 0.8f) * 6.2831853f) * amp;
+    m_shakeOffset.x = ox;
+    m_shakeOffset.y = oy;
 }
 
 void Camera::SetOrthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane) {
@@ -219,7 +236,8 @@ void Camera::UpdateCameraForCharacters(const Vector3& player1Pos, const Vector3&
     newPosition.y = currentPos.y + (targetPosition.y - currentPos.y) * moveSpeedY * deltaTime;
     newPosition.z = currentPos.z;
 
-    SetPosition2D(newPosition.x, newPosition.y);
+    UpdateShake(deltaTime);
+    SetPosition2D(newPosition.x + m_shakeOffset.x, newPosition.y + m_shakeOffset.y);
 }
 
 void Camera::SetCharacterDimensions(float width, float height) {
@@ -296,3 +314,11 @@ void Camera::UpdateViewProjectionMatrix() {
     m_viewProjectionMatrix = viewCopy * projCopy;
     m_vpMatrixNeedsUpdate = false;
 } 
+
+void Camera::AddShake(float amplitude, float duration, float frequency) {
+    if (amplitude <= 0.0f || duration <= 0.0f) return;
+    m_shakeAmplitude = amplitude;
+    m_shakeDuration = duration;
+    m_shakeFrequency = frequency;
+    m_shakeTimeRemaining = duration;
+}

@@ -348,6 +348,17 @@ void Object::SetCustomUV(float u0, float v0, float u1, float v1) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void Object::MakeModelInstanceCopy() {
+    if (!m_model) return;
+    std::shared_ptr<Model> cloned = std::make_shared<Model>();
+    cloned->vertices = m_model->vertices;
+    cloned->indices = m_model->indices;
+    cloned->vertexCount = m_model->vertexCount;
+    cloned->indexCount = m_model->indexCount;
+    cloned->CreateBuffers();
+    m_model = cloned;
+}
+
 // Lift platform methods
 void Object::SetLiftPlatform(bool enabled, const Vector3& startPos, const Vector3& endPos, 
                             float speed, float pauseTime) {

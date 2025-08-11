@@ -214,6 +214,9 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
     }
     
     if (movement->IsSitting()) {
+        if (combat->IsKicking() || combat->IsInCombo() || combat->IsInAxeCombo()) {
+            combat->CancelAllCombos();
+        }
         return;
     }
     
@@ -521,6 +524,10 @@ void CharacterAnimation::SetGunMode(bool enabled) {
         m_aimHoldBlockUntilMs = m_gunEnterStartMs + (unsigned int)(AIM_HOLD_INITIAL_DELAY * 1000.0f);
         m_lastAimTickMs = m_gunEnterStartMs;
     }
+    if (enabled) {
+        // Gun mode and grenade mode are mutually exclusive
+        m_grenadeMode = false;
+    }
     m_gunMode = enabled;
 }
 
@@ -537,6 +544,12 @@ void CharacterAnimation::SetGrenadeMode(bool enabled) {
         m_aimSincePressUp = m_aimSincePressDown = 0.0f;
         m_aimHoldBlockUntilMs = nowMsEnter + (unsigned int)(AIM_HOLD_INITIAL_DELAY * 1000.0f);
         m_lastAimTickMs = nowMsEnter;
+    }
+    if (enabled) {
+        // Grenade mode and gun mode are mutually exclusive
+        m_gunMode = false;
+        m_isTurning = false;
+        m_gunEntering = false;
     }
     m_grenadeMode = enabled;
 }

@@ -304,6 +304,12 @@ void GSPlay::Init() {
     
 
     UpdateHealthBars();
+    if (Object* bombProto = SceneManager::GetInstance()->GetObject(m_bombObjectId)) {
+        bombProto->SetVisible(false);
+    }
+    if (Object* explProto = SceneManager::GetInstance()->GetObject(m_explosionObjectId)) {
+        explProto->SetVisible(false);
+    }
     UpdateHudWeapons();
 }
 
@@ -324,6 +330,9 @@ void GSPlay::Update(float deltaTime) {
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
     UpdateBullets(deltaTime);
+    UpdateBombs(deltaTime);
+    UpdateExplosions(deltaTime);
+    UpdateGrenadeFuse();
     UpdateGunBursts();
     UpdateGunReloads();
     TryCompletePendingShots();
@@ -400,6 +409,8 @@ void GSPlay::Draw() {
     // Draw HUD portraits with independent UVs
     DrawHudPortraits();
     if (cam) { DrawBullets(cam); }
+    if (cam) { DrawBombs(cam); }
+    if (cam) { DrawExplosions(cam); }
     if (cam) { DrawBloods(cam); }
     
     static float lastPosX = m_player.GetPosition().x;
@@ -479,6 +490,303 @@ void GSPlay::Draw() {
         lastPosX2 = m_player2.GetPosition().x;
         lastAnim2 = m_player2.GetCurrentAnimation();
         wasMoving2 = isMoving2;
+    }
+}
+
+int GSPlay::CreateOrAcquireBombObjectFromProto(int protoObjectId) {
+    if (!m_freeBombSlots.empty()) {
+        int idx = m_freeBombSlots.back();
+        m_freeBombSlots.pop_back();
+        if (m_bombObjs[idx]) {
+            if (Object* proto = SceneManager::GetInstance()->GetObject(protoObjectId)) {
+                m_bombObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_bombObjs[idx]->SetTexture(texIds[0], 0);
+                m_bombObjs[idx]->SetShader(proto->GetShaderId());
+                m_bombObjs[idx]->SetScale(proto->GetScale());
+            }
+            m_bombObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    std::unique_ptr<Object> obj = std::make_unique<Object>(50000 + (int)m_bombObjs.size());
+    if (Object* proto = SceneManager::GetInstance()->GetObject(protoObjectId)) {
+        obj->SetModel(proto->GetModelId());
+        const std::vector<int>& texIds = proto->GetTextureIds();
+        if (!texIds.empty()) obj->SetTexture(texIds[0], 0);
+        obj->SetShader(proto->GetShaderId());
+        obj->SetScale(proto->GetScale());
+    }
+    obj->SetVisible(true);
+    m_bombObjs.push_back(std::move(obj));
+    return (int)m_bombObjs.size() - 1;
+}
+
+void GSPlay::SpawnBombFromCharacter(const Character& ch, float overrideLife) {
+    Vector3 pivot = ch.GetGunTopWorldPosition();
+    Vector3 base  = ch.GetPosition();
+    const float aimDeg = ch.GetAimAngleDeg();
+    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
+    const float aimRad = aimDeg * 3.14159265f / 180.0f;
+    const float angleWorld = faceSign * aimRad;
+
+    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
+                       base.y + BULLET_SPAWN_OFFSET_Y,
+                       0.0f);
+    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
+    float c = cosf(angleWorld), s = sinf(angleWorld);
+    Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
+    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
+
+    const float forwardStep = 0.02f;
+    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
+    Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
+                        vLocalForward.x * s + vLocalForward.y * c, 0.0f);
+    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
+
+    int slot = CreateOrAcquireBombObjectFromProto(m_bombObjectId);
+    Bomb b; b.x = spawn.x; b.y = spawn.y;
+    b.vx = dir.x * BOMB_SPEED; b.vy = dir.y * BOMB_SPEED;
+    b.life = (overrideLife > 0.0f) ? overrideLife : BOMB_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+    m_bombs.push_back(b);
+}
+
+void GSPlay::UpdateBombs(float dt) {
+    auto removeBomb = [&](decltype(m_bombs.begin())& it){
+        if (it->objIndex >= 0 && it->objIndex < (int)m_bombObjs.size() && m_bombObjs[it->objIndex]) {
+            m_freeBombSlots.push_back(it->objIndex);
+            m_bombObjs[it->objIndex]->SetVisible(false);
+        }
+        it = m_bombs.erase(it);
+    };
+
+    for (auto it = m_bombs.begin(); it != m_bombs.end(); ) {
+        if (!it->atRest) {
+            it->vy -= BOMB_GRAVITY * dt;
+        }
+        float dx = it->vx * dt;
+        float dy = it->vy * dt;
+        Vector3 curPos(it->x, it->y, 0.0f);
+        Vector3 newPos(it->x + dx, it->y + dy, 0.0f);
+
+        bool collided = false;
+        bool hitVertical = false;
+        bool hitHorizontal = false;
+
+        if (m_wallCollision) {
+            Vector3 resolved = m_wallCollision->ResolveWallCollision(curPos, newPos,
+                BOMB_COLLISION_WIDTH, BOMB_COLLISION_HEIGHT, 0.0f, 0.0f);
+            collided = (resolved.x != newPos.x) || (resolved.y != newPos.y);
+            if (collided) {
+                if (fabsf(resolved.x - newPos.x) > 1e-6f) hitHorizontal = true;
+                if (fabsf(resolved.y - newPos.y) > 1e-6f) hitVertical = true;
+                newPos = resolved;
+            }
+        }
+
+        it->x = newPos.x;
+        it->y = newPos.y;
+        it->life -= dt;
+
+        if (collided) {
+            if (hitHorizontal) {
+                it->vx = -it->vx * BOMB_BOUNCE_DAMPING;
+                it->vy *= BOMB_WALL_FRICTION;
+            }
+            if (hitVertical) {
+                it->vy = -it->vy * BOMB_BOUNCE_DAMPING;
+                it->vx *= BOMB_GROUND_FRICTION;
+                if (fabsf(it->vy) < BOMB_MIN_BOUNCE_SPEED) {
+                    it->vy = 0.0f;
+                    it->grounded = true;
+                } else {
+                    it->grounded = false;
+                }
+            }
+        }
+
+        if (it->grounded) {
+            float sign = (it->vx > 0.0f) ? 1.0f : (it->vx < 0.0f ? -1.0f : 0.0f);
+            float mag = fabsf(it->vx);
+            mag -= BOMB_GROUND_DRAG * dt;
+            if (mag <= 0.0f) { mag = 0.0f; }
+            it->vx = sign * mag;
+            if (mag == 0.0f) {
+                it->atRest = true;
+            }
+        }
+
+        if (it->life <= 0.0f) {
+            SpawnExplosionAt(it->x, it->y);
+            if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                cam->AddShake(0.04f, 0.4f, 18.0f);
+            }
+            removeBomb(it);
+            continue;
+        }
+        ++it;
+    }
+}
+
+int GSPlay::CreateOrAcquireExplosionObjectFromProto(int protoObjectId) {
+    if (!m_freeExplosionSlots.empty()) {
+        int idx = m_freeExplosionSlots.back();
+        m_freeExplosionSlots.pop_back();
+        if (m_explosionObjs[idx]) {
+            if (Object* proto = SceneManager::GetInstance()->GetObject(protoObjectId)) {
+                m_explosionObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_explosionObjs[idx]->SetTexture(texIds[0], 0);
+                m_explosionObjs[idx]->SetShader(proto->GetShaderId());
+                m_explosionObjs[idx]->SetScale(proto->GetScale());
+            }
+            m_explosionObjs[idx]->MakeModelInstanceCopy();
+            m_explosionObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    std::unique_ptr<Object> obj = std::make_unique<Object>(60000 + (int)m_explosionObjs.size());
+    if (Object* proto = SceneManager::GetInstance()->GetObject(protoObjectId)) {
+        obj->SetModel(proto->GetModelId());
+        const std::vector<int>& texIds = proto->GetTextureIds();
+        if (!texIds.empty()) obj->SetTexture(texIds[0], 0);
+        obj->SetShader(proto->GetShaderId());
+        obj->SetScale(proto->GetScale());
+    }
+    obj->MakeModelInstanceCopy();
+    obj->SetVisible(true);
+    m_explosionObjs.push_back(std::move(obj));
+    return (int)m_explosionObjs.size() - 1;
+}
+
+void GSPlay::SpawnExplosionAt(float x, float y) {
+    int idx = CreateOrAcquireExplosionObjectFromProto(m_explosionObjectId);
+    Explosion e{}; e.x = x; e.y = y; e.objIdx = idx; e.cols = 11; e.rows = 1; e.frameIndex = 0; e.frameCount = 11; e.frameTimer = 0.0f; e.frameDuration = EXPLOSION_FRAME_DURATION;
+    if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
+        m_explosionObjs[idx]->SetPosition(x, y, 0.0f);
+        SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, 0);
+    }
+    m_explosions.push_back(e);
+}
+
+void GSPlay::UpdateExplosions(float dt) {
+    for (size_t i = 0; i < m_explosions.size(); ) {
+        Explosion& e = m_explosions[i];
+        if (e.frameIndex == 0 && e.frameTimer <= 0.0f) {
+            float halfW = 0.15f, halfH = 0.15f;
+            if (e.objIdx >= 0 && e.objIdx < (int)m_explosionObjs.size() && m_explosionObjs[e.objIdx]) {
+                const Vector3& sc = m_explosionObjs[e.objIdx]->GetScale();
+                halfW = fabsf(sc.x) * 0.5f;
+                halfH = fabsf(sc.y) * 0.5f;
+            }
+            auto applyDamage = [&](Character& target){
+                Vector3 pos = target.GetPosition();
+                float hx = pos.x + target.GetHurtboxOffsetX();
+                float hy = pos.y + target.GetHurtboxOffsetY();
+                float thw = target.GetHurtboxWidth() * 0.5f;
+                float thh = target.GetHurtboxHeight() * 0.5f;
+                float tLeft = hx - thw, tRight = hx + thw, tBottom = hy - thh, tTop = hy + thh;
+                float eLeft = e.x - halfW, eRight = e.x + halfW, eBottom = e.y - halfH, eTop = e.y + halfH;
+                bool overlap = !(tRight < eLeft || tLeft > eRight || tTop < eBottom || tBottom > eTop);
+                if (!overlap) return;
+                // radial falloff by distance to center
+                float dx = hx - e.x; float dy = hy - e.y;
+                float dist = sqrtf(dx*dx + dy*dy);
+                float maxR = (halfW > halfH ? halfW : halfH);
+                float ratio = 1.0f - (dist / (maxR + 1e-6f));
+                if (ratio < 0.0f) ratio = 0.0f; if (ratio > 1.0f) ratio = 1.0f;
+                float damage = 100.0f * ratio;
+                if (damage <= 0.0f) return;
+                float prev = target.GetHealth();
+                target.TakeDamage(damage);
+                target.CancelAllCombos();
+                if (CharacterMovement* mv = target.GetMovement()) mv->SetInputLocked(false);
+                if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                    target.TriggerDie();
+                }
+            };
+            applyDamage(m_player);
+            applyDamage(m_player2);
+        }
+
+        e.frameTimer += dt;
+        while (e.frameTimer >= e.frameDuration) {
+            e.frameTimer -= e.frameDuration;
+            e.frameIndex += 1;
+            if (e.frameIndex >= e.frameCount) break;
+            int idx = e.objIdx;
+            if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
+                SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, e.frameIndex);
+            }
+        }
+        if (e.frameIndex >= e.frameCount) {
+            int idx = e.objIdx;
+            if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
+                m_explosionObjs[idx]->SetVisible(false);
+                m_freeExplosionSlots.push_back(idx);
+            }
+            m_explosions[i] = m_explosions.back();
+            m_explosions.pop_back();
+        } else {
+            ++i;
+        }
+    }
+}
+
+void GSPlay::DrawExplosions(class Camera* cam) {
+    for (const Explosion& e : m_explosions) {
+        int idx = e.objIdx;
+        if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
+            m_explosionObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
+    }
+}
+
+void GSPlay::SetSpriteUV(Object* obj, int cols, int rows, int frameIndex) {
+    if (!obj || cols <= 0 || rows <= 0 || frameIndex < 0) return;
+    int total = cols * rows;
+    if (frameIndex >= total) frameIndex = total - 1;
+    int col = frameIndex % cols;
+    int row = frameIndex / cols;
+    float du = 1.0f / cols;
+    float dv = 1.0f / rows;
+    float u0 = col * du;
+    float v0 = row * dv;
+    float u1 = u0 + du;
+    float v1 = v0 + dv;
+    obj->SetCustomUV(u0, v0, u1, v1);
+}
+
+void GSPlay::UpdateGrenadeFuse() {
+    auto checkFuse = [&](Character& ch, float& pressTime){
+        if (pressTime < 0.0f) return;
+        float held = m_gameTime - pressTime;
+        if (held >= BOMB_LIFETIME) {
+            Vector3 pos = ch.GetPosition();
+            SpawnExplosionAt(pos.x, pos.y);
+            if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                cam->AddShake(0.04f, 0.4f, 18.0f);
+            }
+            pressTime = -1.0f;
+            ch.SetGrenadeMode(false);
+            if (&ch == &m_player) { m_p1GrenadeExplodedInHand = true; } else { m_p2GrenadeExplodedInHand = true; }
+        }
+    };
+    checkFuse(m_player, m_p1GrenadePressTime);
+    checkFuse(m_player2, m_p2GrenadePressTime);
+}
+
+void GSPlay::DrawBombs(Camera* cam) {
+    for (const Bomb& b : m_bombs) {
+        int idx = b.objIndex;
+        if (idx >= 0 && idx < (int)m_bombObjs.size() && m_bombObjs[idx]) {
+            m_bombObjs[idx]->SetPosition(b.x, b.y, 0.0f);
+            float desired = atan2f(b.vy, b.vx);
+            m_bombObjs[idx]->SetRotation(0.0f, 0.0f, desired);
+            m_bombObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
     }
 }
 
@@ -654,7 +962,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == 'M' || key == 'm') {
         bool was = m_player2.IsGunMode();
         if (bIsPressed) {
-            if (!m_player2.IsJumping()) {
+            if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping()) {
                 m_player2.SetGunMode(true);
                 m_player2.GetMovement()->SetInputLocked(true);
                 if (!was) { m_p2ShotPending = false; m_p2GunStartTime = m_gameTime; }
@@ -666,7 +974,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == '2') {
         bool was = m_player.IsGunMode();
         if (bIsPressed) {
-            if (!m_player.IsJumping()) {
+            if (!m_player.IsGrenadeMode() && !m_player.IsJumping()) {
                 m_player.SetGunMode(true);
                 m_player.GetMovement()->SetInputLocked(true);
                 if (!was) { m_p1ShotPending = false; m_p1GunStartTime = m_gameTime; }
@@ -676,20 +984,52 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     
-    // Grenade visual state toggle (hold)
+    // Grenade visual state toggle (hold) — mutually exclusive with gun mode
     // P1: '3', P2: ','
     if (key == '3') {
         if (bIsPressed) {
-            m_player.SetGrenadeMode(true);
+            if (!m_player.IsGunMode()) {
+                m_player.SetGrenadeMode(true);
+                m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
+                if (m_p1GrenadePressTime < 0.0f) m_p1GrenadePressTime = m_gameTime;
+            }
         } else {
+            bool wasGrenade = m_player.IsGrenadeMode();
             m_player.SetGrenadeMode(false);
+            if (wasGrenade) {
+                float held = (m_p1GrenadePressTime >= 0.0f) ? (m_gameTime - m_p1GrenadePressTime) : 0.0f;
+                float remain = BOMB_LIFETIME - held;
+                if (remain <= 0.0f || m_p1GrenadeExplodedInHand) {
+                } else {
+                    if (remain < 0.2f) remain = 0.2f;
+                    SpawnBombFromCharacter(m_player, remain);
+                }
+                m_p1GrenadePressTime = -1.0f;
+                m_p1GrenadeExplodedInHand = false;
+            }
         }
     }
     if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
         if (bIsPressed) {
-            m_player2.SetGrenadeMode(true);
+            if (!m_player2.IsGunMode()) {
+                m_player2.SetGrenadeMode(true);
+                m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
+                if (m_p2GrenadePressTime < 0.0f) m_p2GrenadePressTime = m_gameTime;
+            }
         } else {
+            bool wasGrenade2 = m_player2.IsGrenadeMode();
             m_player2.SetGrenadeMode(false);
+            if (wasGrenade2) {
+                float held = (m_p2GrenadePressTime >= 0.0f) ? (m_gameTime - m_p2GrenadePressTime) : 0.0f;
+                float remain = BOMB_LIFETIME - held;
+                if (remain <= 0.0f || m_p2GrenadeExplodedInHand) {
+                } else {
+                    if (remain < 0.2f) remain = 0.2f;
+                    SpawnBombFromCharacter(m_player2, remain);
+                }
+                m_p2GrenadePressTime = -1.0f;
+                m_p2GrenadeExplodedInHand = false;
+            }
         }
     }
 
@@ -953,6 +1293,12 @@ void GSPlay::UpdateBullets(float dt) {
         if (m_wallCollision) {
             Vector3 pos(it->x, it->y, 0.0f);
             if (m_wallCollision->CheckWallCollision(pos, BULLET_COLLISION_WIDTH, BULLET_COLLISION_HEIGHT, 0.0f, 0.0f)) {
+                if (it->isBazoka && !it->isFlamegun) {
+                    SpawnExplosionAt(it->x, it->y);
+                    if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                        cam->AddShake(0.03f, 0.35f, 18.0f);
+                    }
+                }
                 removeBullet(it); continue;
             }
         }
@@ -989,6 +1335,12 @@ void GSPlay::UpdateBullets(float dt) {
                     target->TriggerDieFromAttack(*attacker);
                 }
                 SpawnBloodAt(it->x, it->y, it->angleRad);
+                if (it->isBazoka && !it->isFlamegun) {
+                    SpawnExplosionAt(it->x, it->y);
+                    if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                        cam->AddShake(0.03f, 0.35f, 18.0f);
+                    }
+                }
                 removeBullet(it); continue;
             }
         }
@@ -1023,7 +1375,6 @@ void GSPlay::UpdateBullets(float dt) {
 }
 
 int GSPlay::CreateOrAcquireBulletObject() {
-    // reuse slot if available
     if (!m_freeBulletSlots.empty()) {
         int idx = m_freeBulletSlots.back();
         m_freeBulletSlots.pop_back();

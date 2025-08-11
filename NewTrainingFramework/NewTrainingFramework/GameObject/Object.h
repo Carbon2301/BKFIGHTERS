@@ -114,6 +114,8 @@ public:
     // Getter cho model (tránh truy cập trực tiếp biến private)
     std::shared_ptr<Model> GetModelPtr() const { return m_model; }
 
+    void MakeModelInstanceCopy();
+
     // Thêm hàm public để gán texture động (dùng cho text)
     void SetDynamicTexture(std::shared_ptr<Texture2D> tex) {
         m_textureIds.clear();
