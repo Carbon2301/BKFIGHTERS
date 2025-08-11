@@ -307,6 +307,9 @@ void GSPlay::Init() {
     if (Object* bombProto = SceneManager::GetInstance()->GetObject(m_bombObjectId)) {
         bombProto->SetVisible(false);
     }
+    if (Object* explProto = SceneManager::GetInstance()->GetObject(m_explosionObjectId)) {
+        explProto->SetVisible(false);
+    }
     UpdateHudWeapons();
 }
 
@@ -328,6 +331,7 @@ void GSPlay::Update(float deltaTime) {
     m_player2.Update(deltaTime);
     UpdateBullets(deltaTime);
     UpdateBombs(deltaTime);
+    UpdateExplosions(deltaTime);
     UpdateGunBursts();
     UpdateGunReloads();
     TryCompletePendingShots();
@@ -405,6 +409,7 @@ void GSPlay::Draw() {
     DrawHudPortraits();
     if (cam) { DrawBullets(cam); }
     if (cam) { DrawBombs(cam); }
+    if (cam) { DrawExplosions(cam); }
     if (cam) { DrawBloods(cam); }
     
     static float lastPosX = m_player.GetPosition().x;
@@ -612,9 +617,105 @@ void GSPlay::UpdateBombs(float dt) {
             }
         }
 
-        if (it->life <= 0.0f) { removeBomb(it); continue; }
+        if (it->life <= 0.0f) {
+            SpawnExplosionAt(it->x, it->y);
+            removeBomb(it);
+            continue;
+        }
         ++it;
     }
+}
+
+int GSPlay::CreateOrAcquireExplosionObjectFromProto(int protoObjectId) {
+    if (!m_freeExplosionSlots.empty()) {
+        int idx = m_freeExplosionSlots.back();
+        m_freeExplosionSlots.pop_back();
+        if (m_explosionObjs[idx]) {
+            if (Object* proto = SceneManager::GetInstance()->GetObject(protoObjectId)) {
+                m_explosionObjs[idx]->SetModel(proto->GetModelId());
+                const std::vector<int>& texIds = proto->GetTextureIds();
+                if (!texIds.empty()) m_explosionObjs[idx]->SetTexture(texIds[0], 0);
+                m_explosionObjs[idx]->SetShader(proto->GetShaderId());
+                m_explosionObjs[idx]->SetScale(proto->GetScale());
+            }
+            m_explosionObjs[idx]->MakeModelInstanceCopy();
+            m_explosionObjs[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    std::unique_ptr<Object> obj = std::make_unique<Object>(60000 + (int)m_explosionObjs.size());
+    if (Object* proto = SceneManager::GetInstance()->GetObject(protoObjectId)) {
+        obj->SetModel(proto->GetModelId());
+        const std::vector<int>& texIds = proto->GetTextureIds();
+        if (!texIds.empty()) obj->SetTexture(texIds[0], 0);
+        obj->SetShader(proto->GetShaderId());
+        obj->SetScale(proto->GetScale());
+    }
+    obj->MakeModelInstanceCopy();
+    obj->SetVisible(true);
+    m_explosionObjs.push_back(std::move(obj));
+    return (int)m_explosionObjs.size() - 1;
+}
+
+void GSPlay::SpawnExplosionAt(float x, float y) {
+    int idx = CreateOrAcquireExplosionObjectFromProto(m_explosionObjectId);
+    Explosion e{}; e.x = x; e.y = y; e.objIdx = idx; e.cols = 11; e.rows = 1; e.frameIndex = 0; e.frameCount = 11; e.frameTimer = 0.0f; e.frameDuration = EXPLOSION_FRAME_DURATION;
+    if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
+        m_explosionObjs[idx]->SetPosition(x, y, 0.0f);
+        SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, 0);
+    }
+    m_explosions.push_back(e);
+}
+
+void GSPlay::UpdateExplosions(float dt) {
+    for (size_t i = 0; i < m_explosions.size(); ) {
+        Explosion& e = m_explosions[i];
+        e.frameTimer += dt;
+        while (e.frameTimer >= e.frameDuration) {
+            e.frameTimer -= e.frameDuration;
+            e.frameIndex += 1;
+            if (e.frameIndex >= e.frameCount) break;
+            int idx = e.objIdx;
+            if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
+                SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, e.frameIndex);
+            }
+        }
+        if (e.frameIndex >= e.frameCount) {
+            int idx = e.objIdx;
+            if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
+                m_explosionObjs[idx]->SetVisible(false);
+                m_freeExplosionSlots.push_back(idx);
+            }
+            m_explosions[i] = m_explosions.back();
+            m_explosions.pop_back();
+        } else {
+            ++i;
+        }
+    }
+}
+
+void GSPlay::DrawExplosions(class Camera* cam) {
+    for (const Explosion& e : m_explosions) {
+        int idx = e.objIdx;
+        if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
+            m_explosionObjs[idx]->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
+        }
+    }
+}
+
+void GSPlay::SetSpriteUV(Object* obj, int cols, int rows, int frameIndex) {
+    if (!obj || cols <= 0 || rows <= 0 || frameIndex < 0) return;
+    int total = cols * rows;
+    if (frameIndex >= total) frameIndex = total - 1;
+    int col = frameIndex % cols;
+    int row = frameIndex / cols;
+    float du = 1.0f / cols;
+    float dv = 1.0f / rows;
+    float u0 = col * du;
+    float v0 = row * dv;
+    float u1 = u0 + du;
+    float v1 = v0 + dv;
+    obj->SetCustomUV(u0, v0, u1, v1);
 }
 
 void GSPlay::DrawBombs(Camera* cam) {
