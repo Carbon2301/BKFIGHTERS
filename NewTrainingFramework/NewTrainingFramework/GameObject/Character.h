@@ -81,6 +81,10 @@ public:
     
     // Hurtbox management
     void SetHurtbox(float width, float height, float offsetX, float offsetY);
+    void SetHurtboxDefault(float width, float height, float offsetX, float offsetY);
+    void SetHurtboxFacingLeft(float width, float height, float offsetX, float offsetY);
+    void SetHurtboxFacingRight(float width, float height, float offsetX, float offsetY);
+    void SetHurtboxCrouchRoll(float width, float height, float offsetX, float offsetY);
     void DrawHurtbox(class Camera* camera, bool forceShow = false);
     
     // Hurtbox getters for collision detection

@@ -96,7 +96,6 @@ bool PlatformCollision::CheckPlatformCollisionWithHurtbox(float& newY, float pos
             hurtboxBottom <= platformTop + epsilon &&
             hurtboxRight > platformLeft && hurtboxLeft < platformRight) {
             newY = platformTop - hurtboxOffsetY + hurtboxHeight * 0.5f;
-            std::cout << "[PlatformCollision] Collided with platform (hurtbox): Pos:(" << platform.x << ", " << platform.y << ") Size:(" << platform.width << ", " << platform.height << ")" << std::endl;
             return true;
         }
     }

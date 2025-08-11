@@ -341,6 +341,27 @@ void Character::SetHurtbox(float width, float height, float offsetX, float offse
     }
 }
 
+void Character::SetHurtboxDefault(float width, float height, float offsetX, float offsetY) {
+    if (m_hitbox) {
+        m_hitbox->SetHurtboxDefault(width, height, offsetX, offsetY);
+    }
+}
+void Character::SetHurtboxFacingLeft(float width, float height, float offsetX, float offsetY) {
+    if (m_hitbox) {
+        m_hitbox->SetHurtboxFacingLeft(width, height, offsetX, offsetY);
+    }
+}
+void Character::SetHurtboxFacingRight(float width, float height, float offsetX, float offsetY) {
+    if (m_hitbox) {
+        m_hitbox->SetHurtboxFacingRight(width, height, offsetX, offsetY);
+    }
+}
+void Character::SetHurtboxCrouchRoll(float width, float height, float offsetX, float offsetY) {
+    if (m_hitbox) {
+        m_hitbox->SetHurtboxCrouchRoll(width, height, offsetX, offsetY);
+    }
+}
+
 void Character::DrawHurtbox(Camera* camera, bool forceShow) {
     if (m_hitbox) {
         m_hitbox->DrawHurtbox(camera, forceShow);

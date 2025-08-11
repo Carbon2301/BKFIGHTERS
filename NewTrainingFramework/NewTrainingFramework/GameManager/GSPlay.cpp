@@ -21,6 +21,21 @@
 
 #define MENU_BUTTON_ID 301
 
+// HURTBOX CONFIG 
+namespace {
+    struct HurtboxPreset { float w; float h; float ox; float oy; };
+    // Player
+    HurtboxPreset P1_HURTBOX_DEFAULT   { 0.088f, 0.13f,  -0.0088f, -0.038f };
+    HurtboxPreset P1_HURTBOX_FACE_LEFT { 0.08f, 0.13f,  0.01f, -0.038f };
+    HurtboxPreset P1_HURTBOX_FACE_RIGHT{ 0.088f, 0.13f,  -0.0088f, -0.038f };
+    HurtboxPreset P1_HURTBOX_CROUCH    { 0.07f, 0.09f,  -0.0f, -0.053f };
+    // Player 2
+    HurtboxPreset P2_HURTBOX_DEFAULT   { 0.088f, 0.13f,  -0.0088f, -0.038f };
+    HurtboxPreset P2_HURTBOX_FACE_LEFT { 0.08f, 0.13f,  0.01f, -0.038f };
+    HurtboxPreset P2_HURTBOX_FACE_RIGHT{ 0.088f, 0.13f,  -0.0088f, -0.038f };
+    HurtboxPreset P2_HURTBOX_CROUCH    { 0.07f, 0.09f,  -0.0f, -0.053f };
+}
+
 static Character m_player;
 static Character m_player2;
 static InputManager* m_inputManager = nullptr;
@@ -115,8 +130,11 @@ void GSPlay::Init() {
     m_player.Initialize(m_animManager, 1000);
     m_player.SetInputConfig(CharacterMovement::PLAYER1_INPUT);
     m_player.ResetHealth();
-    
-    m_player.SetHurtbox(0.088f, 0.13f, -0.0088f, -0.038f);
+    // Apply Player 1 hurtbox presets
+    m_player.SetHurtboxDefault   (P1_HURTBOX_DEFAULT.w,    P1_HURTBOX_DEFAULT.h,    P1_HURTBOX_DEFAULT.ox,    P1_HURTBOX_DEFAULT.oy);
+    m_player.SetHurtboxFacingLeft(P1_HURTBOX_FACE_LEFT.w,  P1_HURTBOX_FACE_LEFT.h,  P1_HURTBOX_FACE_LEFT.ox,  P1_HURTBOX_FACE_LEFT.oy);
+    m_player.SetHurtboxFacingRight(P1_HURTBOX_FACE_RIGHT.w, P1_HURTBOX_FACE_RIGHT.h, P1_HURTBOX_FACE_RIGHT.ox, P1_HURTBOX_FACE_RIGHT.oy);
+    m_player.SetHurtboxCrouchRoll(P1_HURTBOX_CROUCH.w,     P1_HURTBOX_CROUCH.h,     P1_HURTBOX_CROUCH.ox,     P1_HURTBOX_CROUCH.oy);
     
     auto animManager2 = std::make_shared<AnimationManager>();
     
@@ -133,9 +151,11 @@ void GSPlay::Init() {
     m_player2.Initialize(animManager2, 1001);
     m_player2.SetInputConfig(CharacterMovement::PLAYER2_INPUT);
     m_player2.ResetHealth();
-    
-    // Setup hurtbox for Player 2
-    m_player2.SetHurtbox(0.088f, 0.13f, -0.0088f, -0.038f); // Width, Height, OffsetX, OffsetY
+    // Apply Player 2 hurtbox presets
+    m_player2.SetHurtboxDefault   (P2_HURTBOX_DEFAULT.w,    P2_HURTBOX_DEFAULT.h,    P2_HURTBOX_DEFAULT.ox,    P2_HURTBOX_DEFAULT.oy);
+    m_player2.SetHurtboxFacingLeft(P2_HURTBOX_FACE_LEFT.w,  P2_HURTBOX_FACE_LEFT.h,  P2_HURTBOX_FACE_LEFT.ox,  P2_HURTBOX_FACE_LEFT.oy);
+    m_player2.SetHurtboxFacingRight(P2_HURTBOX_FACE_RIGHT.w, P2_HURTBOX_FACE_RIGHT.h, P2_HURTBOX_FACE_RIGHT.ox, P2_HURTBOX_FACE_RIGHT.oy);
+    m_player2.SetHurtboxCrouchRoll(P2_HURTBOX_CROUCH.w,     P2_HURTBOX_CROUCH.h,     P2_HURTBOX_CROUCH.ox,     P2_HURTBOX_CROUCH.oy);
     
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
@@ -873,6 +893,10 @@ void GSPlay::UpdateBullets(float dt) {
                 float prev = target->GetHealth();
                 float dmg = it->damage > 0.0f ? it->damage : 10.0f;
                 target->TakeDamage(dmg);
+                target->CancelAllCombos();
+                if (CharacterMovement* mv = target->GetMovement()) {
+                    mv->SetInputLocked(false);
+                }
                 if (prev > 0.0f && target->GetHealth() <= 0.0f && attacker) {
                     target->TriggerDieFromAttack(*attacker);
                 }

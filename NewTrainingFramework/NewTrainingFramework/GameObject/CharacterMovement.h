@@ -53,6 +53,7 @@ private:
     bool m_wasJumping;
     
     bool m_isSitting;
+    bool m_isRolling = false;
     
     bool m_isDying;
     bool m_isDead;
@@ -157,6 +158,7 @@ public:
     CharState GetState() const { return m_state; }
     bool IsJumping() const { return m_isJumping; }
     bool IsSitting() const { return m_isSitting; }
+    bool IsRolling() const { return m_isRolling; }
     void ForceSit(bool sit) { m_isSitting = sit; }
     bool IsDying() const { return m_isDying; }
     bool IsDead() const { return m_isDead; }

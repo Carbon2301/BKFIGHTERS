@@ -7,11 +7,11 @@
 #include <GLES3/gl3.h>
 
 CharacterHitbox::CharacterHitbox() 
-    : m_hurtboxWidth(0.0f), m_hurtboxHeight(0.0f), 
-      m_hurtboxOffsetX(0.0f), m_hurtboxOffsetY(0.0f), m_character(nullptr) {
+    : m_character(nullptr) {
     
-    m_hitboxObject = std::make_unique<Object>(-1);
-    m_hurtboxObject = std::make_unique<Object>(-2);
+    m_hitboxObject = std::make_unique<Object>(-1); // Use -1 as ID for hitbox
+    
+    m_hurtboxObject = std::make_unique<Object>(-2); // Use -2 as ID for hurtbox
 }
 
 CharacterHitbox::~CharacterHitbox() {
@@ -24,19 +24,18 @@ void CharacterHitbox::Initialize(Character* character, int originalObjectId) {
     if (!originalObj) {
         return;
     }
-
-    // Setup hitbox object 
+    
     if (m_hitboxObject) {
         m_hitboxObject->SetModel(originalObj->GetModelId());
         m_hitboxObject->SetShader(originalObj->GetShaderId());
         
+        // Create a red texture for hitbox
         auto redTexture = std::make_shared<Texture2D>();
         if (redTexture->CreateColorTexture(64, 64, 255, 0, 0, 180)) { // Red
             m_hitboxObject->SetDynamicTexture(redTexture);
         }
     }
     
-    // Setup hurtbox object
     if (m_hurtboxObject) {
         m_hurtboxObject->SetModel(originalObj->GetModelId());
         m_hurtboxObject->SetShader(originalObj->GetShaderId());
@@ -58,7 +57,7 @@ void CharacterHitbox::DrawHitbox(Camera* camera, bool forceShow) {
         return;
     }
     
-    // Calculate hitbox position
+    // Calculate hitbox position based
     Vector3 position = m_character->GetPosition();
     float hitboxX = position.x + m_character->GetHitboxOffsetX();
     float hitboxY = position.y + m_character->GetHitboxOffsetY();
@@ -86,10 +85,35 @@ void CharacterHitbox::DrawHitboxAndHurtbox(Camera* camera) {
 }
 
 void CharacterHitbox::SetHurtbox(float width, float height, float offsetX, float offsetY) {
-    m_hurtboxWidth = width;
-    m_hurtboxHeight = height;
-    m_hurtboxOffsetX = offsetX;
-    m_hurtboxOffsetY = offsetY;
+    // Backwards compatibility: sets default box
+    m_defaultHurtbox = {width, height, offsetX, offsetY};
+}
+
+void CharacterHitbox::SetHurtboxDefault(float width, float height, float offsetX, float offsetY) {
+    m_defaultHurtbox = {width, height, offsetX, offsetY};
+}
+
+void CharacterHitbox::SetHurtboxFacingLeft(float width, float height, float offsetX, float offsetY) {
+    m_facingLeftHurtbox = {width, height, offsetX, offsetY};
+}
+
+void CharacterHitbox::SetHurtboxFacingRight(float width, float height, float offsetX, float offsetY) {
+    m_facingRightHurtbox = {width, height, offsetX, offsetY};
+}
+
+void CharacterHitbox::SetHurtboxCrouchRoll(float width, float height, float offsetX, float offsetY) {
+    m_crouchRollHurtbox = {width, height, offsetX, offsetY};
+}
+
+void CharacterHitbox::GetActiveHurtbox(Hurtbox& out) const {
+    out = m_defaultHurtbox;
+    if (!m_character) return;
+    const bool sit = m_character->IsSitting();
+    const bool roll = m_character->GetMovement() ? m_character->GetMovement()->IsRolling() : false;
+    if ((sit || roll) && m_crouchRollHurtbox.isSet()) { out = m_crouchRollHurtbox; return; }
+    const bool facingLeft = m_character->IsFacingLeft();
+    if (facingLeft && m_facingLeftHurtbox.isSet()) { out = m_facingLeftHurtbox; return; }
+    if (!facingLeft && m_facingRightHurtbox.isSet()) { out = m_facingRightHurtbox; return; }
 }
 
 void CharacterHitbox::DrawHurtbox(Camera* camera, bool forceShow) {
@@ -97,14 +121,14 @@ void CharacterHitbox::DrawHurtbox(Camera* camera, bool forceShow) {
         return;
     }
     
-    // Calculate hurtbox position
+    Hurtbox hb; GetActiveHurtbox(hb);
     Vector3 position = m_character->GetPosition();
-    float hurtboxX = position.x + m_hurtboxOffsetX;
-    float hurtboxY = position.y + m_hurtboxOffsetY;
+    float hurtboxX = position.x + hb.offsetX;
+    float hurtboxY = position.y + hb.offsetY;
     
     // Set hurtbox object position and scale
     m_hurtboxObject->SetPosition(hurtboxX, hurtboxY, 0.0f);
-    m_hurtboxObject->SetScale(m_hurtboxWidth, m_hurtboxHeight, 1.0f);
+    m_hurtboxObject->SetScale(hb.width, hb.height, 1.0f);
     
     if (camera) {
         m_hurtboxObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
@@ -131,3 +155,16 @@ bool CharacterHitbox::IsHit() const {
     }
     return m_character->IsHit();
 } 
+
+float CharacterHitbox::GetHurtboxWidth() const {
+    Hurtbox hb; GetActiveHurtbox(hb); return hb.width;
+}
+float CharacterHitbox::GetHurtboxHeight() const {
+    Hurtbox hb; GetActiveHurtbox(hb); return hb.height;
+}
+float CharacterHitbox::GetHurtboxOffsetX() const {
+    Hurtbox hb; GetActiveHurtbox(hb); return hb.offsetX;
+}
+float CharacterHitbox::GetHurtboxOffsetY() const {
+    Hurtbox hb; GetActiveHurtbox(hb); return hb.offsetY;
+}

@@ -64,6 +64,7 @@ void CharacterMovement::Initialize(float startX, float startY, float groundY) {
     m_knockdownTimer = 0.0f;
     m_knockdownComplete = false;
     m_attackerFacingLeft = false;
+    m_isRolling = false;
     m_isOnPlatform = false;
     m_currentPlatformY = groundY;
 }
@@ -101,8 +102,9 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
 
     bool isRollingLeft = (keyStates[m_inputConfig.rollLeftKey1] && keyStates[m_inputConfig.rollLeftKey2]);
     bool isRollingRight = (keyStates[m_inputConfig.rollRightKey1] && keyStates[m_inputConfig.rollRightKey2]);
+    m_isRolling = isRollingLeft || isRollingRight;
     
-    bool isOtherAction = (keyStates[m_inputConfig.sitKey] || keyStates[m_inputConfig.jumpKey]);
+    bool isOtherAction = keyStates[m_inputConfig.jumpKey];
     
     float currentTime = SDL_GetTicks() / 1000.0f;
 
@@ -138,6 +140,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
         if (m_invertHorizontal && !leftKeyHeld && !rightKeyHeld) {
             m_invertHorizontal = false;
         }
+        m_isSitting = keyStates[m_inputConfig.sitKey] && !m_isRolling;
         if (isRollingLeft) {
             m_state = CharState::MoveLeft;
             m_facingLeft = true;
@@ -164,10 +167,8 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
                     m_posX += MOVE_SPEED * 0.8f * deltaTime;
                 }
             } else if (keyStates[m_inputConfig.sitKey]) {
-                m_isSitting = true;
                 m_state = CharState::Idle;
             } else {
-                m_isSitting = false;
                 m_state = CharState::Idle;
             }
         }
