@@ -579,12 +579,12 @@ void CharacterAnimation::OnGunShotFired(CharacterMovement* movement) {
 void CharacterAnimation::SetGunByTextureId(int texId) {
     m_gunTopAnimReverse = 0;
     m_gunTopAnimHold    = 1;
-    m_gunTopAnimReload  = -1;   // default: no reload anim
-    m_recoilStrengthMul = 1.0f; // default recoil
-    m_reloadActive      = false;
-    m_reloadTimer       = 0.0f;
-    m_recoilActive      = false;
-    m_recoilTimer       = 0.0f;
+    m_gunTopAnimReload  = -1;
+    m_recoilStrengthMul = 1.0f;
+    m_reloadActive = false;
+    m_reloadTimer = 0.0f;
+    m_recoilActive = false;
+    m_recoilTimer = 0.0f;
 
     switch (texId) {
         case 41: // M4A1

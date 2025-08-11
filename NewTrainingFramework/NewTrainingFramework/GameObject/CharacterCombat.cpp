@@ -173,23 +173,73 @@ void CharacterCombat::HandleAxeCombo(CharacterAnimation* animation, CharacterMov
 void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement, int anim1, int anim2, int anim3) {
     if (!animation || !movement) return;
     if (m_weaponComboCooldown > 0.0f) { m_weaponComboQueued = true; return; }
+    auto computeWeaponHitbox = [&](int weaponAnim1, int step, bool facingLeft,
+                                   float& outW, float& outH, float& outOX, float& outOY){
+        outW = 0.045f; outH = 0.035f; outOX = facingLeft ? -0.055f : 0.055f; outOY = -0.02f;
+
+        enum class W { Axe, Sword, Pipe, Generic };
+        W kind = W::Generic;
+        if (weaponAnim1 == 20) kind = W::Axe;
+        else if (weaponAnim1 == 23) kind = W::Sword;
+        else if (weaponAnim1 == 26) kind = W::Pipe;
+
+        switch (kind) {
+            case W::Axe: {
+                if (step == 1) { outW = 0.2f;  outH = 0.08f;  outOX = facingLeft ? -0.02f  : 0.02f;  outOY = -0.04f; }
+                else if (step == 2) { outW = 0.12f; outH = 0.20f;  outOX = facingLeft ? -0.05f : 0.05f; outOY = -0.02f; }
+                else               { outW = 0.10f;  outH = 0.16f; outOX = facingLeft ? -0.07f  : 0.07f;  outOY = -0.02f; }
+                break;
+            }
+            case W::Sword: {
+                if (step == 1) { outW = 0.24f;  outH = 0.08f;  outOX = facingLeft ? 0.0f : 0.0f;  outOY = -0.04f; }
+                else if (step == 2) { outW = 0.18f; outH = 0.20f;  outOX = facingLeft ? -0.02f : 0.02f; outOY = -0.02f; }
+                else { outW = 0.15f;  outH = 0.18f; outOX = facingLeft ? -0.06f : 0.06f;  outOY = -0.02f; }
+                break;
+            }
+            case W::Pipe: {
+                if (step == 1) { outW = 0.13f;  outH = 0.06f;  outOX = facingLeft ? -0.02f : 0.02f;  outOY = -0.02f; }
+                else if (step == 2) { outW = 0.15f; outH = 0.16f;  outOX = facingLeft ? -0.02f : 0.02f; outOY = -0.02f; }
+                else { outW = 0.10f;  outH = 0.14f; outOX = facingLeft ? -0.07f : 0.07f;  outOY = -0.02f; }
+                break;
+            }
+            default: {
+                if (step == 1) { outW = 0.045f; outH = 0.035f; outOX = facingLeft ? -0.055f : 0.055f; outOY = -0.02f; }
+                else if (step == 2) { outW = 0.05f;  outH = 0.04f;  outOX = facingLeft ? -0.06f  : 0.06f;  outOY = -0.02f; }
+                else               { outW = 0.055f; outH = 0.045f; outOX = facingLeft ? -0.065f : 0.065f; outOY = -0.02f; }
+                break;
+            }
+        }
+    };
+
     if (!m_isInAxeCombo) {
         m_axeComboCount = 1;
         m_isInAxeCombo = true;
         m_axeComboTimer = WEAPON_COMBO_WINDOW;
         animation->PlayAnimation(anim1, false);
         m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
+        float w, h, ox, oy;
+        bool facingLeft = animation->IsFacingLeft(movement);
+        computeWeaponHitbox(anim1, 1, facingLeft, w, h, ox, oy);
+        ShowHitbox(w, h, ox, oy);
     } else if (m_axeComboTimer > 0.0f) {
         m_axeComboCount++;
         m_axeComboTimer = WEAPON_COMBO_WINDOW;
         if (m_axeComboCount == 2) {
             animation->PlayAnimation(anim2, false);
             m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
+            float w, h, ox, oy;
+            bool facingLeft = animation->IsFacingLeft(movement);
+            computeWeaponHitbox(anim1, 2, facingLeft, w, h, ox, oy);
+            ShowHitbox(w, h, ox, oy);
         } else if (m_axeComboCount == 3) {
             animation->PlayAnimation(anim3, false);
             m_axeComboCompleted = true;
             m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
             StartLunge(animation->IsFacingLeft(movement), 0.02f, 0.15f);
+            float w, h, ox, oy;
+            bool facingLeft = animation->IsFacingLeft(movement);
+            computeWeaponHitbox(anim1, 3, facingLeft, w, h, ox, oy);
+            ShowHitbox(w, h, ox, oy);
         } else if (m_axeComboCount > 3) {
             m_axeComboCount = 3;
             m_axeComboCompleted = true;
@@ -200,6 +250,10 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
         m_axeComboTimer = WEAPON_COMBO_WINDOW;
         animation->PlayAnimation(anim1, false);
         m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
+        float w, h, ox, oy;
+        bool facingLeft = animation->IsFacingLeft(movement);
+        computeWeaponHitbox(anim1, 1, facingLeft, w, h, ox, oy);
+        ShowHitbox(w, h, ox, oy);
     }
     m_weaponComboQueued = false;
 }
