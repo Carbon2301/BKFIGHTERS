@@ -172,6 +172,24 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
             m_topObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
+
+    // Draw grenade top overlay when active (reuse top layer with aim rotation similar to gun)
+    if (m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_topAnimManager->GetUV(u0, v0, u1, v1);
+        if (movement && movement->IsFacingLeft()) {
+            std::swap(u0, u1);
+        }
+        m_topObject->SetCustomUV(u0, v0, u1, v1);
+        Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
+        float offsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
+        m_topObject->SetPosition(position.x + offsetX, position.y + m_topOffsetY, position.z);
+        float faceSign = (movement && movement->IsFacingLeft()) ? -1.0f : 1.0f;
+        m_topObject->SetRotation(0.0f, 0.0f, faceSign * m_aimAngleDeg * 3.14159265f / 180.0f);
+        if (camera) {
+            m_topObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
 }
 
 Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) const {
@@ -182,6 +200,13 @@ Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) con
 
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement || !combat) return;
+
+    // Grenade mode: override body/top animations and early-out
+    if (m_grenadeMode) {
+        PlayAnimation(31, true);  // Body Grenade
+        PlayTopAnimation(7, true); // Throwing Hand
+        return;
+    }
 
     // In gun mode we lock body animation externally (e.g., Body Shoot 29)
     if (m_gunMode) {
@@ -248,6 +273,33 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
+
+    // Grenade mode: allow aiming like gun mode
+    if (m_grenadeMode) {
+        // Allow turning; when turn happens, reset aim like gun mode
+        bool currentLeft = movement->IsFacingLeft();
+        bool wantLeft = keyStates[inputConfig.moveLeftKey];
+        bool wantRight = keyStates[inputConfig.moveRightKey];
+        bool turned = false;
+        if (wantLeft && !currentLeft) {
+            movement->SetFacingLeft(true);
+            turned = true;
+        } else if (wantRight && currentLeft) {
+            movement->SetFacingLeft(false);
+            turned = true;
+        }
+        if (turned) {
+            m_aimAngleDeg = 0.0f;
+            m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+            m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+            m_prevAimUp = m_prevAimDown = false;
+        }
+
+        HandleGunAim(keyStates, inputConfig);
+        PlayAnimation(31, true);
+        PlayTopAnimation(7, true);
+        return;
+    }
 
     if (m_gunMode) {
         if (m_syncFacingOnEnter) {
@@ -470,6 +522,23 @@ void CharacterAnimation::SetGunMode(bool enabled) {
         m_lastAimTickMs = m_gunEnterStartMs;
     }
     m_gunMode = enabled;
+}
+
+void CharacterAnimation::SetGrenadeMode(bool enabled) {
+    if (enabled && !m_grenadeMode) {
+        // Initialize aim like entering gun mode
+        unsigned int nowMsEnter = SDL_GetTicks();
+        bool isSticky = (m_lastShotTickMs != 0 && (nowMsEnter - m_lastShotTickMs) <= STICKY_AIM_WINDOW_MS);
+        if (!isSticky) {
+            m_aimAngleDeg = 0.0f;
+        }
+        m_prevAimUp = m_prevAimDown = false;
+        m_aimHoldTimerUp = m_aimHoldTimerDown = 0.0f;
+        m_aimSincePressUp = m_aimSincePressDown = 0.0f;
+        m_aimHoldBlockUntilMs = nowMsEnter + (unsigned int)(AIM_HOLD_INITIAL_DELAY * 1000.0f);
+        m_lastAimTickMs = nowMsEnter;
+    }
+    m_grenadeMode = enabled;
 }
 
 void CharacterAnimation::GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const {

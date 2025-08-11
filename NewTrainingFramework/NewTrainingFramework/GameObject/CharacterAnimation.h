@@ -77,6 +77,9 @@ private:
     float m_reloadTimer = 0.0f;
     static constexpr float RELOAD_DURATION = 0.30f;
 
+    // Grenade throw visual mode
+    bool m_grenadeMode = false;
+
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
 
@@ -119,6 +122,10 @@ public:
 
     // Set current gun by texture id
     void SetGunByTextureId(int texId);
+
+    // Grenade visual mode (locks body/top animations)
+    void SetGrenadeMode(bool enabled);
+    bool IsGrenadeMode() const { return m_grenadeMode; }
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);
