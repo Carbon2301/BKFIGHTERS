@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 38
+# 2DTexture 40
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -32,11 +32,15 @@ ID 5
 FILE "../Resources/Fighter/UI/background_loading.tga"
 TILING GL_CLAMP_TO_EDGE
 
-ID 7
+ID 6
 FILE "../Resources/Fighter/Bomb/Bomb.tga"
 TILING GL_CLAMP_TO_EDGE
-SIZE 12 1
-ANINUM 12
+
+ID 7
+FILE "../Resources/Fighter/Bomb/Exploding_Bomb.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 11 1
+ANINUM 11
 * Animation 0
 0 1 50
 * Animation 1
@@ -59,8 +63,6 @@ ANINUM 12
 9 1 50
 * Animation 10
 10 1 50
-* Animation 11
-11 1 50
 
 ID 8
 FILE "../Resources/Fighter/Characters/Player1_Head.tga"

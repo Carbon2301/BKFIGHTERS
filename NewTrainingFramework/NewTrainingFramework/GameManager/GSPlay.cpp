@@ -654,7 +654,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == 'M' || key == 'm') {
         bool was = m_player2.IsGunMode();
         if (bIsPressed) {
-            if (!m_player2.IsJumping()) {
+            if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping()) {
                 m_player2.SetGunMode(true);
                 m_player2.GetMovement()->SetInputLocked(true);
                 if (!was) { m_p2ShotPending = false; m_p2GunStartTime = m_gameTime; }
@@ -666,7 +666,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == '2') {
         bool was = m_player.IsGunMode();
         if (bIsPressed) {
-            if (!m_player.IsJumping()) {
+            if (!m_player.IsGrenadeMode() && !m_player.IsJumping()) {
                 m_player.SetGunMode(true);
                 m_player.GetMovement()->SetInputLocked(true);
                 if (!was) { m_p1ShotPending = false; m_p1GunStartTime = m_gameTime; }
@@ -676,18 +676,24 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     
-    // Grenade visual state toggle (hold)
+    // Grenade visual state toggle (hold) — mutually exclusive with gun mode
     // P1: '3', P2: ','
     if (key == '3') {
         if (bIsPressed) {
-            m_player.SetGrenadeMode(true);
+            if (!m_player.IsGunMode()) {
+                m_player.SetGrenadeMode(true);
+                m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
+            }
         } else {
             m_player.SetGrenadeMode(false);
         }
     }
     if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
         if (bIsPressed) {
-            m_player2.SetGrenadeMode(true);
+            if (!m_player2.IsGunMode()) {
+                m_player2.SetGrenadeMode(true);
+                m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
+            }
         } else {
             m_player2.SetGrenadeMode(false);
         }
