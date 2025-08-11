@@ -1200,16 +1200,17 @@ void GSPlay::TryCompletePendingShots() {
             }
             ch.MarkGunShotFired();
             pendingFlag = false;
-            if (isP1) {
-                if (m_player1GunTexId == 42) {
+            if ((isP1 && m_player1GunTexId == 42) || (!isP1 && m_player2GunTexId == 42)) {
+                if (isP1) {
                     m_p1ReloadPending = true;
                     m_p1ReloadExitTime = m_gameTime + SHOTGUN_RELOAD_TIME;
-                }
-            } else {
-                if (m_player2GunTexId == 42) {
+                } else {
                     m_p2ReloadPending = true;
                     m_p2ReloadExitTime = m_gameTime + SHOTGUN_RELOAD_TIME;
                 }
+                if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(true);
+            } else {
+                if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false);
             }
             if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(true);
         } else if (currentGunTex == 43) { // Bazoka
@@ -1303,19 +1304,15 @@ void GSPlay::UpdateGunReloads() {
         m_p1ReloadPending = false;
         if (m_player1GunTexId == 42) {
             m_player.SetGunMode(false);
-            if (m_player.GetMovement()) m_player.GetMovement()->SetInputLocked(false);
-        } else {
-            if (m_player.GetMovement()) m_player.GetMovement()->SetInputLocked(false);
         }
+        if (m_player.GetMovement()) m_player.GetMovement()->SetInputLocked(false);
     }
     if (m_p2ReloadPending && m_gameTime >= m_p2ReloadExitTime) {
         m_p2ReloadPending = false;
         if (m_player2GunTexId == 42) {
             m_player2.SetGunMode(false);
-            if (m_player2.GetMovement()) m_player2.GetMovement()->SetInputLocked(false);
-        } else {
-            if (m_player2.GetMovement()) m_player2.GetMovement()->SetInputLocked(false);
         }
+        if (m_player2.GetMovement()) m_player2.GetMovement()->SetInputLocked(false);
     }
 }
 
