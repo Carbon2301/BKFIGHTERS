@@ -121,6 +121,12 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         HandleKick();
         }
     }
+
+    if (keyStates[inputConfig.sitKey]) {
+        if (m_combat && (m_combat->IsKicking() || m_combat->IsInCombo() || m_combat->IsInAxeCombo())) {
+            m_combat->CancelAllCombos();
+        }
+    }
     
     if (inputManager->IsKeyJustPressed(inputConfig.dieKey)) {
         HandleDie();

@@ -214,6 +214,9 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
     }
     
     if (movement->IsSitting()) {
+        if (combat->IsKicking() || combat->IsInCombo() || combat->IsInAxeCombo()) {
+            combat->CancelAllCombos();
+        }
         return;
     }
     

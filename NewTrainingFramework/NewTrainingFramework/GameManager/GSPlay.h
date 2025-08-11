@@ -132,6 +132,8 @@ private:
          int cols; int rows;
          int frameIndex; int frameCount;
          float frameTimer; float frameDuration;
+         bool damagedP1 = false;
+         bool damagedP2 = false;
      };
      std::vector<Explosion> m_explosions;
      std::vector<std::unique_ptr<Object>> m_explosionObjs;
@@ -143,6 +145,7 @@ private:
      void DrawExplosions(class Camera* cam);
      void SetSpriteUV(Object* obj, int cols, int rows, int frameIndex);
      static constexpr float EXPLOSION_FRAME_DURATION = 0.05f; // seconds per frame
+     void ApplyExplosionDamageAt(float x, float y, float halfW, float halfH, Explosion* e = nullptr);
 
     std::unique_ptr<WallCollision> m_wallCollision;
 

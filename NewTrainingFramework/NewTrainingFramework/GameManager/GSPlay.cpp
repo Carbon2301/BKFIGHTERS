@@ -673,6 +673,43 @@ void GSPlay::SpawnExplosionAt(float x, float y) {
 void GSPlay::UpdateExplosions(float dt) {
     for (size_t i = 0; i < m_explosions.size(); ) {
         Explosion& e = m_explosions[i];
+        if (e.frameIndex == 0 && e.frameTimer <= 0.0f) {
+            float halfW = 0.15f, halfH = 0.15f;
+            if (e.objIdx >= 0 && e.objIdx < (int)m_explosionObjs.size() && m_explosionObjs[e.objIdx]) {
+                const Vector3& sc = m_explosionObjs[e.objIdx]->GetScale();
+                halfW = fabsf(sc.x) * 0.5f;
+                halfH = fabsf(sc.y) * 0.5f;
+            }
+            auto applyDamage = [&](Character& target){
+                Vector3 pos = target.GetPosition();
+                float hx = pos.x + target.GetHurtboxOffsetX();
+                float hy = pos.y + target.GetHurtboxOffsetY();
+                float thw = target.GetHurtboxWidth() * 0.5f;
+                float thh = target.GetHurtboxHeight() * 0.5f;
+                float tLeft = hx - thw, tRight = hx + thw, tBottom = hy - thh, tTop = hy + thh;
+                float eLeft = e.x - halfW, eRight = e.x + halfW, eBottom = e.y - halfH, eTop = e.y + halfH;
+                bool overlap = !(tRight < eLeft || tLeft > eRight || tTop < eBottom || tBottom > eTop);
+                if (!overlap) return;
+                // radial falloff by distance to center
+                float dx = hx - e.x; float dy = hy - e.y;
+                float dist = sqrtf(dx*dx + dy*dy);
+                float maxR = (halfW > halfH ? halfW : halfH);
+                float ratio = 1.0f - (dist / (maxR + 1e-6f));
+                if (ratio < 0.0f) ratio = 0.0f; if (ratio > 1.0f) ratio = 1.0f;
+                float damage = 100.0f * ratio;
+                if (damage <= 0.0f) return;
+                float prev = target.GetHealth();
+                target.TakeDamage(damage);
+                target.CancelAllCombos();
+                if (CharacterMovement* mv = target.GetMovement()) mv->SetInputLocked(false);
+                if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                    target.TriggerDie();
+                }
+            };
+            applyDamage(m_player);
+            applyDamage(m_player2);
+        }
+
         e.frameTimer += dt;
         while (e.frameTimer >= e.frameDuration) {
             e.frameTimer -= e.frameDuration;
