@@ -283,6 +283,15 @@ private:
     Vector3 m_hudAmmo1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
     Vector3 m_hudAmmo2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
 
+    // Bomb HUD
+    int m_p1Bombs = 3;
+    int m_p2Bombs = 3;
+    Vector3 m_hudBomb1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
+    Vector3 m_hudBomb2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
+    Vector3 m_hudBombIcon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudBombIcon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    void UpdateHudBombDigits();
+
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };
     std::vector<ItemLife> m_itemLives;
