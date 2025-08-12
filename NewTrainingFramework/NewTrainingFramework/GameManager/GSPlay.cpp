@@ -1279,7 +1279,15 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping() && hasGun && ammoOk) {
                 m_player2.SetGunMode(true);
                 m_player2.GetMovement()->SetInputLocked(true);
-                if (!was) { m_p2ShotPending = false; m_p2GunStartTime = m_gameTime; }
+                if (!was) {
+                    m_p2ShotPending = false; m_p2GunStartTime = m_gameTime;
+                    // Entering gun mode sound
+                    if (m_player2GunTexId == 43 || m_player2GunTexId == 44) {
+                        SoundManager::Instance().PlaySFXByID(23, 0);
+                    } else {
+                        SoundManager::Instance().PlaySFXByID(11, 0);
+                    }
+                }
             }
         } else {
             if (was) { m_p2ShotPending = true; }
@@ -1298,7 +1306,14 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             if (!m_player.IsGrenadeMode() && !m_player.IsJumping() && hasGun && ammoOk) {
                 m_player.SetGunMode(true);
                 m_player.GetMovement()->SetInputLocked(true);
-                if (!was) { m_p1ShotPending = false; m_p1GunStartTime = m_gameTime; }
+                if (!was) {
+                    m_p1ShotPending = false; m_p1GunStartTime = m_gameTime;
+                    if (m_player1GunTexId == 43 || m_player1GunTexId == 44) {
+                        SoundManager::Instance().PlaySFXByID(23, 0);
+                    } else {
+                        SoundManager::Instance().PlaySFXByID(11, 0);
+                    }
+                }
             }
         } else {
             if (was) { m_p1ShotPending = true; }
@@ -1990,6 +2005,7 @@ void GSPlay::TryCompletePendingShots() {
                 float jitter = (t - 0.5f) * totalSpreadDeg;
                 SpawnBulletFromCharacterWithJitter(ch, jitter);
             }
+            SoundManager::Instance().PlaySFXByID(14, 0); // GunShortgun (Shotgun)
             ch.MarkGunShotFired();
             pendingFlag = false;
             ammoShot -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(42, isP1);
@@ -2038,6 +2054,7 @@ void GSPlay::TryCompletePendingShots() {
             }
             ammoBaz -= 1; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(43, isP1);
             ch.MarkGunShotFired();
+            SoundManager::Instance().PlaySFXByID(24, 0); // Gun(Bazoka)
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
@@ -2067,6 +2084,11 @@ void GSPlay::TryCompletePendingShots() {
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
+            if (currentGunTex == 45) {
+                SoundManager::Instance().PlaySFXByID(10, 0); // GunDEagle
+            } else if (currentGunTex == 46) {
+                SoundManager::Instance().PlaySFXByID(15, 0); // GunSnipper (Sniper)
+            }
         }
     };
     tryFinish(m_player,  m_p1ShotPending, m_p1GunStartTime);
@@ -2095,8 +2117,21 @@ void GSPlay::UpdateGunBursts() {
             if (gunTex == 47) baseJitter = 3.0f;
             float jitter = (r * 2.0f - 1.0f) * baseJitter;
             SpawnBulletFromCharacterWithJitter(ch, jitter);
+            if (gunTex == 41) {
+                SoundManager::Instance().PlaySFXByID(12, 0); // GunM4A1
+            } else if (gunTex == 47) {
+                SoundManager::Instance().PlaySFXByID(16, 0); // GunUzi
+            }
+            if (gunTex == 41) {
+                SoundManager::Instance().PlaySFXByID(12, 0); // GunM4A1
+            }
         } else {
             SpawnBulletFromCharacter(ch);
+            if (gunTex == 45) {
+                SoundManager::Instance().PlaySFXByID(10, 0); // GunDEagle
+            } else if (gunTex == 40) {
+                SoundManager::Instance().PlaySFXByID(13, 0); // GunPistol
+            }
         }
         ch.MarkGunShotFired();
         remain -= 1;
@@ -2384,6 +2419,7 @@ void GSPlay::HandleItemPickup() {
             player.SetWeapon(weaponType);
             player.SuppressNextPunch();
             std::cout << "Picked up weapon ID " << removedId << " (type=" << (int)weaponType << ")" << std::endl;
+            SoundManager::Instance().PlaySFXByID(1, 0);
             return true;
         }
         return false;
@@ -2415,6 +2451,12 @@ void GSPlay::HandleItemPickup() {
             RefreshHudAmmoInstant(isPlayer1);
             player.SuppressNextPunch();
             std::cout << "Picked up gun ID " << removedId << " (tex=" << texId << ")" << std::endl;
+            if (texId == 43 || texId == 44) {
+                // Bazoka or Flamegun pickup
+                SoundManager::Instance().PlaySFXByID(23, 0);
+            } else {
+                SoundManager::Instance().PlaySFXByID(11, 0);
+            }
             return true;
         }
         return false;
