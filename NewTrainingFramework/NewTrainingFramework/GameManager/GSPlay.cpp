@@ -43,10 +43,10 @@ static Character m_player2;
 static InputManager* m_inputManager = nullptr;
 
 bool GSPlay::s_showHitboxHurtbox = false;
-bool GSPlay::s_showPlatformBoxes = true;
-bool GSPlay::s_showWallBoxes = true;
-bool GSPlay::s_showLadderBoxes = true;
-bool GSPlay::s_showTeleportBoxes = true;
+bool GSPlay::s_showPlatformBoxes = false;
+bool GSPlay::s_showWallBoxes = false;
+bool GSPlay::s_showLadderBoxes = false;
+bool GSPlay::s_showTeleportBoxes = false;
 
 bool GSPlay_IsShowPlatformBoxes() {
     return GSPlay::IsShowPlatformBoxes();
