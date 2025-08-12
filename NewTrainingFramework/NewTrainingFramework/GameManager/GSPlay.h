@@ -204,9 +204,21 @@ private:
     bool  m_p2ReloadPending = false;
     float m_p2ReloadExitTime = -1.0f;
 
-    int m_p1Ammo = 15;
-    int m_p2Ammo = 15;
+    // Ammo per gun
+    int m_p1Ammo40 = 15;  int m_p2Ammo40 = 15;   // Pistol
+    int m_p1Ammo41 = 30;  int m_p2Ammo41 = 30;   // M4A1 (5 per shot)
+    int m_p1Ammo42 = 60;  int m_p2Ammo42 = 60;   // Shotgun (5 per shot)
+    int m_p1Ammo43 = 3;   int m_p2Ammo43 = 3;    // Bazoka
+    int m_p1Ammo44 = 30;  int m_p2Ammo44 = 30;   // Flamegun (5 per shot)
+    int m_p1Ammo45 = 12;  int m_p2Ammo45 = 12;   // Deagle
+    int m_p1Ammo46 = 6;   int m_p2Ammo46 = 6;    // Sniper
+    int m_p1Ammo47 = 30;  int m_p2Ammo47 = 30;   // Uzi (5 per shot)
+
     void UpdateHudAmmoDigits();
+    int& AmmoRefFor(int texId, bool isPlayer1);
+    int  AmmoCostFor(int texId) const;
+    int  AmmoCapacityFor(int texId) const;
+    void TryUnequipIfEmpty(int texId, bool isPlayer1);
     
 public:
     GSPlay();
@@ -258,6 +270,8 @@ private:
     void UpdateHudWeapons();
     Vector3 m_hudWeapon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     Vector3 m_hudWeapon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudAmmo1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
+    Vector3 m_hudAmmo2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
 
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };

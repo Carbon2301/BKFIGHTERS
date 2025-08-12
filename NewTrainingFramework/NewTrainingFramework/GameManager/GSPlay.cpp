@@ -357,10 +357,15 @@ void GSPlay::Init() {
                 if (Object* R = scene->GetObject(rightId)) { if (auto t = makeTextTexture(rbuf)) R->SetDynamicTexture(t); }
             };
 
-            m_p1Ammo = 15;
-            m_p2Ammo = 15;
-            setTwoDigits(m_p1Ammo, 924, 925);
-            setTwoDigits(m_p2Ammo, 926, 927);
+            auto setDigitsVisible = [&](bool isP1, bool visible){
+                int leftId  = isP1 ? 924 : 926;
+                int rightId = isP1 ? 925 : 927;
+                if (Object* L = scene->GetObject(leftId))  { if (!visible) L->SetScale(0.0f, 0.0f, 1.0f); }
+                if (Object* R = scene->GetObject(rightId)) { if (!visible) R->SetScale(0.0f, 0.0f, 1.0f); }
+            };
+            setDigitsVisible(true,  m_player1GunTexId >= 0);
+            setDigitsVisible(false, m_player2GunTexId >= 0);
+            UpdateHudAmmoDigits();
 
             TTF_CloseFont(font);
         }
@@ -394,9 +399,88 @@ void GSPlay::UpdateHudAmmoDigits() {
         if (Object* L = scene->GetObject(leftId))  { if (auto t = makeTextTexture(lbuf)) L->SetDynamicTexture(t); }
         if (Object* R = scene->GetObject(rightId)) { if (auto t = makeTextTexture(rbuf)) R->SetDynamicTexture(t); }
     };
-    setTwoDigits(m_p1Ammo, 924, 925);
-    setTwoDigits(m_p2Ammo, 926, 927);
+    auto currentAmmo = [&](bool isP1)->int{
+        int tex = isP1 ? m_player1GunTexId : m_player2GunTexId;
+        switch (tex) {
+            case 40: return isP1 ? m_p1Ammo40 : m_p2Ammo40;
+            case 41: return isP1 ? m_p1Ammo41 : m_p2Ammo41;
+            case 42: return isP1 ? m_p1Ammo42 : m_p2Ammo42;
+            case 43: return isP1 ? m_p1Ammo43 : m_p2Ammo43;
+            case 44: return isP1 ? m_p1Ammo44 : m_p2Ammo44;
+            case 45: return isP1 ? m_p1Ammo45 : m_p2Ammo45;
+            case 46: return isP1 ? m_p1Ammo46 : m_p2Ammo46;
+            case 47: return isP1 ? m_p1Ammo47 : m_p2Ammo47;
+            default: return 0;
+        }
+    };
+    auto showDigits = [&](bool isP1, bool show){
+        int leftId  = isP1 ? 924 : 926;
+        int rightId = isP1 ? 925 : 927;
+        Vector3 base = isP1 ? m_hudAmmo1BaseScale : m_hudAmmo2BaseScale;
+        if (Object* L = scene->GetObject(leftId))  { L->SetScale(show ? base : Vector3(0.0f,0.0f,base.z)); }
+        if (Object* R = scene->GetObject(rightId)) { R->SetScale(show ? base : Vector3(0.0f,0.0f,base.z)); }
+    };
+    int a1 = currentAmmo(true);
+    int a2 = currentAmmo(false);
+    showDigits(true,  a1 > 0 && m_player1GunTexId >= 0);
+    showDigits(false, a2 > 0 && m_player2GunTexId >= 0);
+    if (a1 > 0 && m_player1GunTexId >= 0) setTwoDigits(a1, 924, 925);
+    if (a2 > 0 && m_player2GunTexId >= 0) setTwoDigits(a2, 926, 927);
     TTF_CloseFont(font);
+}
+
+// Return reference to ammo counter for given gun texture and player
+int& GSPlay::AmmoRefFor(int texId, bool isPlayer1) {
+    switch (texId) {
+        case 40: return isPlayer1 ? m_p1Ammo40 : m_p2Ammo40;
+        case 41: return isPlayer1 ? m_p1Ammo41 : m_p2Ammo41;
+        case 42: return isPlayer1 ? m_p1Ammo42 : m_p2Ammo42;
+        case 43: return isPlayer1 ? m_p1Ammo43 : m_p2Ammo43;
+        case 44: return isPlayer1 ? m_p1Ammo44 : m_p2Ammo44;
+        case 45: return isPlayer1 ? m_p1Ammo45 : m_p2Ammo45;
+        case 46: return isPlayer1 ? m_p1Ammo46 : m_p2Ammo46;
+        case 47: return isPlayer1 ? m_p1Ammo47 : m_p2Ammo47;
+        default: return isPlayer1 ? m_p1Ammo40 : m_p2Ammo40; // fallback
+    }
+}
+
+// Ammo cost for one trigger release per gun
+int GSPlay::AmmoCostFor(int texId) const {
+    switch (texId) {
+        case 41: // M4A1
+        case 42: // Shotgun
+        case 44: // Flamegun
+        case 47: // Uzi
+            return 5;
+        case 43: // Bazoka
+        case 46: // Sniper
+        case 45: // Deagle
+        case 40: // Pistol
+        default:
+            return 1;
+    }
+}
+
+void GSPlay::TryUnequipIfEmpty(int texId, bool isPlayer1) {
+    int& ammo = AmmoRefFor(texId, isPlayer1);
+    if (ammo > 0) return;
+            if (isPlayer1) m_player1GunTexId = -1; else m_player2GunTexId = -1;
+    UpdateHudWeapons();
+    UpdateHudAmmoDigits();
+}
+
+int GSPlay::AmmoCapacityFor(int texId) const {
+    switch (texId) {
+        case 40: return 15; // Pistol
+        case 41: return 30; // M4A1
+        case 42: return 60; // Shotgun
+        case 43: return 3;  // Bazoka
+        case 44: return 30; // Flamegun
+        case 45: return 12; // Deagle
+        case 46: return 6;  // Sniper
+        case 47: return 30; // Uzi
+        default: return 0;
+    }
 }
 
 void GSPlay::Update(float deltaTime) {
@@ -1058,7 +1142,11 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         if (bIsPressed) {
             bool hasGun = (m_player2GunTexId >= 0);
             bool ammoOk = true;
-            if (hasGun && m_player2GunTexId == 40) { ammoOk = (m_p2Ammo > 0); }
+            if (hasGun) {
+                int need = AmmoCostFor(m_player2GunTexId);
+                int have = AmmoRefFor(m_player2GunTexId, false);
+                ammoOk = (have >= need);
+            }
             if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping() && hasGun && ammoOk) {
                 m_player2.SetGunMode(true);
                 m_player2.GetMovement()->SetInputLocked(true);
@@ -1073,7 +1161,11 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         if (bIsPressed) {
             bool hasGun = (m_player1GunTexId >= 0);
             bool ammoOk = true;
-            if (hasGun && m_player1GunTexId == 40) { ammoOk = (m_p1Ammo > 0); }
+            if (hasGun) {
+                int need = AmmoCostFor(m_player1GunTexId);
+                int have = AmmoRefFor(m_player1GunTexId, true);
+                ammoOk = (have >= need);
+            }
             if (!m_player.IsGrenadeMode() && !m_player.IsJumping() && hasGun && ammoOk) {
                 m_player.SetGunMode(true);
                 m_player.GetMovement()->SetInputLocked(true);
@@ -1730,6 +1822,8 @@ void GSPlay::TryCompletePendingShots() {
             ch.MarkGunShotFired();
             pendingFlag = false;
         } else if (currentGunTex == 42) {
+            int& ammoShot = isP1 ? m_p1Ammo42 : m_p2Ammo42;
+            if (ammoShot < 5) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             const int pellets = 5;
             const float totalSpreadDeg = 6.0f;
             for (int i = 0; i < pellets; ++i) {
@@ -1739,6 +1833,7 @@ void GSPlay::TryCompletePendingShots() {
             }
             ch.MarkGunShotFired();
             pendingFlag = false;
+            ammoShot -= 5; UpdateHudAmmoDigits(); TryUnequipIfEmpty(42, isP1);
             if ((isP1 && m_player1GunTexId == 42) || (!isP1 && m_player2GunTexId == 42)) {
                 if (isP1) {
                     m_p1ReloadPending = true;
@@ -1753,6 +1848,8 @@ void GSPlay::TryCompletePendingShots() {
             }
             if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(true);
         } else if (currentGunTex == 43) { // Bazoka
+            int& ammoBaz = isP1 ? m_p1Ammo43 : m_p2Ammo43;
+            if (ammoBaz < 1) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             Vector3 pivot = ch.GetGunTopWorldPosition();
             Vector3 base  = ch.GetPosition();
             const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
@@ -1780,11 +1877,14 @@ void GSPlay::TryCompletePendingShots() {
             if ((int)m_bullets.size() < MAX_BULLETS) {
                 m_bullets.push_back(b);
             }
+            ammoBaz -= 1; UpdateHudAmmoDigits(); TryUnequipIfEmpty(43, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
         } else if (currentGunTex == 44) { // FlameGun
+            int& ammoFlame = isP1 ? m_p1Ammo44 : m_p2Ammo44;
+            if (ammoFlame < 5) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             const int count = FLAMEGUN_BULLET_COUNT;
             for (int i = 0; i < count; ++i) {
                 float r1 = (float)rand() / (float)RAND_MAX;
@@ -1793,31 +1893,17 @@ void GSPlay::TryCompletePendingShots() {
                 float jitter = r * (FLAMEGUN_SPREAD_DEG * 0.6f);
                 SpawnFlamegunBulletFromCharacter(ch, jitter);
             }
+            ammoFlame -= 5; UpdateHudAmmoDigits(); TryUnequipIfEmpty(44, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
         } else {
-            if (currentGunTex == 40) {
-                int& ammoRef = isP1 ? m_p1Ammo : m_p2Ammo;
-                if (ammoRef <= 0) {
-                    pendingFlag = false;
-                    ch.SetGunMode(false);
-                    if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false);
-                    return;
-                }
-            }
+            int& ammoGeneric = AmmoRefFor(currentGunTex, isP1);
+            int need = AmmoCostFor(currentGunTex);
+            if (ammoGeneric < need) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             SpawnBulletFromCharacter(ch);
-            if (currentGunTex == 40) {
-                if (isP1) { if (m_p1Ammo > 0) m_p1Ammo -= 1; }
-                else      { if (m_p2Ammo > 0) m_p2Ammo -= 1; }
-                UpdateHudAmmoDigits();
-                int ammoLeft = isP1 ? m_p1Ammo : m_p2Ammo;
-                if (ammoLeft <= 0) {
-                    if (isP1) m_player1GunTexId = -1; else m_player2GunTexId = -1;
-                    UpdateHudWeapons();
-                }
-            }
+            ammoGeneric -= need; UpdateHudAmmoDigits(); TryUnequipIfEmpty(currentGunTex, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
@@ -1835,6 +1921,16 @@ void GSPlay::UpdateGunBursts() {
         const bool isP1Local = (&ch == &m_player);
         int gunTex = isP1Local ? m_player1GunTexId : m_player2GunTexId;
         if (gunTex == 41 || gunTex == 47) {
+            int& ammo = (isP1Local ? m_p1Ammo41 : m_p2Ammo41);
+            int& ammoUzi = (isP1Local ? m_p1Ammo47 : m_p2Ammo47);
+            if (gunTex == 41 && remain == M4A1_BURST_COUNT) {
+                if (ammo < 5) { active = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
+                ammo -= 5; UpdateHudAmmoDigits(); TryUnequipIfEmpty(41, isP1Local);
+            }
+            if (gunTex == 47 && remain == M4A1_BURST_COUNT) {
+                if (ammoUzi < 5) { active = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
+                ammoUzi -= 5; UpdateHudAmmoDigits(); TryUnequipIfEmpty(47, isP1Local);
+            }
             float r = (float)rand() / (float)RAND_MAX; // [0,1]
             float baseJitter = 1.0f;
             if (gunTex == 47) baseJitter = 3.0f;
@@ -2150,6 +2246,11 @@ void GSPlay::HandleItemPickup() {
             if (CharacterAnimation* a1 = player.GetAnimation()) {
                 a1->SetGunByTextureId(texId);
             }
+            int cap = AmmoCapacityFor(texId);
+            int& ammoRef = AmmoRefFor(texId, isPlayer1);
+            ammoRef = cap;
+            UpdateHudWeapons();
+            UpdateHudAmmoDigits();
             player.SuppressNextPunch();
             std::cout << "Picked up gun ID " << removedId << " (tex=" << texId << ")" << std::endl;
             return true;
