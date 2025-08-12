@@ -2,6 +2,7 @@
 #include "Character.h"
 #include "CharacterAnimation.h"
 #include "CharacterHitbox.h"
+#include "../GameManager/SoundManager.h"
 #include "SceneManager.h"
 #include "ResourceManager.h"
 #include "InputManager.h"
@@ -467,6 +468,7 @@ void Character::TakeDamage(float damage) {
     if (m_health < 0.0f) {
         m_health = 0.0f;
     }
+    SoundManager::Instance().PlaySFXByID(6, 0);
     
     if (m_health <= 0.0f && !m_isDead) {
         m_isDead = true;

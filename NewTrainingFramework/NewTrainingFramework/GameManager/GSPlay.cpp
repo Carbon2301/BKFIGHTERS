@@ -1303,6 +1303,27 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             if (was) { m_p1ShotPending = true; }
         }
     }
+
+    if (bIsPressed && key == '1') { 
+        if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
+            m_player.SetGunMode(false);
+            m_player.SetGrenadeMode(false);
+            m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
+            m_p1GrenadePressTime = -1.0f; m_p1GrenadeExplodedInHand = false;
+            if (m_player.GetMovement()) m_player.GetMovement()->SetInputLocked(false);
+            m_player.SuppressNextPunch();
+        }
+    }
+    if (bIsPressed && (key == 'N' || key == 'n')) {
+        if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
+            m_player2.SetGunMode(false);
+            m_player2.SetGrenadeMode(false);
+            m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
+            m_p2GrenadePressTime = -1.0f; m_p2GrenadeExplodedInHand = false;
+            if (m_player2.GetMovement()) m_player2.GetMovement()->SetInputLocked(false);
+            m_player2.SuppressNextPunch();
+        }
+    }
     
     // Grenade visual state toggle (hold) — mutually exclusive with gun mode
     // P1: '3', P2: ','
@@ -1619,6 +1640,7 @@ void GSPlay::UpdateBullets(float dt) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
                     }
                 }
+                SoundManager::Instance().PlaySFXByID(4, 0); // "WallGetHit"
                 removeBullet(it); continue;
             }
         }
