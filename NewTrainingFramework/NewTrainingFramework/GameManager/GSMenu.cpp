@@ -40,7 +40,7 @@ void GSMenu::Init() {
         return;
     }
     SDL_Color color = {255, 255, 255, 255};
-    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "Welcome to My game", color);
+    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "Welcome to BK Fighters - Made by Carbon x Gialinx", color);
     if (!textSurface) {
         std::cout << "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
         TTF_CloseFont(font);
@@ -60,10 +60,11 @@ void GSMenu::Init() {
     m_textObject->SetModel(0);
     m_textObject->SetShader(0);
     m_textObject->SetDynamicTexture(m_textTexture);
-    float x = -1.0f;
-    float y = 0.8f;
+    float x = 0.00556242f;
+    float y = 0.791667f;
     m_textObject->Set2DPosition(x, y);
-    m_textObject->SetSize(0.8f, 0.2f);
+    m_textObject->SetSize(1.8f, 0.1f);
+ 
 }
 
 void GSMenu::Update(float deltaTime) {

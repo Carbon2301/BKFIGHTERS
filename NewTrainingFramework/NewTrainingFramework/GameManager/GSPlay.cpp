@@ -19,6 +19,7 @@
 #include <fstream>
 #include <sstream>
 #include <SDL_ttf.h>
+#include "SoundManager.h"
 
 #define MENU_BUTTON_ID 301
 
@@ -67,6 +68,7 @@ void GSPlay::Init() {
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    SoundManager::Instance().PlayMusicByID(22, -1);
     
     ResourceManager* resourceManager = ResourceManager::GetInstance();
     std::shared_ptr<Texture2D> healthTexture = resourceManager->GetTexture(12);
@@ -2139,6 +2141,7 @@ void GSPlay::Pause() {
 }
 
 void GSPlay::Exit() {
+    SoundManager::Instance().StopMusic();
 }
 
 void GSPlay::Cleanup() {

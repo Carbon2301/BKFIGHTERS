@@ -419,5 +419,94 @@ ID 0
 NAME "menu"
 FILE "../Resources/Music/background_music.mp3"
 
+ID 1
+NAME "MeleePickup"
+FILE "../Resources/Music/MeleePickup.mp3"
+
+ID 2
+NAME "MetalGetHit"
+FILE "../Resources/Music/MetalGetHit.mp3"
+
+ID 3
+NAME "Roll"
+FILE "../Resources/Music/Roll.mp3"
+
+ID 4
+NAME "WallGetHit"
+FILE "../Resources/Music/WallGetHit.mp3"
+
+ID 5
+NAME "WoodGetHit"
+FILE "../Resources/Music/WoodGetHit.mp3"
+
+ID 6
+NAME "BodyGetHit"
+FILE "../Resources/Music/BodyGetHit.mp3"
+
+ID 7
+NAME "BombLoadnPickup"
+FILE "../Resources/Music/Bomb(LoadnPickup).mp3"
+
+ID 8
+NAME "Bomb"
+FILE "../Resources/Music/Bomb.mp3"
+
+ID 9
+NAME "Fall"
+FILE "../Resources/Music/Fall.mp3"
+
+ID 10
+NAME "GunDEagle"
+FILE "../Resources/Music/Gun(DEagle).mp3"
+
+ID 11
+NAME "GunLoadnPickup"
+FILE "../Resources/Music/Gun(LoadnPickup).mp3"
+
+ID 12
+NAME "GunM4A1"
+FILE "../Resources/Music/Gun(M4A1).mp3"
+
+ID 13
+NAME "GunPistol"
+FILE "../Resources/Music/Gun(Pistol).mp3"
+
+ID 14
+NAME "GunShortgun"
+FILE "../Resources/Music/Gun(Shotgun).mp3"
+
+ID 15
+NAME "GunSnipper"
+FILE "../Resources/Music/Gun(Snipper).mp3"
+
+ID 16
+NAME "GunUzi"
+FILE "../Resources/Music/Gun(Uzi).mp3"
+
+ID 17
+NAME "HealPickUp"
+FILE "../Resources/Music/HealPickUp.mp3"
+
+ID 18
+NAME "Jump"
+FILE "../Resources/Music/Jump.mp3"
+
+ID 19
+NAME "Melee1"
+FILE "../Resources/Music/Melee1.mp3"
+
+ID 20
+NAME "Melee2"
+FILE "../Resources/Music/Melee2.mp3"
+
+ID 21
+NAME "Melee3"
+FILE "../Resources/Music/Melee3.mp3"
+
+ID 22
+NAME "backgroundNoise"
+FILE "../Resources/Music/backgroundNoise.mp3"
+
+
 
 
