@@ -4,6 +4,7 @@
 #include "CharacterAnimation.h"
 #include "CharacterMovement.h"
 #include "AnimationManager.h"
+#include "../GameManager/SoundManager.h"
 #include <iostream>
 #include <cstdlib>
 
@@ -106,6 +107,7 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         m_comboTimer = PUNCH_COMBO_WINDOW;
         animation->PlayAnimation(10, false);
         m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
+        SoundManager::Instance().PlaySFXByID(19, 0);
         
         // Show hitbox for punch 1
         float hitboxWidth = 0.03f;
@@ -124,6 +126,7 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         if (m_comboCount == 2) {
             animation->PlayAnimation(11, false);
             m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
+            SoundManager::Instance().PlaySFXByID(20, 0);
             
             // Show hitbox for punch 2
             float hitboxWidth = 0.03f;
@@ -134,6 +137,7 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         } else if (m_comboCount == 3) {
             animation->PlayAnimation(12, false);
             m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
+            SoundManager::Instance().PlaySFXByID(21, 0);
             
             // Show hitbox for punch 3
             float hitboxWidth = 0.03f;
@@ -154,6 +158,7 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         m_comboTimer = PUNCH_COMBO_WINDOW;
         animation->PlayAnimation(10, false);
         m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
+        SoundManager::Instance().PlaySFXByID(19, 0);
         
         // Show hitbox for punch 1
         float hitboxWidth = 0.03f;
@@ -217,6 +222,7 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
         m_axeComboTimer = WEAPON_COMBO_WINDOW;
         animation->PlayAnimation(anim1, false);
         m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
+        SoundManager::Instance().PlaySFXByID(19, 0);
         float w, h, ox, oy;
         bool facingLeft = animation->IsFacingLeft(movement);
         computeWeaponHitbox(anim1, 1, facingLeft, w, h, ox, oy);
@@ -227,6 +233,7 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
         if (m_axeComboCount == 2) {
             animation->PlayAnimation(anim2, false);
             m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
+            SoundManager::Instance().PlaySFXByID(20, 0);
             float w, h, ox, oy;
             bool facingLeft = animation->IsFacingLeft(movement);
             computeWeaponHitbox(anim1, 2, facingLeft, w, h, ox, oy);
@@ -236,6 +243,7 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
             m_axeComboCompleted = true;
             m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
             StartLunge(animation->IsFacingLeft(movement), 0.02f, 0.15f);
+            SoundManager::Instance().PlaySFXByID(21, 0);
             float w, h, ox, oy;
             bool facingLeft = animation->IsFacingLeft(movement);
             computeWeaponHitbox(anim1, 3, facingLeft, w, h, ox, oy);
