@@ -18,6 +18,7 @@
 #include "ResourceManager.h"
 #include <fstream>
 #include <sstream>
+#include <SDL_ttf.h>
 
 #define MENU_BUTTON_ID 301
 
@@ -311,6 +312,83 @@ void GSPlay::Init() {
         explProto->SetVisible(false);
     }
     UpdateHudWeapons();
+
+    {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (!font) {
+            std::cout << "Failed to load font for HUD digits: " << TTF_GetError() << std::endl;
+        } else {
+            TTF_SetFontHinting(font, TTF_HINTING_NONE);
+            TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+            auto makeTextTexture = [&](const char* text) -> std::shared_ptr<Texture2D> {
+                SDL_Color color = {255, 255, 255, 255};
+                SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text, color);
+                if (!surf) { return nullptr; }
+                std::shared_ptr<Texture2D> tex = std::make_shared<Texture2D>();
+                if (!tex->LoadFromSDLSurface(surf)) {
+                    SDL_FreeSurface(surf);
+                    return nullptr;
+                }
+                SDL_FreeSurface(surf);
+                tex->SetSharpFiltering();
+                return tex;
+            };
+
+            SceneManager* scene = SceneManager::GetInstance();
+            auto setTwoDigits = [&](int value, int leftId, int rightId){
+                if (value < 0) value = 0;
+                if (value > 99) value = 99;
+                int left = (value / 10) % 10;
+                int right = value % 10;
+                char lbuf[2] = {(char)('0' + left), '\0'};
+                char rbuf[2] = {(char)('0' + right), '\0'};
+                if (Object* L = scene->GetObject(leftId))  { if (auto t = makeTextTexture(lbuf)) L->SetDynamicTexture(t); }
+                if (Object* R = scene->GetObject(rightId)) { if (auto t = makeTextTexture(rbuf)) R->SetDynamicTexture(t); }
+            };
+
+            m_p1Ammo = 15;
+            m_p2Ammo = 15;
+            setTwoDigits(m_p1Ammo, 924, 925);
+            setTwoDigits(m_p2Ammo, 926, 927);
+
+            TTF_CloseFont(font);
+        }
+    }
+}
+
+void GSPlay::UpdateHudAmmoDigits() {
+    if (TTF_WasInit() == 0) return;
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    if (!font) { return; }
+    TTF_SetFontHinting(font, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    auto makeTextTexture = [&](const char* text) -> std::shared_ptr<Texture2D> {
+        SDL_Color color = {255, 255, 255, 255};
+        SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text, color);
+        if (!surf) { return nullptr; }
+        std::shared_ptr<Texture2D> tex = std::make_shared<Texture2D>();
+        if (!tex->LoadFromSDLSurface(surf)) { SDL_FreeSurface(surf); return nullptr; }
+        SDL_FreeSurface(surf);
+        tex->SetSharpFiltering();
+        return tex;
+    };
+    SceneManager* scene = SceneManager::GetInstance();
+    auto setTwoDigits = [&](int value, int leftId, int rightId){
+        if (value < 0) value = 0;
+        if (value > 99) value = 99;
+        int left = (value / 10) % 10;
+        int right = value % 10;
+        char lbuf[2] = {(char)('0' + left), '\0'};
+        char rbuf[2] = {(char)('0' + right), '\0'};
+        if (Object* L = scene->GetObject(leftId))  { if (auto t = makeTextTexture(lbuf)) L->SetDynamicTexture(t); }
+        if (Object* R = scene->GetObject(rightId)) { if (auto t = makeTextTexture(rbuf)) R->SetDynamicTexture(t); }
+    };
+    setTwoDigits(m_p1Ammo, 924, 925);
+    setTwoDigits(m_p2Ammo, 926, 927);
+    TTF_CloseFont(font);
 }
 
 void GSPlay::Update(float deltaTime) {
@@ -1699,6 +1777,11 @@ void GSPlay::TryCompletePendingShots() {
             ch.GetMovement()->SetInputLocked(false);
         } else {
             SpawnBulletFromCharacter(ch);
+            if (currentGunTex == 40) {
+                if (isP1) { if (m_p1Ammo > 0) m_p1Ammo -= 1; }
+                else      { if (m_p2Ammo > 0) m_p2Ammo -= 1; }
+                UpdateHudAmmoDigits();
+            }
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);

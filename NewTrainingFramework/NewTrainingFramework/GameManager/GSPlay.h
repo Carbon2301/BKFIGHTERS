@@ -203,6 +203,10 @@ private:
     float m_p1ReloadExitTime = -1.0f;
     bool  m_p2ReloadPending = false;
     float m_p2ReloadExitTime = -1.0f;
+
+    int m_p1Ammo = 15;
+    int m_p2Ammo = 15;
+    void UpdateHudAmmoDigits();
     
 public:
     GSPlay();
