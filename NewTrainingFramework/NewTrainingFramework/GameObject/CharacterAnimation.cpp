@@ -121,6 +121,29 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
     }
 }
 
+void CharacterAnimation::StartHardLanding(CharacterMovement* movement) {
+    if (m_hardLandingActive) return;
+    unsigned int nowMs = SDL_GetTicks();
+    if (m_blockHardLandingUntilMs != 0 && nowMs < m_blockHardLandingUntilMs) {
+        return;
+    }
+    m_hardLandingActive = true;
+    m_hardLandingPhase = 0;
+    if (movement) {
+        m_restoreInputAfterHardLanding = !movement->IsInputLocked();
+        movement->SetInputLocked(true);
+    } else {
+        m_restoreInputAfterHardLanding = false;
+    }
+    m_gunMode = false;
+    m_grenadeMode = false;
+    m_isTurning = false;
+    m_gunEntering = false;
+    m_reloadActive = false;
+    m_recoilActive = false;
+    PlayAnimation(15, false);
+}
+
 void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
     if (m_characterObject && m_animManager && m_characterObject->GetModelId() >= 0 && m_characterObject->GetModelPtr()) {
         float u0, v0, u1, v1;
@@ -199,16 +222,52 @@ Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) con
 }
 
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
-    if (!movement || !combat) return;
+    if (!movement) return;
 
-    // Grenade mode: override body/top animations and early-out
-    if (m_grenadeMode) {
-        PlayAnimation(31, true);  // Body Grenade
-        PlayTopAnimation(7, true); // Throwing Hand
+    if (!m_hardLandingActive && movement->ConsumeHardLandingRequested()) {
+        StartHardLanding(movement);
         return;
     }
 
-    // In gun mode we lock body animation externally (e.g., Body Shoot 29)
+    if (m_hardLandingActive) {
+        if (movement && !movement->IsInputLocked()) {
+            movement->SetInputLocked(true);
+        }
+        int cur = GetCurrentAnimation();
+        if (m_hardLandingPhase == 0) {
+            if (cur != 15) {
+                PlayAnimation(15, false);
+            } else if (!m_animManager->IsPlaying()) {
+                m_hardLandingPhase = 1;
+                PlayAnimation(14, false);
+            }
+        } else {
+            if (cur != 14) {
+                PlayAnimation(14, false);
+            } else if (!m_animManager->IsPlaying()) {
+                m_hardLandingActive = false;
+                m_hardLandingPhase = 0;
+                if (m_restoreInputAfterHardLanding) {
+                    movement->SetInputLocked(false);
+                }
+                PlayAnimation(0, true);
+                unsigned int doneMs = SDL_GetTicks();
+                m_blockHardLandingUntilMs = doneMs + 120; // ~0.12s debounce
+            }
+        }
+        return;
+    }
+
+    if (!combat) {
+        return;
+    }
+
+    if (m_grenadeMode) {
+        PlayAnimation(31, true);
+        PlayTopAnimation(7, true);
+        return;
+    }
+
     if (m_gunMode) {
         return;
     }
@@ -271,6 +330,9 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
 
 void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, CharacterMovement* movement, CharacterCombat* combat) {
     if (!keyStates || !movement || !combat) {
+        return;
+    }
+    if (m_hardLandingActive) {
         return;
     }
     
@@ -470,6 +532,18 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
 }
 
 void CharacterAnimation::PlayAnimation(int animIndex, bool loop) {
+    if (m_hardLandingActive) {
+        int required = (m_hardLandingPhase == 0) ? 15 : 14;
+        if (animIndex != required) {
+            return;
+        }
+        if (m_animManager) {
+            int cur = m_animManager->GetCurrentAnimation();
+            if (cur == required && m_animManager->IsPlaying()) {
+                return;
+            }
+        }
+    }
     if (m_animManager) {
         bool allowReplay = (animIndex == 19 || animIndex == 17) ||
                           (animIndex >= 10 && animIndex <= 12) ||
@@ -485,6 +559,9 @@ void CharacterAnimation::PlayAnimation(int animIndex, bool loop) {
 }
 
 void CharacterAnimation::PlayTopAnimation(int animIndex, bool loop) {
+    if (m_hardLandingActive) {
+        return;
+    }
     if (m_topAnimManager) {
         if (m_lastTopAnimation != animIndex) {
             m_topAnimManager->Play(animIndex, loop);

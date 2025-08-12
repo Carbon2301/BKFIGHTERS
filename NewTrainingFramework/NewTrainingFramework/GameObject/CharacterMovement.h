@@ -118,11 +118,25 @@ private:
 
     bool m_justStartedUpwardJump = false;
 
+    // Hard landing detection
+    float m_highestYInAir = 0.0f;
+    bool  m_hardLandingRequested = false;
+    static constexpr float HARD_LANDING_DROP_THRESHOLD = 0.4f;
+
     bool  m_rollCadenceActive = false;
     bool  m_rollPhaseIsRoll = true;
     float m_rollPhaseTimer = 0.0f;
     static constexpr float ROLL_PHASE_DURATION = 0.3f;
     static constexpr float WALK_PHASE_DURATION = 0.7f;
+
+    bool  m_hasPendingFallDamage = false;
+    float m_pendingFallDamage = 0.0f;
+    static constexpr float FALL_DAMAGE_MIN = 10.0f;
+    static constexpr float FALL_DAMAGE_MAX = 25.0f;
+    static constexpr float FALL_DAMAGE_MIN_DROP = HARD_LANDING_DROP_THRESHOLD;
+    static constexpr float FALL_DAMAGE_MAX_DROP = 1.0f;
+
+    void QueueFallDamageFromDrop(float dropDistance);
 
     // Constants
     static const float JUMP_FORCE;
@@ -203,6 +217,20 @@ public:
         bool v = m_justStartedUpwardJump;
         m_justStartedUpwardJump = false;
         return v;
+    }
+
+    bool ConsumeHardLandingRequested() {
+        bool v = m_hardLandingRequested;
+        m_hardLandingRequested = false;
+        return v;
+    }
+
+    float ConsumePendingFallDamage() {
+        if (!m_hasPendingFallDamage) return 0.0f;
+        m_hasPendingFallDamage = false;
+        float d = m_pendingFallDamage;
+        m_pendingFallDamage = 0.0f;
+        return d;
     }
 
     // Static input configurations

@@ -83,6 +83,11 @@ private:
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
 
+    bool m_hardLandingActive = false;
+    int  m_hardLandingPhase = 0; // 0 = Lie, 1 = Land
+    bool m_restoreInputAfterHardLanding = false;
+    unsigned int m_blockHardLandingUntilMs = 0;
+
 public:
     // Movement animation handling
     void HandleMovementAnimations(const bool* keyStates, CharacterMovement* movement, CharacterCombat* combat);
@@ -131,6 +136,9 @@ public:
     int GetBodyTextureId() const { return (m_objectId == 1000) ? 10 : 11; }
     float GetTopOffsetX() const { return m_topOffsetX; }
     float GetTopOffsetY() const { return m_topOffsetY; }
+
+    bool IsHardLandingActive() const { return m_hardLandingActive; }
+    void StartHardLanding(class CharacterMovement* movement);
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);

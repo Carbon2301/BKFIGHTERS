@@ -67,6 +67,10 @@ void CharacterMovement::Initialize(float startX, float startY, float groundY) {
     m_isRolling = false;
     m_isOnPlatform = false;
     m_currentPlatformY = groundY;
+    m_highestYInAir = startY;
+    m_hardLandingRequested = false;
+    m_hasPendingFallDamage = false;
+    m_pendingFallDamage = 0.0f;
 }
 
 void CharacterMovement::Update(float deltaTime, const bool* keyStates) {
@@ -205,6 +209,7 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_isJumping = true;
             m_jumpVelocity = JUMP_FORCE;
             m_jumpStartY = m_posY;
+            m_highestYInAir = m_posY;
             m_isOnPlatform = false;
             m_justStartedUpwardJump = true;
         }
@@ -215,6 +220,7 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
     if (m_isJumping) {
         m_jumpVelocity -= GRAVITY * deltaTime;
         m_posY += m_jumpVelocity * deltaTime;
+        if (m_posY > m_highestYInAir) m_highestYInAir = m_posY;
         
         bool isMovingLeft = !m_inputLocked && keyStates[m_inputConfig.moveLeftKey];
         bool isMovingRight = !m_inputLocked && keyStates[m_inputConfig.moveRightKey];
@@ -244,6 +250,11 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_jumpVelocity = 0.0f;
             m_isOnPlatform = true;
             m_currentPlatformY = newY;
+            float dropDistance = m_highestYInAir - m_posY;
+            if (dropDistance >= HARD_LANDING_DROP_THRESHOLD) {
+                m_hardLandingRequested = true;
+                QueueFallDamageFromDrop(dropDistance);
+            }
         }
         else if (m_posY <= m_groundY) {
             m_posY = m_groundY;
@@ -251,6 +262,11 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_jumpVelocity = 0.0f;
             m_isOnPlatform = false;
             m_currentPlatformY = m_groundY;
+            float dropDistance = m_highestYInAir - m_posY;
+            if (dropDistance >= HARD_LANDING_DROP_THRESHOLD) {
+                m_hardLandingRequested = true;
+                QueueFallDamageFromDrop(dropDistance);
+            }
         }
     }
     
@@ -261,6 +277,7 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_isJumping = true;
             m_jumpVelocity = 0.0f;
             m_currentMovingPlatformId = -1;
+            m_highestYInAir = m_posY;
         }
     }
 
@@ -269,6 +286,16 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
             m_state = CharState::Idle;
         }
     }
+}
+
+void CharacterMovement::QueueFallDamageFromDrop(float dropDistance) {
+    float clamped = dropDistance;
+    if (clamped < FALL_DAMAGE_MIN_DROP) clamped = FALL_DAMAGE_MIN_DROP;
+    if (clamped > FALL_DAMAGE_MAX_DROP) clamped = FALL_DAMAGE_MAX_DROP;
+    float t = (clamped - FALL_DAMAGE_MIN_DROP) / (FALL_DAMAGE_MAX_DROP - FALL_DAMAGE_MIN_DROP);
+    float dmg = FALL_DAMAGE_MIN + t * (FALL_DAMAGE_MAX - FALL_DAMAGE_MIN);
+    m_pendingFallDamage = dmg;
+    m_hasPendingFallDamage = true;
 }
 
 void CharacterMovement::SetPosition(float x, float y) {
@@ -481,15 +508,20 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
         if (resolvedPos.x != newPos.x || resolvedPos.y != newPos.y) {
             m_posX = resolvedPos.x;
             m_posY = resolvedPos.y;
-            
+
             if (resolvedPos.y != newPos.y && resolvedPos.y > newPos.y) {
                 m_isJumping = false;
                 m_jumpVelocity = 0.0f;
+                float dropDistance = m_highestYInAir - m_posY;
+                if (dropDistance >= HARD_LANDING_DROP_THRESHOLD) {
+                    m_hardLandingRequested = true;
+                    QueueFallDamageFromDrop(dropDistance);
+                }
                 if (!keyStates[m_inputConfig.moveLeftKey] && !keyStates[m_inputConfig.moveRightKey]) {
                     m_state = CharState::Idle;
                 }
             }
-            
+
             if (resolvedPos.x != newPos.x) {
                 if (!keyStates[m_inputConfig.moveLeftKey] && !keyStates[m_inputConfig.moveRightKey]) {
                     m_state = CharState::Idle;
@@ -682,12 +714,14 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
             m_state = CharState::Idle;
             m_isOnPlatform = false;
             m_justStartedUpwardJump = true;
+            m_highestYInAir = m_posY;
         }
     }
     
     if (m_isJumping) {
         m_jumpVelocity -= GRAVITY * deltaTime;
         m_posY += m_jumpVelocity * deltaTime;
+        if (m_posY > m_highestYInAir) m_highestYInAir = m_posY;
         
         if (!m_inputLocked && keyStates[inputConfig.moveLeftKey]) {
             m_posX -= MOVE_SPEED * 1.5f * deltaTime;
@@ -702,18 +736,24 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
         }
         
         float newY = m_posY;
-        if (!m_isFallingThroughPlatform && CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY)) {
+        bool landedOnPlatform = !m_isFallingThroughPlatform && CheckPlatformCollisionWithHurtbox(newY, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+        if (landedOnPlatform) {
             m_posY = newY;
             m_isJumping = false;
             m_jumpVelocity = 0.0f;
             m_wasJumping = true;
             m_isOnPlatform = true;
             m_currentPlatformY = newY;
+            float dropDistance = m_highestYInAir - m_posY;
+            if (dropDistance >= HARD_LANDING_DROP_THRESHOLD) {
+                m_hardLandingRequested = true;
+                QueueFallDamageFromDrop(dropDistance);
+            }
             
             if (!keyStates[inputConfig.moveLeftKey] && !keyStates[inputConfig.moveRightKey]) {
                 m_state = CharState::Idle;
             }
-        } else if (m_posY <= m_groundY) {
+        } else if (!landedOnPlatform && m_posY <= m_groundY) {
             m_posY = m_groundY;
             m_isJumping = false;
             m_jumpVelocity = 0.0f;
@@ -721,6 +761,11 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
             m_isOnPlatform = false;
             m_currentPlatformY = m_groundY;
             m_isFallingThroughPlatform = false;
+            float dropDistance = m_highestYInAir - m_posY;
+            if (dropDistance >= HARD_LANDING_DROP_THRESHOLD) {
+                m_hardLandingRequested = true;
+                QueueFallDamageFromDrop(dropDistance);
+            }
             
             if (!keyStates[inputConfig.moveLeftKey] && !keyStates[inputConfig.moveRightKey]) {
                 m_state = CharState::Idle;
@@ -767,6 +812,7 @@ void CharacterMovement::HandleLandingWithHurtbox(const bool* keyStates, float hu
             if (m_posY > m_groundY + 0.01f) {
                 m_isJumping = true;
                 m_jumpVelocity = 0.0f;
+                m_highestYInAir = m_posY;
             }
         } else if (onPlatform) {
             m_posY = newY;
