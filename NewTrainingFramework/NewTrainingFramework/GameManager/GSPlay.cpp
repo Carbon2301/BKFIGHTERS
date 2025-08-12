@@ -966,6 +966,7 @@ void GSPlay::SpawnExplosionAt(float x, float y) {
         m_explosionObjs[idx]->SetPosition(x, y, 0.0f);
         SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, 0);
     }
+    SoundManager::Instance().PlaySFXByID(8, 0); 
     m_explosions.push_back(e);
 }
 
@@ -1330,9 +1331,13 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == '3') {
         if (bIsPressed) {
             if (!m_player.IsGunMode() && m_p1Bombs > 0) {
-                m_player.SetGrenadeMode(true);
-                m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
-                if (m_p1GrenadePressTime < 0.0f) m_p1GrenadePressTime = m_gameTime;
+                bool entering = !m_player.IsGrenadeMode();
+                if (entering) {
+                    m_player.SetGrenadeMode(true);
+                    m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
+                    if (m_p1GrenadePressTime < 0.0f) m_p1GrenadePressTime = m_gameTime;
+                    SoundManager::Instance().PlaySFXByID(7, 0);
+                }
             }
         } else {
             bool wasGrenade = m_player.IsGrenadeMode();
@@ -1353,9 +1358,13 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
         if (bIsPressed) {
             if (!m_player2.IsGunMode() && m_p2Bombs > 0) {
-                m_player2.SetGrenadeMode(true);
-                m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
-                if (m_p2GrenadePressTime < 0.0f) m_p2GrenadePressTime = m_gameTime;
+                bool entering2 = !m_player2.IsGrenadeMode();
+                if (entering2) {
+                    m_player2.SetGrenadeMode(true);
+                    m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
+                    if (m_p2GrenadePressTime < 0.0f) m_p2GrenadePressTime = m_gameTime;
+                    SoundManager::Instance().PlaySFXByID(7, 0);
+                }
             }
         } else {
             bool wasGrenade2 = m_player2.IsGrenadeMode();
@@ -2428,6 +2437,7 @@ void GSPlay::HandleItemPickup() {
             if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
             UpdateHudBombDigits();
             std::cout << "Picked up bomb ID " << removedId << " -> refill to 3\n";
+            SoundManager::Instance().PlaySFXByID(7, 0);
             return true;
         }
         return false;
