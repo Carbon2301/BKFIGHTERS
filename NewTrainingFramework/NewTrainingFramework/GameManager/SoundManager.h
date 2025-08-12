@@ -3,6 +3,8 @@
 #include <map>
 struct _Mix_Music;
 typedef struct _Mix_Music Mix_Music;
+struct Mix_Chunk;
+typedef struct Mix_Chunk Mix_Chunk;
 
 class SoundManager {
 public:
@@ -16,6 +18,16 @@ public:
     void LoadMusicByID(int id, const std::string& path);
     void PlayMusicByID(int id, int loop = -1);
 
+    void LoadSFX(const std::string& name, const std::string& path);
+    void LoadSFXByID(int id, const std::string& path);
+    void PlaySFX(const std::string& name, int loops = 0);
+    void PlaySFXByID(int id, int loops = 0);
+
+    void PreloadMusicByID(int id);
+    void PreloadSFXByID(int id);
+    void PreloadAllAudio(bool includeMusic = true, bool includeSfx = true);
+    std::vector<int> GetAllAudioIDs() const;
+
 private:
     SoundManager();
     ~SoundManager();
@@ -24,5 +36,9 @@ private:
 
     std::map<std::string, Mix_Music*> m_musicMap;
     std::map<int, Mix_Music*> m_musicMapByID;
+    std::map<std::string, Mix_Chunk*> m_sfxMap;
+    std::map<int, Mix_Chunk*> m_sfxMapByID;
+    std::map<int, std::string> m_audioPathByID;
+    std::map<std::string, std::string> m_audioPathByName;
     Mix_Music* m_currentMusic = nullptr;
 }; 

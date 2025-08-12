@@ -263,6 +263,10 @@ public:
     void UpdateFanRotation(float deltaTime);
 
 private:
+    bool m_prevJumpingP1 = false;
+    bool m_prevJumpingP2 = false;
+    bool m_prevRollingP1 = false;
+    bool m_prevRollingP2 = false;
     void DrawHudPortraits();
     // Item pickup system
     void HandleItemPickup();

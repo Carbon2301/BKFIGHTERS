@@ -19,6 +19,7 @@
 #include <fstream>
 #include <sstream>
 #include <SDL_ttf.h>
+#include "SoundManager.h"
 
 #define MENU_BUTTON_ID 301
 
@@ -67,6 +68,7 @@ void GSPlay::Init() {
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    SoundManager::Instance().PlayMusicByID(22, -1);
     
     ResourceManager* resourceManager = ResourceManager::GetInstance();
     std::shared_ptr<Texture2D> healthTexture = resourceManager->GetTexture(12);
@@ -115,6 +117,8 @@ void GSPlay::Init() {
     m_gameTime = 0.0f;
 
     m_inputManager = InputManager::GetInstance();
+    m_prevJumpingP1 = false;
+    m_prevJumpingP2 = false;
 
     m_animManager = std::make_shared<AnimationManager>();
     
@@ -604,6 +608,23 @@ void GSPlay::Update(float deltaTime) {
     
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
+
+    if (m_player.GetMovement() && m_player.GetMovement()->ConsumeJustStartedUpwardJump()) {
+        SoundManager::Instance().PlaySFXByID(18, 0);
+    }
+    if (m_player2.GetMovement() && m_player2.GetMovement()->ConsumeJustStartedUpwardJump()) {
+        SoundManager::Instance().PlaySFXByID(18, 0);
+    }
+    bool rollingP1 = m_player.GetMovement() ? m_player.GetMovement()->IsRolling() : false;
+    bool rollingP2 = m_player2.GetMovement() ? m_player2.GetMovement()->IsRolling() : false;
+    if (!m_prevRollingP1 && rollingP1) {
+        SoundManager::Instance().PlaySFXByID(3, 0);
+    }
+    if (!m_prevRollingP2 && rollingP2) {
+        SoundManager::Instance().PlaySFXByID(3, 0);
+    }
+    m_prevRollingP1 = rollingP1;
+    m_prevRollingP2 = rollingP2;
     UpdateBullets(deltaTime);
     UpdateBombs(deltaTime);
     UpdateExplosions(deltaTime);
@@ -945,6 +966,7 @@ void GSPlay::SpawnExplosionAt(float x, float y) {
         m_explosionObjs[idx]->SetPosition(x, y, 0.0f);
         SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, 0);
     }
+    SoundManager::Instance().PlaySFXByID(8, 0); 
     m_explosions.push_back(e);
 }
 
@@ -1282,15 +1304,40 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             if (was) { m_p1ShotPending = true; }
         }
     }
+
+    if (bIsPressed && key == '1') { 
+        if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
+            m_player.SetGunMode(false);
+            m_player.SetGrenadeMode(false);
+            m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
+            m_p1GrenadePressTime = -1.0f; m_p1GrenadeExplodedInHand = false;
+            if (m_player.GetMovement()) m_player.GetMovement()->SetInputLocked(false);
+            m_player.SuppressNextPunch();
+        }
+    }
+    if (bIsPressed && (key == 'N' || key == 'n')) {
+        if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
+            m_player2.SetGunMode(false);
+            m_player2.SetGrenadeMode(false);
+            m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
+            m_p2GrenadePressTime = -1.0f; m_p2GrenadeExplodedInHand = false;
+            if (m_player2.GetMovement()) m_player2.GetMovement()->SetInputLocked(false);
+            m_player2.SuppressNextPunch();
+        }
+    }
     
     // Grenade visual state toggle (hold) — mutually exclusive with gun mode
     // P1: '3', P2: ','
     if (key == '3') {
         if (bIsPressed) {
             if (!m_player.IsGunMode() && m_p1Bombs > 0) {
-                m_player.SetGrenadeMode(true);
-                m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
-                if (m_p1GrenadePressTime < 0.0f) m_p1GrenadePressTime = m_gameTime;
+                bool entering = !m_player.IsGrenadeMode();
+                if (entering) {
+                    m_player.SetGrenadeMode(true);
+                    m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
+                    if (m_p1GrenadePressTime < 0.0f) m_p1GrenadePressTime = m_gameTime;
+                    SoundManager::Instance().PlaySFXByID(7, 0);
+                }
             }
         } else {
             bool wasGrenade = m_player.IsGrenadeMode();
@@ -1311,9 +1358,13 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
         if (bIsPressed) {
             if (!m_player2.IsGunMode() && m_p2Bombs > 0) {
-                m_player2.SetGrenadeMode(true);
-                m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
-                if (m_p2GrenadePressTime < 0.0f) m_p2GrenadePressTime = m_gameTime;
+                bool entering2 = !m_player2.IsGrenadeMode();
+                if (entering2) {
+                    m_player2.SetGrenadeMode(true);
+                    m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
+                    if (m_p2GrenadePressTime < 0.0f) m_p2GrenadePressTime = m_gameTime;
+                    SoundManager::Instance().PlaySFXByID(7, 0);
+                }
             }
         } else {
             bool wasGrenade2 = m_player2.IsGrenadeMode();
@@ -1598,6 +1649,7 @@ void GSPlay::UpdateBullets(float dt) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
                     }
                 }
+                SoundManager::Instance().PlaySFXByID(4, 0); // "WallGetHit"
                 removeBullet(it); continue;
             }
         }
@@ -2139,6 +2191,7 @@ void GSPlay::Pause() {
 }
 
 void GSPlay::Exit() {
+    SoundManager::Instance().StopMusic();
 }
 
 void GSPlay::Cleanup() {
@@ -2384,6 +2437,7 @@ void GSPlay::HandleItemPickup() {
             if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
             UpdateHudBombDigits();
             std::cout << "Picked up bomb ID " << removedId << " -> refill to 3\n";
+            SoundManager::Instance().PlaySFXByID(7, 0);
             return true;
         }
         return false;
