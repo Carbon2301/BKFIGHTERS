@@ -203,6 +203,32 @@ private:
     float m_p1ReloadExitTime = -1.0f;
     bool  m_p2ReloadPending = false;
     float m_p2ReloadExitTime = -1.0f;
+
+    // Ammo per gun
+    int m_p1Ammo40 = 15;  int m_p2Ammo40 = 15;   // Pistol
+    int m_p1Ammo41 = 30;  int m_p2Ammo41 = 30;   // M4A1 (5 per shot)
+    int m_p1Ammo42 = 60;  int m_p2Ammo42 = 60;   // Shotgun (5 per shot)
+    int m_p1Ammo43 = 3;   int m_p2Ammo43 = 3;    // Bazoka
+    int m_p1Ammo44 = 30;  int m_p2Ammo44 = 30;   // Flamegun (5 per shot)
+    int m_p1Ammo45 = 12;  int m_p2Ammo45 = 12;   // Deagle
+    int m_p1Ammo46 = 6;   int m_p2Ammo46 = 6;    // Sniper
+    int m_p1Ammo47 = 30;  int m_p2Ammo47 = 30;   // Uzi (5 per shot)
+
+    void UpdateHudAmmoDigits();
+    int& AmmoRefFor(int texId, bool isPlayer1);
+    int  AmmoCostFor(int texId) const;
+    int  AmmoCapacityFor(int texId) const;
+    void TryUnequipIfEmpty(int texId, bool isPlayer1);
+    int   m_p1HudAmmoShown = 0;
+    int   m_p2HudAmmoShown = 0;
+    int   m_p1HudAmmoTarget = 0;
+    int   m_p2HudAmmoTarget = 0;
+    float m_hudAmmoStepInterval = 0.05f;
+    float m_p1HudAmmoNextTick = 0.0f;
+    float m_p2HudAmmoNextTick = 0.0f;
+    void StartHudAmmoAnimation(bool isPlayer1);
+    void RefreshHudAmmoInstant(bool isPlayer1);
+    void UpdateHudAmmoAnim(float deltaTime);
     
 public:
     GSPlay();
@@ -254,6 +280,17 @@ private:
     void UpdateHudWeapons();
     Vector3 m_hudWeapon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     Vector3 m_hudWeapon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudAmmo1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
+    Vector3 m_hudAmmo2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
+
+    // Bomb HUD
+    int m_p1Bombs = 3;
+    int m_p2Bombs = 3;
+    Vector3 m_hudBomb1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
+    Vector3 m_hudBomb2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
+    Vector3 m_hudBombIcon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudBombIcon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    void UpdateHudBombDigits();
 
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };

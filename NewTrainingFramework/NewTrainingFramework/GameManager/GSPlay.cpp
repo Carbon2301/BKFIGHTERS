@@ -18,6 +18,7 @@
 #include "ResourceManager.h"
 #include <fstream>
 #include <sstream>
+#include <SDL_ttf.h>
 
 #define MENU_BUTTON_ID 301
 
@@ -216,6 +217,10 @@ void GSPlay::Init() {
     applyGlint(AXE_OBJECT_ID);
     applyGlint(SWORD_OBJECT_ID);
     applyGlint(PIPE_OBJECT_ID);
+    int glintPickupIds[] = {1200,1201,1202,1203,1204,1205,1206,1207,1502};
+    for (int gid : glintPickupIds) {
+        applyGlint(gid);
+    }
 
     // Initialize lifetime tracking for item objects
     m_itemLives.clear();
@@ -223,6 +228,8 @@ void GSPlay::Init() {
     tryAdd(AXE_OBJECT_ID);
     tryAdd(SWORD_OBJECT_ID);
     tryAdd(PIPE_OBJECT_ID);
+    int pickupIds[] = {1200,1201,1202,1203,1204,1205,1206,1207,1502};
+    for (int pid : pickupIds) { tryAdd(pid); }
 
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
@@ -236,13 +243,21 @@ void GSPlay::Init() {
 
     if (Object* hudGun1 = sceneManager->GetObject(920)) {
         m_hudGun1BaseScale = hudGun1->GetScale();
-        hudGun1->SetScale(m_hudGun1BaseScale);
-        hudGun1->SetTexture(m_player1GunTexId, 0);
+        if (m_player1GunTexId >= 0) {
+            hudGun1->SetScale(m_hudGun1BaseScale);
+            hudGun1->SetTexture(m_player1GunTexId, 0);
+        } else {
+            hudGun1->SetScale(0.0f, 0.0f, m_hudGun1BaseScale.z);
+        }
     }
     if (Object* hudGun2 = sceneManager->GetObject(921)) {
         m_hudGun2BaseScale = hudGun2->GetScale();
-        hudGun2->SetScale(m_hudGun2BaseScale);
-        hudGun2->SetTexture(m_player2GunTexId, 0);
+        if (m_player2GunTexId >= 0) {
+            hudGun2->SetScale(m_hudGun2BaseScale);
+            hudGun2->SetTexture(m_player2GunTexId, 0);
+        } else {
+            hudGun2->SetScale(0.0f, 0.0f, m_hudGun2BaseScale.z);
+        }
     }
 
     m_wallCollision = std::make_unique<WallCollision>();
@@ -311,6 +326,266 @@ void GSPlay::Init() {
         explProto->SetVisible(false);
     }
     UpdateHudWeapons();
+
+    {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (!font) {
+            std::cout << "Failed to load font for HUD digits: " << TTF_GetError() << std::endl;
+        } else {
+            TTF_SetFontHinting(font, TTF_HINTING_NONE);
+            TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+            auto makeTextTexture = [&](const char* text) -> std::shared_ptr<Texture2D> {
+                SDL_Color color = {255, 255, 255, 255};
+                SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text, color);
+                if (!surf) { return nullptr; }
+                std::shared_ptr<Texture2D> tex = std::make_shared<Texture2D>();
+                if (!tex->LoadFromSDLSurface(surf)) {
+                    SDL_FreeSurface(surf);
+                    return nullptr;
+                }
+                SDL_FreeSurface(surf);
+                tex->SetSharpFiltering();
+                return tex;
+            };
+
+            SceneManager* scene = SceneManager::GetInstance();
+            auto setTwoDigits = [&](int value, int leftId, int rightId){
+                if (value < 0) value = 0;
+                if (value > 99) value = 99;
+                int left = (value / 10) % 10;
+                int right = value % 10;
+                char lbuf[2] = {(char)('0' + left), '\0'};
+                char rbuf[2] = {(char)('0' + right), '\0'};
+                if (Object* L = scene->GetObject(leftId))  { if (auto t = makeTextTexture(lbuf)) L->SetDynamicTexture(t); }
+                if (Object* R = scene->GetObject(rightId)) { if (auto t = makeTextTexture(rbuf)) R->SetDynamicTexture(t); }
+            };
+
+            auto setDigitsVisible = [&](bool isP1, bool visible){
+                int leftId  = isP1 ? 924 : 926;
+                int rightId = isP1 ? 925 : 927;
+                if (Object* L = scene->GetObject(leftId))  { if (!visible) L->SetScale(0.0f, 0.0f, 1.0f); }
+                if (Object* R = scene->GetObject(rightId)) { if (!visible) R->SetScale(0.0f, 0.0f, 1.0f); }
+            };
+            setDigitsVisible(true,  m_player1GunTexId >= 0);
+            setDigitsVisible(false, m_player2GunTexId >= 0);
+            UpdateHudAmmoDigits();
+
+            auto setBombDigitsVisible = [&](bool isP1, bool visible){
+                int leftId  = isP1 ? 928 : 930;
+                int rightId = isP1 ? 929 : 931;
+                if (Object* L = scene->GetObject(leftId))  { if (!visible) L->SetScale(0.0f, 0.0f, 1.0f); }
+                if (Object* R = scene->GetObject(rightId)) { if (!visible) R->SetScale(0.0f, 0.0f, 1.0f); }
+            };
+            setBombDigitsVisible(true,  m_p1Bombs > 0);
+            setBombDigitsVisible(false, m_p2Bombs > 0);
+            if (Object* bombIcon1 = scene->GetObject(922)) m_hudBombIcon1BaseScale = bombIcon1->GetScale();
+            if (Object* bombIcon2 = scene->GetObject(923)) m_hudBombIcon2BaseScale = bombIcon2->GetScale();
+            UpdateHudBombDigits();
+
+            TTF_CloseFont(font);
+        }
+    }
+}
+
+void GSPlay::UpdateHudAmmoDigits() {
+    if (TTF_WasInit() == 0) return;
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    if (!font) { return; }
+    TTF_SetFontHinting(font, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    auto makeTextTexture = [&](const char* text) -> std::shared_ptr<Texture2D> {
+        SDL_Color color = {255, 255, 255, 255};
+        SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text, color);
+        if (!surf) { return nullptr; }
+        std::shared_ptr<Texture2D> tex = std::make_shared<Texture2D>();
+        if (!tex->LoadFromSDLSurface(surf)) { SDL_FreeSurface(surf); return nullptr; }
+        SDL_FreeSurface(surf);
+        tex->SetSharpFiltering();
+        return tex;
+    };
+    SceneManager* scene = SceneManager::GetInstance();
+    auto setTwoDigits = [&](int value, int leftId, int rightId){
+        if (value < 0) value = 0;
+        if (value > 99) value = 99;
+        int left = (value / 10) % 10;
+        int right = value % 10;
+        char lbuf[2] = {(char)('0' + left), '\0'};
+        char rbuf[2] = {(char)('0' + right), '\0'};
+        if (Object* L = scene->GetObject(leftId))  { if (auto t = makeTextTexture(lbuf)) L->SetDynamicTexture(t); }
+        if (Object* R = scene->GetObject(rightId)) { if (auto t = makeTextTexture(rbuf)) R->SetDynamicTexture(t); }
+    };
+    auto currentAmmo = [&](bool isP1)->int{
+        int tex = isP1 ? m_player1GunTexId : m_player2GunTexId;
+        switch (tex) {
+            case 40: return isP1 ? m_p1Ammo40 : m_p2Ammo40;
+            case 41: return isP1 ? m_p1Ammo41 : m_p2Ammo41;
+            case 42: return isP1 ? m_p1Ammo42 : m_p2Ammo42;
+            case 43: return isP1 ? m_p1Ammo43 : m_p2Ammo43;
+            case 44: return isP1 ? m_p1Ammo44 : m_p2Ammo44;
+            case 45: return isP1 ? m_p1Ammo45 : m_p2Ammo45;
+            case 46: return isP1 ? m_p1Ammo46 : m_p2Ammo46;
+            case 47: return isP1 ? m_p1Ammo47 : m_p2Ammo47;
+            default: return 0;
+        }
+    };
+    auto showDigits = [&](bool isP1, bool show){
+        int leftId  = isP1 ? 924 : 926;
+        int rightId = isP1 ? 925 : 927;
+        Vector3 base = isP1 ? m_hudAmmo1BaseScale : m_hudAmmo2BaseScale;
+        if (Object* L = scene->GetObject(leftId))  { L->SetScale(show ? base : Vector3(0.0f,0.0f,base.z)); }
+        if (Object* R = scene->GetObject(rightId)) { R->SetScale(show ? base : Vector3(0.0f,0.0f,base.z)); }
+    };
+    int a1 = currentAmmo(true);
+    int a2 = currentAmmo(false);
+    m_p1HudAmmoTarget = (m_player1GunTexId >= 0) ? a1 : 0;
+    m_p2HudAmmoTarget = (m_player2GunTexId >= 0) ? a2 : 0;
+    if (m_p1HudAmmoShown <= 0) m_p1HudAmmoShown = m_p1HudAmmoTarget;
+    if (m_p2HudAmmoShown <= 0) m_p2HudAmmoShown = m_p2HudAmmoTarget;
+    showDigits(true,  a1 > 0 && m_player1GunTexId >= 0);
+    showDigits(false, a2 > 0 && m_player2GunTexId >= 0);
+    if (m_p1HudAmmoShown > 0 && m_player1GunTexId >= 0) setTwoDigits(m_p1HudAmmoShown, 924, 925);
+    if (m_p2HudAmmoShown > 0 && m_player2GunTexId >= 0) setTwoDigits(m_p2HudAmmoShown, 926, 927);
+    TTF_CloseFont(font);
+}
+
+// Return reference to ammo counter for given gun texture and player
+int& GSPlay::AmmoRefFor(int texId, bool isPlayer1) {
+    switch (texId) {
+        case 40: return isPlayer1 ? m_p1Ammo40 : m_p2Ammo40;
+        case 41: return isPlayer1 ? m_p1Ammo41 : m_p2Ammo41;
+        case 42: return isPlayer1 ? m_p1Ammo42 : m_p2Ammo42;
+        case 43: return isPlayer1 ? m_p1Ammo43 : m_p2Ammo43;
+        case 44: return isPlayer1 ? m_p1Ammo44 : m_p2Ammo44;
+        case 45: return isPlayer1 ? m_p1Ammo45 : m_p2Ammo45;
+        case 46: return isPlayer1 ? m_p1Ammo46 : m_p2Ammo46;
+        case 47: return isPlayer1 ? m_p1Ammo47 : m_p2Ammo47;
+        default: return isPlayer1 ? m_p1Ammo40 : m_p2Ammo40; // fallback
+    }
+}
+
+// Ammo cost for one trigger release per gun
+int GSPlay::AmmoCostFor(int texId) const {
+    switch (texId) {
+        case 41: // M4A1
+        case 42: // Shotgun
+        case 44: // Flamegun
+        case 47: // Uzi
+            return 5;
+        case 43: // Bazoka
+        case 46: // Sniper
+        case 45: // Deagle
+        case 40: // Pistol
+        default:
+            return 1;
+    }
+}
+
+void GSPlay::TryUnequipIfEmpty(int texId, bool isPlayer1) {
+    int& ammo = AmmoRefFor(texId, isPlayer1);
+    if (ammo > 0) return;
+            if (isPlayer1) m_player1GunTexId = -1; else m_player2GunTexId = -1;
+    UpdateHudWeapons();
+    UpdateHudAmmoDigits();
+}
+
+void GSPlay::StartHudAmmoAnimation(bool isPlayer1) {
+    if (isPlayer1) {
+        m_p1HudAmmoNextTick = m_gameTime + m_hudAmmoStepInterval;
+    } else {
+        m_p2HudAmmoNextTick = m_gameTime + m_hudAmmoStepInterval;
+    }
+}
+
+void GSPlay::RefreshHudAmmoInstant(bool isPlayer1) {
+    if (isPlayer1) {
+        m_p1HudAmmoShown = m_p1HudAmmoTarget;
+    } else {
+        m_p2HudAmmoShown = m_p2HudAmmoTarget;
+    }
+    UpdateHudAmmoDigits();
+}
+
+void GSPlay::UpdateHudAmmoAnim(float deltaTime) {
+    // Step P1
+    if (m_player1GunTexId >= 0 && m_p1HudAmmoShown > m_p1HudAmmoTarget) {
+        if (m_gameTime >= m_p1HudAmmoNextTick) {
+            m_p1HudAmmoShown -= 1;
+            m_p1HudAmmoNextTick = m_gameTime + m_hudAmmoStepInterval;
+            UpdateHudAmmoDigits();
+        }
+    }
+    // Step P2
+    if (m_player2GunTexId >= 0 && m_p2HudAmmoShown > m_p2HudAmmoTarget) {
+        if (m_gameTime >= m_p2HudAmmoNextTick) {
+            m_p2HudAmmoShown -= 1;
+            m_p2HudAmmoNextTick = m_gameTime + m_hudAmmoStepInterval;
+            UpdateHudAmmoDigits();
+        }
+    }
+}
+
+void GSPlay::UpdateHudBombDigits() {
+    if (TTF_WasInit() == 0) return;
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    if (!font) return;
+    TTF_SetFontHinting(font, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    auto makeTextTexture = [&](const char* text) -> std::shared_ptr<Texture2D> {
+        SDL_Color color = {255, 255, 255, 255};
+        SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text, color);
+        if (!surf) return nullptr;
+        std::shared_ptr<Texture2D> tex = std::make_shared<Texture2D>();
+        if (!tex->LoadFromSDLSurface(surf)) { SDL_FreeSurface(surf); return nullptr; }
+        SDL_FreeSurface(surf);
+        tex->SetSharpFiltering();
+        return tex;
+    };
+    SceneManager* scene = SceneManager::GetInstance();
+    auto setTwoDigits = [&](int value, int leftId, int rightId){
+        if (value < 0) value = 0; if (value > 99) value = 99;
+        int left = (value / 10) % 10; int right = value % 10;
+        char lbuf[2] = {(char)('0' + left), '\0'};
+        char rbuf[2] = {(char)('0' + right), '\0'};
+        if (Object* L = scene->GetObject(leftId))  { if (auto t = makeTextTexture(lbuf)) L->SetDynamicTexture(t); }
+        if (Object* R = scene->GetObject(rightId)) { if (auto t = makeTextTexture(rbuf)) R->SetDynamicTexture(t); }
+    };
+    auto showDigits = [&](bool isP1, bool show){
+        int leftId  = isP1 ? 928 : 930;
+        int rightId = isP1 ? 929 : 931;
+        Vector3 base = isP1 ? m_hudBomb1BaseScale : m_hudBomb2BaseScale;
+        if (Object* L = scene->GetObject(leftId))  { L->SetScale(show ? base : Vector3(0.0f,0.0f,base.z)); }
+        if (Object* R = scene->GetObject(rightId)) { R->SetScale(show ? base : Vector3(0.0f,0.0f,base.z)); }
+    };
+    showDigits(true,  m_p1Bombs > 0);
+    showDigits(false, m_p2Bombs > 0);
+    if (Object* bombIcon1 = scene->GetObject(922)) {
+        Vector3 base = m_hudBombIcon1BaseScale.x != 0.0f || m_hudBombIcon1BaseScale.y != 0.0f ? m_hudBombIcon1BaseScale : bombIcon1->GetScale();
+        bombIcon1->SetScale(m_p1Bombs > 0 ? base : Vector3(0.0f, 0.0f, base.z));
+    }
+    if (Object* bombIcon2 = scene->GetObject(923)) {
+        Vector3 base = m_hudBombIcon2BaseScale.x != 0.0f || m_hudBombIcon2BaseScale.y != 0.0f ? m_hudBombIcon2BaseScale : bombIcon2->GetScale();
+        bombIcon2->SetScale(m_p2Bombs > 0 ? base : Vector3(0.0f, 0.0f, base.z));
+    }
+    if (m_p1Bombs > 0) setTwoDigits(m_p1Bombs, 928, 929);
+    if (m_p2Bombs > 0) setTwoDigits(m_p2Bombs, 930, 931);
+    TTF_CloseFont(font);
+}
+
+int GSPlay::AmmoCapacityFor(int texId) const {
+    switch (texId) {
+        case 40: return 15; // Pistol
+        case 41: return 30; // M4A1
+        case 42: return 60; // Shotgun
+        case 43: return 3;  // Bazoka
+        case 44: return 30; // Flamegun
+        case 45: return 12; // Deagle
+        case 46: return 6;  // Sniper
+        case 47: return 30; // Uzi
+        default: return 0;
+    }
 }
 
 void GSPlay::Update(float deltaTime) {
@@ -337,6 +612,8 @@ void GSPlay::Update(float deltaTime) {
     UpdateGunReloads();
     TryCompletePendingShots();
     UpdateHudWeapons();
+    UpdateHudAmmoAnim(deltaTime);
+    UpdateHudBombDigits();
     
     if (m_player.CheckHitboxCollision(m_player2)) {
         m_player2.TriggerGetHit(m_player);
@@ -838,12 +1115,20 @@ void GSPlay::UpdateHudWeapons() {
     };
 
     if (Object* hudGun1 = scene->GetObject(920)) {
-        hudGun1->SetTexture(m_player1GunTexId, 0);
-        hudGun1->SetScale(computeHudGunScale(m_player1GunTexId, m_hudGun1BaseScale));
+        if (m_player1GunTexId < 0) {
+            hudGun1->SetScale(0.0f, 0.0f, m_hudGun1BaseScale.z);
+        } else {
+            hudGun1->SetTexture(m_player1GunTexId, 0);
+            hudGun1->SetScale(computeHudGunScale(m_player1GunTexId, m_hudGun1BaseScale));
+        }
     }
     if (Object* hudGun2 = scene->GetObject(921)) {
-        hudGun2->SetTexture(m_player2GunTexId, 0);
-        hudGun2->SetScale(computeHudGunScale(m_player2GunTexId, m_hudGun2BaseScale));
+        if (m_player2GunTexId < 0) {
+            hudGun2->SetScale(0.0f, 0.0f, m_hudGun2BaseScale.z);
+        } else {
+            hudGun2->SetTexture(m_player2GunTexId, 0);
+            hudGun2->SetScale(computeHudGunScale(m_player2GunTexId, m_hudGun2BaseScale));
+        }
     }
 }
 
@@ -871,7 +1156,7 @@ void GSPlay::DrawHudPortraits() {
         hud1->SetCustomUV(u0, v0, u1, v1);
         hud1->Draw(uiView, uiProj);
 
-        if (m_player.IsGunMode()) {
+        if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
             float hu0, hv0, hu1, hv1;
             m_player.GetTopFrameUV(hu0, hv0, hu1, hv1);
             if (flip) {
@@ -918,7 +1203,7 @@ void GSPlay::DrawHudPortraits() {
         hud2->SetCustomUV(u0, v0, u1, v1);
         hud2->Draw(uiView, uiProj);
 
-        if (m_player2.IsGunMode()) {
+        if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
             float hu0, hv0, hu1, hv1;
             m_player2.GetTopFrameUV(hu0, hv0, hu1, hv1);
             if (flip2) {
@@ -962,7 +1247,14 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == 'M' || key == 'm') {
         bool was = m_player2.IsGunMode();
         if (bIsPressed) {
-            if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping()) {
+            bool hasGun = (m_player2GunTexId >= 0);
+            bool ammoOk = true;
+            if (hasGun) {
+                int need = AmmoCostFor(m_player2GunTexId);
+                int have = AmmoRefFor(m_player2GunTexId, false);
+                ammoOk = (have >= need);
+            }
+            if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping() && hasGun && ammoOk) {
                 m_player2.SetGunMode(true);
                 m_player2.GetMovement()->SetInputLocked(true);
                 if (!was) { m_p2ShotPending = false; m_p2GunStartTime = m_gameTime; }
@@ -974,7 +1266,14 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == '2') {
         bool was = m_player.IsGunMode();
         if (bIsPressed) {
-            if (!m_player.IsGrenadeMode() && !m_player.IsJumping()) {
+            bool hasGun = (m_player1GunTexId >= 0);
+            bool ammoOk = true;
+            if (hasGun) {
+                int need = AmmoCostFor(m_player1GunTexId);
+                int have = AmmoRefFor(m_player1GunTexId, true);
+                ammoOk = (have >= need);
+            }
+            if (!m_player.IsGrenadeMode() && !m_player.IsJumping() && hasGun && ammoOk) {
                 m_player.SetGunMode(true);
                 m_player.GetMovement()->SetInputLocked(true);
                 if (!was) { m_p1ShotPending = false; m_p1GunStartTime = m_gameTime; }
@@ -988,7 +1287,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     // P1: '3', P2: ','
     if (key == '3') {
         if (bIsPressed) {
-            if (!m_player.IsGunMode()) {
+            if (!m_player.IsGunMode() && m_p1Bombs > 0) {
                 m_player.SetGrenadeMode(true);
                 m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
                 if (m_p1GrenadePressTime < 0.0f) m_p1GrenadePressTime = m_gameTime;
@@ -1002,7 +1301,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 if (remain <= 0.0f || m_p1GrenadeExplodedInHand) {
                 } else {
                     if (remain < 0.2f) remain = 0.2f;
-                    SpawnBombFromCharacter(m_player, remain);
+                    if (m_p1Bombs > 0) { SpawnBombFromCharacter(m_player, remain); m_p1Bombs -= 1; UpdateHudBombDigits(); }
                 }
                 m_p1GrenadePressTime = -1.0f;
                 m_p1GrenadeExplodedInHand = false;
@@ -1011,7 +1310,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
         if (bIsPressed) {
-            if (!m_player2.IsGunMode()) {
+            if (!m_player2.IsGunMode() && m_p2Bombs > 0) {
                 m_player2.SetGrenadeMode(true);
                 m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
                 if (m_p2GrenadePressTime < 0.0f) m_p2GrenadePressTime = m_gameTime;
@@ -1025,7 +1324,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 if (remain <= 0.0f || m_p2GrenadeExplodedInHand) {
                 } else {
                     if (remain < 0.2f) remain = 0.2f;
-                    SpawnBombFromCharacter(m_player2, remain);
+                    if (m_p2Bombs > 0) { SpawnBombFromCharacter(m_player2, remain); m_p2Bombs -= 1; UpdateHudBombDigits(); }
                 }
                 m_p2GrenadePressTime = -1.0f;
                 m_p2GrenadeExplodedInHand = false;
@@ -1630,6 +1929,8 @@ void GSPlay::TryCompletePendingShots() {
             ch.MarkGunShotFired();
             pendingFlag = false;
         } else if (currentGunTex == 42) {
+            int& ammoShot = isP1 ? m_p1Ammo42 : m_p2Ammo42;
+            if (ammoShot < 5) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             const int pellets = 5;
             const float totalSpreadDeg = 6.0f;
             for (int i = 0; i < pellets; ++i) {
@@ -1639,6 +1940,7 @@ void GSPlay::TryCompletePendingShots() {
             }
             ch.MarkGunShotFired();
             pendingFlag = false;
+            ammoShot -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(42, isP1);
             if ((isP1 && m_player1GunTexId == 42) || (!isP1 && m_player2GunTexId == 42)) {
                 if (isP1) {
                     m_p1ReloadPending = true;
@@ -1653,6 +1955,8 @@ void GSPlay::TryCompletePendingShots() {
             }
             if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(true);
         } else if (currentGunTex == 43) { // Bazoka
+            int& ammoBaz = isP1 ? m_p1Ammo43 : m_p2Ammo43;
+            if (ammoBaz < 1) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             Vector3 pivot = ch.GetGunTopWorldPosition();
             Vector3 base  = ch.GetPosition();
             const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
@@ -1680,11 +1984,14 @@ void GSPlay::TryCompletePendingShots() {
             if ((int)m_bullets.size() < MAX_BULLETS) {
                 m_bullets.push_back(b);
             }
+            ammoBaz -= 1; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(43, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
         } else if (currentGunTex == 44) { // FlameGun
+            int& ammoFlame = isP1 ? m_p1Ammo44 : m_p2Ammo44;
+            if (ammoFlame < 5) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             const int count = FLAMEGUN_BULLET_COUNT;
             for (int i = 0; i < count; ++i) {
                 float r1 = (float)rand() / (float)RAND_MAX;
@@ -1693,12 +2000,17 @@ void GSPlay::TryCompletePendingShots() {
                 float jitter = r * (FLAMEGUN_SPREAD_DEG * 0.6f);
                 SpawnFlamegunBulletFromCharacter(ch, jitter);
             }
+            ammoFlame -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(44, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
         } else {
+            int& ammoGeneric = AmmoRefFor(currentGunTex, isP1);
+            int need = AmmoCostFor(currentGunTex);
+            if (ammoGeneric < need) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             SpawnBulletFromCharacter(ch);
+            ammoGeneric -= need; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(currentGunTex, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
@@ -1716,6 +2028,16 @@ void GSPlay::UpdateGunBursts() {
         const bool isP1Local = (&ch == &m_player);
         int gunTex = isP1Local ? m_player1GunTexId : m_player2GunTexId;
         if (gunTex == 41 || gunTex == 47) {
+            int& ammo = (isP1Local ? m_p1Ammo41 : m_p2Ammo41);
+            int& ammoUzi = (isP1Local ? m_p1Ammo47 : m_p2Ammo47);
+            if (gunTex == 41 && remain == M4A1_BURST_COUNT) {
+                if (ammo < 5) { active = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
+                ammo -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1Local); TryUnequipIfEmpty(41, isP1Local);
+            }
+            if (gunTex == 47 && remain == M4A1_BURST_COUNT) {
+                if (ammoUzi < 5) { active = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
+                ammoUzi -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1Local); TryUnequipIfEmpty(47, isP1Local);
+            }
             float r = (float)rand() / (float)RAND_MAX; // [0,1]
             float baseJitter = 1.0f;
             if (gunTex == 47) baseJitter = 3.0f;
@@ -1965,6 +2287,7 @@ void GSPlay::HandleItemPickup() {
     Object* gun_deagle  = scene->GetObject(1205);
     Object* gun_sniper  = scene->GetObject(1206);
     Object* gun_uzi     = scene->GetObject(1207);
+    Object* bomb_pickup = scene->GetObject(1502);
 
     const bool* keys = m_inputManager->GetKeyStates();
     if (!keys) return;
@@ -2031,12 +2354,42 @@ void GSPlay::HandleItemPickup() {
             if (CharacterAnimation* a1 = player.GetAnimation()) {
                 a1->SetGunByTextureId(texId);
             }
+            int cap = AmmoCapacityFor(texId);
+            int& ammoRef = AmmoRefFor(texId, isPlayer1);
+            ammoRef = cap;
+            UpdateHudWeapons();
+            UpdateHudAmmoDigits();
+            RefreshHudAmmoInstant(isPlayer1);
             player.SuppressNextPunch();
             std::cout << "Picked up gun ID " << removedId << " (tex=" << texId << ")" << std::endl;
             return true;
         }
         return false;
     };
+
+    // Try pick up bomb (Player 1)
+    auto tryPickupBomb = [&](Object*& bombObj, Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
+        if (!sitHeld || !pickupJust || !bombObj) return false;
+        const Vector3& objPos = bombObj->GetPosition();
+        const Vector3& objScale = bombObj->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = bombObj->GetId();
+            scene->RemoveObject(removedId);
+            bombObj = nullptr;
+            if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
+            UpdateHudBombDigits();
+            std::cout << "Picked up bomb ID " << removedId << " -> refill to 3\n";
+            return true;
+        }
+        return false;
+    };
+
+    if ( tryPickupBomb(bomb_pickup, m_player,  p1Sit, p1PickupJust, true) ) { return; }
 
     // Check Player 1 melee
     if ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
@@ -2051,6 +2404,9 @@ void GSPlay::HandleItemPickup() {
          tryPickupGun(45, gun_deagle,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(46, gun_sniper,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(47, gun_uzi,     m_player, p1Sit, p1PickupJust, true) ) { return; }
+
+    // Try pick up bomb (Player 2)
+    if ( tryPickupBomb(bomb_pickup, m_player2, p2Sit, p2PickupJust, false) ) { return; }
 
     // Check Player 2
     if ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||

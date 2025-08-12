@@ -34,7 +34,7 @@ void GSMenu::Init() {
 
     //Tạo texture text động bằng SDL_ttf
     if (TTF_WasInit() == 0) TTF_Init();
-    TTF_Font* font = TTF_OpenFont("../Resources/Font/Roboto-Regular.ttf", 32);
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 32);
     if (!font) {
         std::cout << "Failed to load font! TTF_Error: " << TTF_GetError() << std::endl;
         return;
