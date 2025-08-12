@@ -110,7 +110,10 @@ void CharacterHitbox::GetActiveHurtbox(Hurtbox& out) const {
     if (!m_character) return;
     const bool sit = m_character->IsSitting();
     const bool roll = m_character->GetMovement() ? m_character->GetMovement()->IsRolling() : false;
-    if ((sit || roll) && m_crouchRollHurtbox.isSet()) { out = m_crouchRollHurtbox; return; }
+    CharState st = m_character->GetState();
+    const bool movingHoriz = (st == CharState::MoveLeft || st == CharState::MoveRight);
+    if (roll && m_crouchRollHurtbox.isSet()) { out = m_crouchRollHurtbox; return; }
+    if (sit && !movingHoriz && m_crouchRollHurtbox.isSet()) { out = m_crouchRollHurtbox; return; }
     const bool facingLeft = m_character->IsFacingLeft();
     if (facingLeft && m_facingLeftHurtbox.isSet()) { out = m_facingLeftHurtbox; return; }
     if (!facingLeft && m_facingRightHurtbox.isSet()) { out = m_facingRightHurtbox; return; }
