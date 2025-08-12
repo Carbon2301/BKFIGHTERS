@@ -871,7 +871,7 @@ void GSPlay::DrawHudPortraits() {
         hud1->SetCustomUV(u0, v0, u1, v1);
         hud1->Draw(uiView, uiProj);
 
-        if (m_player.IsGunMode()) {
+        if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
             float hu0, hv0, hu1, hv1;
             m_player.GetTopFrameUV(hu0, hv0, hu1, hv1);
             if (flip) {
@@ -918,7 +918,7 @@ void GSPlay::DrawHudPortraits() {
         hud2->SetCustomUV(u0, v0, u1, v1);
         hud2->Draw(uiView, uiProj);
 
-        if (m_player2.IsGunMode()) {
+        if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
             float hu0, hv0, hu1, hv1;
             m_player2.GetTopFrameUV(hu0, hv0, hu1, hv1);
             if (flip2) {
