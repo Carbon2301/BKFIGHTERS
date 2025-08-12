@@ -1,6 +1,7 @@
 #pragma once
 #include "GameStateBase.h"
 #include "SceneManager.h"
+#include <vector>
 class Object;
 
 class GSIntro : public GameStateBase {
@@ -13,6 +14,10 @@ private:
     float m_barHeight = 0.0f;
     float m_barLeftX = 0.0f;
     float m_barY = 0.0f;
+    struct LoadTask { int id; bool isMusic; };
+    std::vector<LoadTask> m_tasks;
+    size_t m_taskIndex = 0;
+    float m_minShowTime = 1.0f;
     
 public:
     GSIntro();

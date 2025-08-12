@@ -116,6 +116,8 @@ private:
 
     bool m_inputLocked = false;
 
+    bool m_justStartedUpwardJump = false;
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;
@@ -190,6 +192,12 @@ public:
     // Teleport collision methods
     void InitializeTeleportCollision();
     TeleportCollision* GetTeleportCollision() const { return m_teleportCollision.get(); }
+
+    bool ConsumeJustStartedUpwardJump() {
+        bool v = m_justStartedUpwardJump;
+        m_justStartedUpwardJump = false;
+        return v;
+    }
 
     // Static input configurations
     static const PlayerInputConfig PLAYER1_INPUT;

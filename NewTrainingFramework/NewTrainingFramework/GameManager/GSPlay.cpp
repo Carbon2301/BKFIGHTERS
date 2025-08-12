@@ -117,6 +117,8 @@ void GSPlay::Init() {
     m_gameTime = 0.0f;
 
     m_inputManager = InputManager::GetInstance();
+    m_prevJumpingP1 = false;
+    m_prevJumpingP2 = false;
 
     m_animManager = std::make_shared<AnimationManager>();
     
@@ -606,6 +608,13 @@ void GSPlay::Update(float deltaTime) {
     
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
+
+    if (m_player.GetMovement() && m_player.GetMovement()->ConsumeJustStartedUpwardJump()) {
+        SoundManager::Instance().PlaySFXByID(18, 0);
+    }
+    if (m_player2.GetMovement() && m_player2.GetMovement()->ConsumeJustStartedUpwardJump()) {
+        SoundManager::Instance().PlaySFXByID(18, 0);
+    }
     UpdateBullets(deltaTime);
     UpdateBombs(deltaTime);
     UpdateExplosions(deltaTime);

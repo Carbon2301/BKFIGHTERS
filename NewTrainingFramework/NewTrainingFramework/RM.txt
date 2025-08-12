@@ -507,6 +507,3 @@ ID 22
 NAME "backgroundNoise"
 FILE "../Resources/Music/backgroundNoise.mp3"
 
-
-
-

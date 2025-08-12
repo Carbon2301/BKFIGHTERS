@@ -186,11 +186,11 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
     if (keyStates[m_inputConfig.jumpKey]) {
         if (!m_isJumping && (m_posY <= m_groundY + 0.01f || m_isOnPlatform)) {
             m_isSitting = false;
-            
             m_isJumping = true;
             m_jumpVelocity = JUMP_FORCE;
             m_jumpStartY = m_posY;
             m_isOnPlatform = false;
+            m_justStartedUpwardJump = true;
         }
     }
     
@@ -665,6 +665,7 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
             m_wasJumping = false;
             m_state = CharState::Idle;
             m_isOnPlatform = false;
+            m_justStartedUpwardJump = true;
         }
     }
     

@@ -5,6 +5,8 @@
 #include "SceneManager.h"
 #include "../GameObject/Object.h"
 #include <iostream>
+#include "SoundManager.h"
+#include <algorithm>
 
 GSIntro::GSIntro() 
     : GameStateBase(StateType::INTRO), m_loadingTimer(0.0f), m_loadingDuration(3.0f) {
@@ -70,6 +72,14 @@ void GSIntro::Init() {
 
     m_loadingTimer = 0.0f;
     std::cout << "Loading screen initialized" << std::endl;
+
+    m_tasks.clear();
+    auto allIds = SoundManager::Instance().GetAllAudioIDs();
+    for (int id : allIds) {
+        bool isMusic = (id == 0 || id == 22); // 22 is backgroundNoise, 0 is menu
+        m_tasks.push_back({id, isMusic});
+    }
+    m_taskIndex = 0;
 }
 
 void GSIntro::Update(float deltaTime) {
@@ -77,7 +87,17 @@ void GSIntro::Update(float deltaTime) {
     
     SceneManager::GetInstance()->Update(deltaTime);
     
-    float t = m_loadingTimer / m_loadingDuration;
+    if (m_taskIndex < m_tasks.size()) {
+        const LoadTask& task = m_tasks[m_taskIndex];
+        if (task.isMusic) SoundManager::Instance().PreloadMusicByID(task.id);
+        else SoundManager::Instance().PreloadSFXByID(task.id);
+        m_taskIndex++;
+    }
+
+    float totalPlanned = (std::max)(m_loadingDuration, m_minShowTime);
+    float progressByTime = (std::min)(1.0f, m_loadingTimer / totalPlanned);
+    float progressByTasks = m_tasks.empty() ? 1.0f : (float)m_taskIndex / (float)m_tasks.size();
+    float t = (std::min)(1.0f, 0.5f * progressByTime + 0.5f * progressByTasks);
     if (t > 1.0f) t = 1.0f;
     float currentWidth = m_barWidth * t;
     if (m_barFill) {
@@ -86,7 +106,7 @@ void GSIntro::Update(float deltaTime) {
         m_barFill->SetScale(currentWidth, m_barHeight - 0.02f, 1.0f);
     }
     
-    if (m_loadingTimer >= m_loadingDuration) {
+    if (t >= 1.0f && m_loadingTimer >= m_minShowTime) {
         std::cout << "Loading complete! Transitioning to main menu..." << std::endl;
         GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
     }

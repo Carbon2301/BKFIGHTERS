@@ -26,6 +26,7 @@ void SoundManager::LoadMusic(const std::string& name, const std::string& path) {
         Mix_Music* music = Mix_LoadMUS(path.c_str());
         if (music) {
             m_musicMap[name] = music;
+            m_audioPathByName[name] = path;
         } else {
             std::cout << "Failed to load music: " << path << " Error: " << Mix_GetError() << std::endl;
         }
@@ -33,9 +34,21 @@ void SoundManager::LoadMusic(const std::string& name, const std::string& path) {
 }
 
 void SoundManager::PlayMusic(const std::string& name, int loop) {
+    Mix_Music* music = nullptr;
     auto it = m_musicMap.find(name);
     if (it != m_musicMap.end()) {
-        m_currentMusic = it->second;
+        music = it->second;
+    } else {
+        auto itPath = m_audioPathByName.find(name);
+        if (itPath != m_audioPathByName.end()) {
+            music = Mix_LoadMUS(itPath->second.c_str());
+            if (music) {
+                m_musicMap[name] = music;
+            }
+        }
+    }
+    if (music) {
+        m_currentMusic = music;
         if (Mix_PlayMusic(m_currentMusic, loop) == -1) {
             std::cout << "Failed to play music: " << Mix_GetError() << std::endl;
         }
@@ -54,6 +67,7 @@ void SoundManager::LoadMusicByID(int id, const std::string& path) {
         Mix_Music* music = Mix_LoadMUS(path.c_str());
         if (music) {
             m_musicMapByID[id] = music;
+            m_audioPathByID[id] = path;
         } else {
             std::cout << "Failed to load music: " << path << " Error: " << Mix_GetError() << std::endl;
         }
@@ -61,14 +75,96 @@ void SoundManager::LoadMusicByID(int id, const std::string& path) {
 }
 
 void SoundManager::PlayMusicByID(int id, int loop) {
+    Mix_Music* music = nullptr;
     auto it = m_musicMapByID.find(id);
     if (it != m_musicMapByID.end()) {
-        m_currentMusic = it->second;
+        music = it->second;
+    } else {
+        auto itPath = m_audioPathByID.find(id);
+        if (itPath != m_audioPathByID.end()) {
+            music = Mix_LoadMUS(itPath->second.c_str());
+            if (music) {
+                m_musicMapByID[id] = music;
+            }
+        }
+    }
+    if (music) {
+        m_currentMusic = music;
         if (Mix_PlayMusic(m_currentMusic, loop) == -1) {
             std::cout << "Failed to play music: " << Mix_GetError() << std::endl;
         }
     } else {
         std::cout << "Music not found with ID: " << id << std::endl;
+    }
+}
+
+void SoundManager::LoadSFX(const std::string& name, const std::string& path) {
+    if (m_sfxMap.count(name) == 0) {
+        Mix_Chunk* chunk = Mix_LoadWAV(path.c_str());
+        if (chunk) {
+            m_sfxMap[name] = chunk;
+            m_audioPathByName[name] = path;
+        } else {
+            std::cout << "Failed to load SFX: " << path << " Error: " << Mix_GetError() << std::endl;
+        }
+    }
+}
+
+void SoundManager::LoadSFXByID(int id, const std::string& path) {
+    if (m_sfxMapByID.count(id) == 0) {
+        Mix_Chunk* chunk = Mix_LoadWAV(path.c_str());
+        if (chunk) {
+            m_sfxMapByID[id] = chunk;
+            m_audioPathByID[id] = path;
+        } else {
+            std::cout << "Failed to load SFX: " << path << " Error: " << Mix_GetError() << std::endl;
+        }
+    }
+}
+
+void SoundManager::PlaySFX(const std::string& name, int loops) {
+    Mix_Chunk* chunk = nullptr;
+    auto it = m_sfxMap.find(name);
+    if (it != m_sfxMap.end()) {
+        chunk = it->second;
+    } else {
+        auto itPath = m_audioPathByName.find(name);
+        if (itPath != m_audioPathByName.end()) {
+            chunk = Mix_LoadWAV(itPath->second.c_str());
+            if (chunk) {
+                m_sfxMap[name] = chunk;
+            }
+        }
+    }
+    if (chunk) {
+        if (Mix_PlayChannel(-1, chunk, loops) == -1) {
+            std::cout << "Failed to play SFX: " << Mix_GetError() << std::endl;
+        }
+    } else {
+        std::cout << "SFX not found: " << name << std::endl;
+    }
+}
+
+void SoundManager::PlaySFXByID(int id, int loops) {
+    Mix_Chunk* chunk = nullptr;
+    auto it = m_sfxMapByID.find(id);
+    if (it != m_sfxMapByID.end()) {
+        chunk = it->second;
+    } else {
+        auto itPath = m_audioPathByID.find(id);
+        if (itPath != m_audioPathByID.end()) {
+            chunk = Mix_LoadWAV(itPath->second.c_str());
+            if (chunk) {
+                m_sfxMapByID[id] = chunk;
+            }
+        }
+    }
+    if (chunk) {
+        if (Mix_PlayChannel(-1, chunk, loops) == -1) {
+            std::cout << "Failed to play SFX: " << Mix_GetError() << std::endl;
+        }
+    } else {
+        std::cout << "SFX not found with ID: " << id << std::endl;
     }
 }
 
@@ -85,6 +181,20 @@ void SoundManager::Clear() {
         }
     }
     m_musicMapByID.clear();
+    for (auto& pair : m_sfxMap) {
+        if (pair.second) {
+            Mix_FreeChunk(pair.second);
+        }
+    }
+    m_sfxMap.clear();
+    for (auto& pair : m_sfxMapByID) {
+        if (pair.second) {
+            Mix_FreeChunk(pair.second);
+        }
+    }
+    m_sfxMapByID.clear();
+    m_audioPathByID.clear();
+    m_audioPathByName.clear();
     m_currentMusic = nullptr;
 }
 
@@ -129,10 +239,8 @@ void SoundManager::LoadMusicFromFile(const std::string& rmFilePath) {
                 path = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
             }
             if (id != -1 && !path.empty()) {
-                LoadMusicByID(id, path);
-                if (!name.empty()) {
-                    LoadMusic(name, path);
-                }
+                m_audioPathByID[id] = path;
+                if (!name.empty()) m_audioPathByName[name] = path;
                 id = -1;
                 path.clear();
                 name.clear();
@@ -140,3 +248,39 @@ void SoundManager::LoadMusicFromFile(const std::string& rmFilePath) {
         }
     }
 } 
+
+void SoundManager::PreloadMusicByID(int id) {
+    if (m_musicMapByID.count(id)) return;
+    auto itPath = m_audioPathByID.find(id);
+    if (itPath == m_audioPathByID.end()) return;
+    Mix_Music* music = Mix_LoadMUS(itPath->second.c_str());
+    if (music) {
+        m_musicMapByID[id] = music;
+    }
+}
+
+void SoundManager::PreloadSFXByID(int id) {
+    if (m_sfxMapByID.count(id)) return;
+    auto itPath = m_audioPathByID.find(id);
+    if (itPath == m_audioPathByID.end()) return;
+    Mix_Chunk* chunk = Mix_LoadWAV(itPath->second.c_str());
+    if (chunk) {
+        m_sfxMapByID[id] = chunk;
+    }
+}
+
+std::vector<int> SoundManager::GetAllAudioIDs() const {
+    std::vector<int> ids;
+    ids.reserve(m_audioPathByID.size());
+    for (const auto& kv : m_audioPathByID) ids.push_back(kv.first);
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+void SoundManager::PreloadAllAudio(bool includeMusic, bool includeSfx) {
+    for (const auto& kv : m_audioPathByID) {
+        int id = kv.first;
+        if (includeMusic) PreloadMusicByID(id);
+        if (includeSfx) PreloadSFXByID(id);
+    }
+}
