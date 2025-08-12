@@ -52,7 +52,11 @@ private:
     int m_currentWeaponAnim1 = -1;
     int m_currentWeaponAnim2 = -1;
     int m_currentWeaponAnim3 = -1;
-    void AdvanceQueuedWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement);
+
+    class CharacterAnimation* m_lastAnimationCtx = nullptr;
+    class CharacterMovement*  m_lastMovementCtx  = nullptr;
+
+  bool m_attackPressed = false;
 
 public:
     CharacterCombat();
@@ -74,6 +78,7 @@ public:
     bool CheckHitboxCollision(const Character& attacker, const Character& target) const;
     void TriggerGetHit(CharacterAnimation* animation, const Character& attacker, Character* target);
     bool IsHit() const { return m_isHit; }
+  void SetAttackPressed(bool pressed) { m_attackPressed = pressed; }
     
     bool IsInCombo() const { return m_isInCombo; }
     int GetComboCount() const { return m_comboCount; }

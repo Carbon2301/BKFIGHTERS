@@ -11,9 +11,9 @@
 const float CharacterCombat::COMBO_WINDOW = 0.8f;
 const float CharacterCombat::HIT_DURATION = 0.3f;
 const float CharacterCombat::HITBOX_DURATION = 0.2f;
-const float CharacterCombat::WEAPON_COMBO_MIN_INTERVAL = 0.4f;
+const float CharacterCombat::WEAPON_COMBO_MIN_INTERVAL = 0.5f;
 const float CharacterCombat::WEAPON_COMBO_WINDOW = 0.6f;
-const float CharacterCombat::PUNCH_COMBO_MIN_INTERVAL = 0.4f;
+const float CharacterCombat::PUNCH_COMBO_MIN_INTERVAL = 0.5f;
 const float CharacterCombat::PUNCH_COMBO_WINDOW = 0.6f;
 
 CharacterCombat::CharacterCombat() 
@@ -54,8 +54,6 @@ void CharacterCombat::Update(float deltaTime) {
             m_lungeSpeed = 0.0f;
             m_lungeDirection = 0.0f;
         }
-    }
-    if (m_isInAxeCombo && m_weaponComboQueued && m_weaponComboCooldown <= 0.0f && m_axeComboTimer > 0.0f) {
     }
     
     if (m_isHit) {
@@ -124,6 +122,7 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         m_comboTimer = PUNCH_COMBO_WINDOW;
         
         if (m_comboCount == 2) {
+            if (!m_attackPressed) { m_comboCount = 1; return; }
             animation->PlayAnimation(11, false);
             m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
             SoundManager::Instance().PlaySFXByID(20, 0);
@@ -135,6 +134,7 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
             float hitboxOffsetY = -0.02f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         } else if (m_comboCount == 3) {
+            if (!m_attackPressed) { m_comboCount = 2; return; }
             animation->PlayAnimation(12, false);
             m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
             SoundManager::Instance().PlaySFXByID(21, 0);
@@ -231,6 +231,7 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
         m_axeComboCount++;
         m_axeComboTimer = WEAPON_COMBO_WINDOW;
         if (m_axeComboCount == 2) {
+            if (!m_attackPressed) { m_axeComboCount = 1; return; }
             animation->PlayAnimation(anim2, false);
             m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
             SoundManager::Instance().PlaySFXByID(20, 0);
@@ -239,6 +240,7 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
             computeWeaponHitbox(anim1, 2, facingLeft, w, h, ox, oy);
             ShowHitbox(w, h, ox, oy);
         } else if (m_axeComboCount == 3) {
+            if (!m_attackPressed) { m_axeComboCount = 2; return; }
             animation->PlayAnimation(anim3, false);
             m_axeComboCompleted = true;
             m_weaponComboCooldown = WEAPON_COMBO_MIN_INTERVAL;
@@ -264,11 +266,6 @@ void CharacterCombat::HandleWeaponCombo(CharacterAnimation* animation, Character
         ShowHitbox(w, h, ox, oy);
     }
     m_weaponComboQueued = false;
-}
-
-void CharacterCombat::AdvanceQueuedWeaponCombo(CharacterAnimation* animation, CharacterMovement* movement) {
-    (void)animation;
-    (void)movement;
 }
 
 void CharacterCombat::HandleKick(CharacterAnimation* animation, CharacterMovement* movement) {

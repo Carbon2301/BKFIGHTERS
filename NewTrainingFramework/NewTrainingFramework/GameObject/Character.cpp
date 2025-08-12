@@ -118,7 +118,9 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     
-    if (!m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
+    bool punchDown = inputManager->IsKeyJustPressed(inputConfig.punchKey);
+    if (m_combat) m_combat->SetAttackPressed(punchDown);
+    if (!m_movement->IsInputLocked() && !IsGrenadeMode() && punchDown) {
         if (m_suppressNextPunch) {
             m_suppressNextPunch = false;
         } else {
@@ -171,6 +173,25 @@ void Character::Update(float deltaTime) {
         if (dx != 0.0f) {
             Vector3 p = m_movement->GetPosition();
             m_movement->SetPosition(p.x + dx, p.y);
+        }
+        if (m_combat->IsInCombo() && m_combat->GetComboTimer() > 0.0f) {
+            m_combat->HandlePunchCombo(m_animation.get(), m_movement.get());
+        }
+        if (m_combat->IsInAxeCombo() && m_combat->GetAxeComboTimer() > 0.0f) {
+            switch (m_weapon) {
+                case WeaponType::Axe:
+                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 20, 21, 22);
+                    break;
+                case WeaponType::Sword:
+                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 23, 24, 25);
+                    break;
+                case WeaponType::Pipe:
+                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 26, 27, 28);
+                    break;
+                default:
+                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 20, 21, 22);
+                    break;
+            }
         }
     }
 
