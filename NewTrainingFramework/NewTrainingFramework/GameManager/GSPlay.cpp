@@ -422,10 +422,14 @@ void GSPlay::UpdateHudAmmoDigits() {
     };
     int a1 = currentAmmo(true);
     int a2 = currentAmmo(false);
+    m_p1HudAmmoTarget = (m_player1GunTexId >= 0) ? a1 : 0;
+    m_p2HudAmmoTarget = (m_player2GunTexId >= 0) ? a2 : 0;
+    if (m_p1HudAmmoShown <= 0) m_p1HudAmmoShown = m_p1HudAmmoTarget;
+    if (m_p2HudAmmoShown <= 0) m_p2HudAmmoShown = m_p2HudAmmoTarget;
     showDigits(true,  a1 > 0 && m_player1GunTexId >= 0);
     showDigits(false, a2 > 0 && m_player2GunTexId >= 0);
-    if (a1 > 0 && m_player1GunTexId >= 0) setTwoDigits(a1, 924, 925);
-    if (a2 > 0 && m_player2GunTexId >= 0) setTwoDigits(a2, 926, 927);
+    if (m_p1HudAmmoShown > 0 && m_player1GunTexId >= 0) setTwoDigits(m_p1HudAmmoShown, 924, 925);
+    if (m_p2HudAmmoShown > 0 && m_player2GunTexId >= 0) setTwoDigits(m_p2HudAmmoShown, 926, 927);
     TTF_CloseFont(font);
 }
 
@@ -469,6 +473,42 @@ void GSPlay::TryUnequipIfEmpty(int texId, bool isPlayer1) {
     UpdateHudAmmoDigits();
 }
 
+void GSPlay::StartHudAmmoAnimation(bool isPlayer1) {
+    if (isPlayer1) {
+        m_p1HudAmmoNextTick = m_gameTime + m_hudAmmoStepInterval;
+    } else {
+        m_p2HudAmmoNextTick = m_gameTime + m_hudAmmoStepInterval;
+    }
+}
+
+void GSPlay::RefreshHudAmmoInstant(bool isPlayer1) {
+    if (isPlayer1) {
+        m_p1HudAmmoShown = m_p1HudAmmoTarget;
+    } else {
+        m_p2HudAmmoShown = m_p2HudAmmoTarget;
+    }
+    UpdateHudAmmoDigits();
+}
+
+void GSPlay::UpdateHudAmmoAnim(float deltaTime) {
+    // Step P1
+    if (m_player1GunTexId >= 0 && m_p1HudAmmoShown > m_p1HudAmmoTarget) {
+        if (m_gameTime >= m_p1HudAmmoNextTick) {
+            m_p1HudAmmoShown -= 1;
+            m_p1HudAmmoNextTick = m_gameTime + m_hudAmmoStepInterval;
+            UpdateHudAmmoDigits();
+        }
+    }
+    // Step P2
+    if (m_player2GunTexId >= 0 && m_p2HudAmmoShown > m_p2HudAmmoTarget) {
+        if (m_gameTime >= m_p2HudAmmoNextTick) {
+            m_p2HudAmmoShown -= 1;
+            m_p2HudAmmoNextTick = m_gameTime + m_hudAmmoStepInterval;
+            UpdateHudAmmoDigits();
+        }
+    }
+}
+
 int GSPlay::AmmoCapacityFor(int texId) const {
     switch (texId) {
         case 40: return 15; // Pistol
@@ -507,6 +547,7 @@ void GSPlay::Update(float deltaTime) {
     UpdateGunReloads();
     TryCompletePendingShots();
     UpdateHudWeapons();
+    UpdateHudAmmoAnim(deltaTime);
     
     if (m_player.CheckHitboxCollision(m_player2)) {
         m_player2.TriggerGetHit(m_player);
@@ -1833,7 +1874,7 @@ void GSPlay::TryCompletePendingShots() {
             }
             ch.MarkGunShotFired();
             pendingFlag = false;
-            ammoShot -= 5; UpdateHudAmmoDigits(); TryUnequipIfEmpty(42, isP1);
+            ammoShot -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(42, isP1);
             if ((isP1 && m_player1GunTexId == 42) || (!isP1 && m_player2GunTexId == 42)) {
                 if (isP1) {
                     m_p1ReloadPending = true;
@@ -1877,7 +1918,7 @@ void GSPlay::TryCompletePendingShots() {
             if ((int)m_bullets.size() < MAX_BULLETS) {
                 m_bullets.push_back(b);
             }
-            ammoBaz -= 1; UpdateHudAmmoDigits(); TryUnequipIfEmpty(43, isP1);
+            ammoBaz -= 1; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(43, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
@@ -1893,7 +1934,7 @@ void GSPlay::TryCompletePendingShots() {
                 float jitter = r * (FLAMEGUN_SPREAD_DEG * 0.6f);
                 SpawnFlamegunBulletFromCharacter(ch, jitter);
             }
-            ammoFlame -= 5; UpdateHudAmmoDigits(); TryUnequipIfEmpty(44, isP1);
+            ammoFlame -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(44, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
@@ -1903,7 +1944,7 @@ void GSPlay::TryCompletePendingShots() {
             int need = AmmoCostFor(currentGunTex);
             if (ammoGeneric < need) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
             SpawnBulletFromCharacter(ch);
-            ammoGeneric -= need; UpdateHudAmmoDigits(); TryUnequipIfEmpty(currentGunTex, isP1);
+            ammoGeneric -= need; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(currentGunTex, isP1);
             ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
@@ -1925,11 +1966,11 @@ void GSPlay::UpdateGunBursts() {
             int& ammoUzi = (isP1Local ? m_p1Ammo47 : m_p2Ammo47);
             if (gunTex == 41 && remain == M4A1_BURST_COUNT) {
                 if (ammo < 5) { active = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
-                ammo -= 5; UpdateHudAmmoDigits(); TryUnequipIfEmpty(41, isP1Local);
+                ammo -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1Local); TryUnequipIfEmpty(41, isP1Local);
             }
             if (gunTex == 47 && remain == M4A1_BURST_COUNT) {
                 if (ammoUzi < 5) { active = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
-                ammoUzi -= 5; UpdateHudAmmoDigits(); TryUnequipIfEmpty(47, isP1Local);
+                ammoUzi -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1Local); TryUnequipIfEmpty(47, isP1Local);
             }
             float r = (float)rand() / (float)RAND_MAX; // [0,1]
             float baseJitter = 1.0f;
@@ -2251,6 +2292,7 @@ void GSPlay::HandleItemPickup() {
             ammoRef = cap;
             UpdateHudWeapons();
             UpdateHudAmmoDigits();
+            RefreshHudAmmoInstant(isPlayer1);
             player.SuppressNextPunch();
             std::cout << "Picked up gun ID " << removedId << " (tex=" << texId << ")" << std::endl;
             return true;

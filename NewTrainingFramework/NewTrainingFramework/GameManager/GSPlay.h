@@ -219,6 +219,16 @@ private:
     int  AmmoCostFor(int texId) const;
     int  AmmoCapacityFor(int texId) const;
     void TryUnequipIfEmpty(int texId, bool isPlayer1);
+    int   m_p1HudAmmoShown = 0;
+    int   m_p2HudAmmoShown = 0;
+    int   m_p1HudAmmoTarget = 0;
+    int   m_p2HudAmmoTarget = 0;
+    float m_hudAmmoStepInterval = 0.05f;
+    float m_p1HudAmmoNextTick = 0.0f;
+    float m_p2HudAmmoNextTick = 0.0f;
+    void StartHudAmmoAnimation(bool isPlayer1);
+    void RefreshHudAmmoInstant(bool isPlayer1);
+    void UpdateHudAmmoAnim(float deltaTime);
     
 public:
     GSPlay();
