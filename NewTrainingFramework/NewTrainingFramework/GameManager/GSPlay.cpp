@@ -237,13 +237,21 @@ void GSPlay::Init() {
 
     if (Object* hudGun1 = sceneManager->GetObject(920)) {
         m_hudGun1BaseScale = hudGun1->GetScale();
-        hudGun1->SetScale(m_hudGun1BaseScale);
-        hudGun1->SetTexture(m_player1GunTexId, 0);
+        if (m_player1GunTexId >= 0) {
+            hudGun1->SetScale(m_hudGun1BaseScale);
+            hudGun1->SetTexture(m_player1GunTexId, 0);
+        } else {
+            hudGun1->SetScale(0.0f, 0.0f, m_hudGun1BaseScale.z);
+        }
     }
     if (Object* hudGun2 = sceneManager->GetObject(921)) {
         m_hudGun2BaseScale = hudGun2->GetScale();
-        hudGun2->SetScale(m_hudGun2BaseScale);
-        hudGun2->SetTexture(m_player2GunTexId, 0);
+        if (m_player2GunTexId >= 0) {
+            hudGun2->SetScale(m_hudGun2BaseScale);
+            hudGun2->SetTexture(m_player2GunTexId, 0);
+        } else {
+            hudGun2->SetScale(0.0f, 0.0f, m_hudGun2BaseScale.z);
+        }
     }
 
     m_wallCollision = std::make_unique<WallCollision>();
@@ -916,12 +924,20 @@ void GSPlay::UpdateHudWeapons() {
     };
 
     if (Object* hudGun1 = scene->GetObject(920)) {
-        hudGun1->SetTexture(m_player1GunTexId, 0);
-        hudGun1->SetScale(computeHudGunScale(m_player1GunTexId, m_hudGun1BaseScale));
+        if (m_player1GunTexId < 0) {
+            hudGun1->SetScale(0.0f, 0.0f, m_hudGun1BaseScale.z);
+        } else {
+            hudGun1->SetTexture(m_player1GunTexId, 0);
+            hudGun1->SetScale(computeHudGunScale(m_player1GunTexId, m_hudGun1BaseScale));
+        }
     }
     if (Object* hudGun2 = scene->GetObject(921)) {
-        hudGun2->SetTexture(m_player2GunTexId, 0);
-        hudGun2->SetScale(computeHudGunScale(m_player2GunTexId, m_hudGun2BaseScale));
+        if (m_player2GunTexId < 0) {
+            hudGun2->SetScale(0.0f, 0.0f, m_hudGun2BaseScale.z);
+        } else {
+            hudGun2->SetTexture(m_player2GunTexId, 0);
+            hudGun2->SetScale(computeHudGunScale(m_player2GunTexId, m_hudGun2BaseScale));
+        }
     }
 }
 
@@ -1040,7 +1056,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == 'M' || key == 'm') {
         bool was = m_player2.IsGunMode();
         if (bIsPressed) {
-            if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping()) {
+            bool hasGun = (m_player2GunTexId >= 0);
+            bool ammoOk = true;
+            if (hasGun && m_player2GunTexId == 40) { ammoOk = (m_p2Ammo > 0); }
+            if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping() && hasGun && ammoOk) {
                 m_player2.SetGunMode(true);
                 m_player2.GetMovement()->SetInputLocked(true);
                 if (!was) { m_p2ShotPending = false; m_p2GunStartTime = m_gameTime; }
@@ -1052,7 +1071,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (key == '2') {
         bool was = m_player.IsGunMode();
         if (bIsPressed) {
-            if (!m_player.IsGrenadeMode() && !m_player.IsJumping()) {
+            bool hasGun = (m_player1GunTexId >= 0);
+            bool ammoOk = true;
+            if (hasGun && m_player1GunTexId == 40) { ammoOk = (m_p1Ammo > 0); }
+            if (!m_player.IsGrenadeMode() && !m_player.IsJumping() && hasGun && ammoOk) {
                 m_player.SetGunMode(true);
                 m_player.GetMovement()->SetInputLocked(true);
                 if (!was) { m_p1ShotPending = false; m_p1GunStartTime = m_gameTime; }
@@ -1776,11 +1798,25 @@ void GSPlay::TryCompletePendingShots() {
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
         } else {
+            if (currentGunTex == 40) {
+                int& ammoRef = isP1 ? m_p1Ammo : m_p2Ammo;
+                if (ammoRef <= 0) {
+                    pendingFlag = false;
+                    ch.SetGunMode(false);
+                    if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false);
+                    return;
+                }
+            }
             SpawnBulletFromCharacter(ch);
             if (currentGunTex == 40) {
                 if (isP1) { if (m_p1Ammo > 0) m_p1Ammo -= 1; }
                 else      { if (m_p2Ammo > 0) m_p2Ammo -= 1; }
                 UpdateHudAmmoDigits();
+                int ammoLeft = isP1 ? m_p1Ammo : m_p2Ammo;
+                if (ammoLeft <= 0) {
+                    if (isP1) m_player1GunTexId = -1; else m_player2GunTexId = -1;
+                    UpdateHudWeapons();
+                }
             }
             ch.MarkGunShotFired();
             pendingFlag = false;
