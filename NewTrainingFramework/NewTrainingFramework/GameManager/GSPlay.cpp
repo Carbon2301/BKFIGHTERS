@@ -217,6 +217,10 @@ void GSPlay::Init() {
     applyGlint(AXE_OBJECT_ID);
     applyGlint(SWORD_OBJECT_ID);
     applyGlint(PIPE_OBJECT_ID);
+    int glintPickupIds[] = {1200,1201,1202,1203,1204,1205,1206,1207,1502};
+    for (int gid : glintPickupIds) {
+        applyGlint(gid);
+    }
 
     // Initialize lifetime tracking for item objects
     m_itemLives.clear();
@@ -224,6 +228,8 @@ void GSPlay::Init() {
     tryAdd(AXE_OBJECT_ID);
     tryAdd(SWORD_OBJECT_ID);
     tryAdd(PIPE_OBJECT_ID);
+    int pickupIds[] = {1200,1201,1202,1203,1204,1205,1206,1207,1502};
+    for (int pid : pickupIds) { tryAdd(pid); }
 
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
