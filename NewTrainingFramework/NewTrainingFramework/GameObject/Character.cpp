@@ -81,11 +81,18 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     if (m_movement && m_combat) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
+        if (m_animation && m_animation->IsHardLandingActive()) {
+            lock = true;
+            SetGunMode(false);
+            SetGrenadeMode(false);
+        }
         if (m_animation && m_animation->IsGunMode()) lock = true;
         if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+        if (m_animation && m_animation->IsHardLandingActive()) lock = true;
         if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
             m_movement->ForceSit(false);
         }
+        lock = m_movement->IsInputLocked() || lock;
         m_movement->SetInputLocked(lock);
     }
     
@@ -96,10 +103,22 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (m_animation) {
         m_animation->HandleMovementAnimations(keyStates, m_movement.get(), m_combat.get());
     }
+
+    if (m_movement) {
+        bool hardLandingNow = (m_animation && m_animation->IsHardLandingActive());
+        if (hardLandingNow && !m_prevHardLandingActive) {
+            float pendingDamage = m_movement->ConsumePendingFallDamage();
+            if (pendingDamage > 0.0f) {
+                SoundManager::Instance().PlaySFXByID(9, 0);
+                TakeDamage(pendingDamage, false);
+            }
+        }
+        m_prevHardLandingActive = hardLandingNow;
+    }
     
     const PlayerInputConfig& inputConfig = m_movement->GetInputConfig();
     
-    if (!IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
+    if (!m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.punchKey)) {
         if (m_suppressNextPunch) {
             m_suppressNextPunch = false;
         } else {
@@ -117,7 +136,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         }
     }
     
-    if (!IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
+    if (!m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         if (!m_movement->IsJumping()) {
         HandleKick();
         }
@@ -136,6 +155,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
         if (m_animation && m_animation->IsGunMode()) lock = true;
         if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+        lock = m_movement->IsInputLocked() || lock;
         m_movement->SetInputLocked(lock);
     }
 }
@@ -461,14 +481,16 @@ void Character::TriggerGetHit(const Character& attacker) {
     }
 } 
 
-void Character::TakeDamage(float damage) {
+void Character::TakeDamage(float damage, bool playSfx) {
     if (m_isDead) return;
     
     m_health -= damage;
     if (m_health < 0.0f) {
         m_health = 0.0f;
     }
-    SoundManager::Instance().PlaySFXByID(6, 0);
+    if (playSfx) {
+        SoundManager::Instance().PlaySFXByID(6, 0);
+    }
     
     if (m_health <= 0.0f && !m_isDead) {
         m_isDead = true;

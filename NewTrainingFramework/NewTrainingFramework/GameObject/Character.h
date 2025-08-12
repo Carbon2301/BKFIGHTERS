@@ -26,6 +26,7 @@ private:
     const float MAX_HEALTH = 100.0f;
     const float DAMAGE_PER_HIT = 10.0f;
     bool m_isDead;
+    bool m_prevHardLandingActive = false;
 
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
@@ -140,7 +141,7 @@ public:
     float GetHealth() const { return m_health; }
     float GetMaxHealth() const { return MAX_HEALTH; }
     bool IsDead() const { return m_isDead; }
-    void TakeDamage(float damage);
+    void TakeDamage(float damage, bool playSfx = true);
     void Heal(float amount);
     void ResetHealth();
 

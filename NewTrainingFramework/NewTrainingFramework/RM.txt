@@ -147,7 +147,7 @@ ANINUM 36
 15 1 300
 * Animation 6: Climb Ladder
 16 4 300
-* Animation 7: Fall
+* Animation 7: No
 20 2 300
 * Animation 8: GetHit1
 22 1 300
@@ -225,7 +225,7 @@ ANINUM 36
 15 1 300
 * Animation 6: Climb Ladder
 16 4 300
-* Animation 7: Fall
+* Animation 7: No
 20 2 300
 * Animation 8: GetHit1
 22 1 300
