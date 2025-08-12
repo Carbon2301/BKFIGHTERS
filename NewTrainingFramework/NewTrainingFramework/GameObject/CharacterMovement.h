@@ -118,6 +118,12 @@ private:
 
     bool m_justStartedUpwardJump = false;
 
+    bool  m_rollCadenceActive = false;
+    bool  m_rollPhaseIsRoll = true;
+    float m_rollPhaseTimer = 0.0f;
+    static constexpr float ROLL_PHASE_DURATION = 0.3f;
+    static constexpr float WALK_PHASE_DURATION = 0.7f;
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;

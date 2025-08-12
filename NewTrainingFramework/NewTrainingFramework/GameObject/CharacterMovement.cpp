@@ -100,9 +100,25 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
         return;
     }
 
-    bool isRollingLeft = (keyStates[m_inputConfig.rollLeftKey1] && keyStates[m_inputConfig.rollLeftKey2]);
-    bool isRollingRight = (keyStates[m_inputConfig.rollRightKey1] && keyStates[m_inputConfig.rollRightKey2]);
-    m_isRolling = isRollingLeft || isRollingRight;
+    bool rollHeldLeft = (keyStates[m_inputConfig.rollLeftKey1] && keyStates[m_inputConfig.rollLeftKey2]);
+    bool rollHeldRight = (keyStates[m_inputConfig.rollRightKey1] && keyStates[m_inputConfig.rollRightKey2]);
+    bool anyRollHeld = rollHeldLeft || rollHeldRight;
+
+    if (anyRollHeld && !m_isJumping) {
+        m_rollCadenceActive = true;
+        m_rollPhaseTimer += deltaTime;
+        float phaseDuration = m_rollPhaseIsRoll ? ROLL_PHASE_DURATION : WALK_PHASE_DURATION;
+        if (m_rollPhaseTimer >= phaseDuration) {
+            m_rollPhaseTimer -= phaseDuration;
+            m_rollPhaseIsRoll = !m_rollPhaseIsRoll;
+        }
+    } else if (!anyRollHeld) {
+        m_rollCadenceActive = false;
+        m_rollPhaseIsRoll = true;
+        m_rollPhaseTimer = 0.0f;
+    }
+
+    m_isRolling = anyRollHeld && m_rollCadenceActive && m_rollPhaseIsRoll;
     
     bool isOtherAction = keyStates[m_inputConfig.jumpKey];
     
@@ -141,11 +157,11 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
             m_invertHorizontal = false;
         }
         m_isSitting = keyStates[m_inputConfig.sitKey] && !m_isRolling;
-        if (isRollingLeft) {
+        if (m_isRolling && rollHeldLeft) {
             m_state = CharState::MoveLeft;
             m_facingLeft = true;
             m_posX -= MOVE_SPEED * 1.5f * deltaTime;
-        } else if (isRollingRight) {
+        } else if (m_isRolling && rollHeldRight) {
             m_state = CharState::MoveRight;
             m_facingLeft = false;
             m_posX += MOVE_SPEED * 1.5f * deltaTime;

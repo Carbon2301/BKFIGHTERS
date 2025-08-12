@@ -615,6 +615,16 @@ void GSPlay::Update(float deltaTime) {
     if (m_player2.GetMovement() && m_player2.GetMovement()->ConsumeJustStartedUpwardJump()) {
         SoundManager::Instance().PlaySFXByID(18, 0);
     }
+    bool rollingP1 = m_player.GetMovement() ? m_player.GetMovement()->IsRolling() : false;
+    bool rollingP2 = m_player2.GetMovement() ? m_player2.GetMovement()->IsRolling() : false;
+    if (!m_prevRollingP1 && rollingP1) {
+        SoundManager::Instance().PlaySFXByID(3, 0);
+    }
+    if (!m_prevRollingP2 && rollingP2) {
+        SoundManager::Instance().PlaySFXByID(3, 0);
+    }
+    m_prevRollingP1 = rollingP1;
+    m_prevRollingP2 = rollingP2;
     UpdateBullets(deltaTime);
     UpdateBombs(deltaTime);
     UpdateExplosions(deltaTime);

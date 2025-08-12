@@ -447,8 +447,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
             } else {
                 PlayAnimation(16, false);
             }
-        } else if ((keyStates[inputConfig.rollLeftKey1] && keyStates[inputConfig.rollLeftKey2]) ||
-                   (keyStates[inputConfig.rollRightKey1] && keyStates[inputConfig.rollRightKey2])) {
+        } else if (movement->IsRolling()) {
             PlayAnimation(4, true);
         } else if (keyStates[inputConfig.moveRightKey]) {
             if (isShiftPressed) {
