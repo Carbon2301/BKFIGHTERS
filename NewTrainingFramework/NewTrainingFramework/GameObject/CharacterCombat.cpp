@@ -118,11 +118,13 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         std::cout << "Combo " << m_comboCount << ": Punch1!" << std::endl;
         std::cout << "Press J again within " << COMBO_WINDOW << " seconds for next punch!" << std::endl;
     } else if (m_comboTimer > 0.0f) {
+        if (!m_attackPressed) {
+            return;
+        }
         m_comboCount++;
         m_comboTimer = PUNCH_COMBO_WINDOW;
         
         if (m_comboCount == 2) {
-            if (!m_attackPressed) { m_comboCount = 1; return; }
             animation->PlayAnimation(11, false);
             m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
             SoundManager::Instance().PlaySFXByID(20, 0);
@@ -134,7 +136,6 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
             float hitboxOffsetY = -0.02f;
             ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         } else if (m_comboCount == 3) {
-            if (!m_attackPressed) { m_comboCount = 2; return; }
             animation->PlayAnimation(12, false);
             m_punchComboCooldown = PUNCH_COMBO_MIN_INTERVAL;
             SoundManager::Instance().PlaySFXByID(21, 0);

@@ -80,20 +80,25 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     }
     
     if (m_movement && m_combat) {
-        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
-        if (m_animation && m_animation->IsHardLandingActive()) {
-            lock = true;
-            SetGunMode(false);
-            SetGrenadeMode(false);
-        }
-        if (m_animation && m_animation->IsGunMode()) lock = true;
-        if (m_animation && m_animation->IsGrenadeMode()) lock = true;
-        if (m_animation && m_animation->IsHardLandingActive()) lock = true;
-        if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
-            m_movement->ForceSit(false);
-        }
-        lock = m_movement->IsInputLocked() || lock;
-        m_movement->SetInputLocked(lock);
+		bool lock = m_combat->IsKicking();
+		if (m_animation && m_animation->IsHardLandingActive()) {
+			lock = true;
+			SetGunMode(false);
+			SetGrenadeMode(false);
+		}
+		if (m_animation && m_animation->IsGunMode()) lock = true;
+		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+		if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
+			m_movement->ForceSit(false);
+		}
+		if (m_animation) {
+			int cur = m_animation->GetCurrentAnimation();
+			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
+			if (m_animation->IsAnimationPlaying() && isAttackAnim) {
+				lock = true;
+			}
+		}
+		m_movement->SetInputLocked(lock);
     }
     
     m_movement->UpdateWithHurtbox(deltaTime, keyStates, 
@@ -153,13 +158,19 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (inputManager->IsKeyJustPressed(inputConfig.dieKey)) {
         HandleDie();
     }
-    if (m_movement && m_combat) {
-        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
-        if (m_animation && m_animation->IsGunMode()) lock = true;
-        if (m_animation && m_animation->IsGrenadeMode()) lock = true;
-        lock = m_movement->IsInputLocked() || lock;
-        m_movement->SetInputLocked(lock);
-    }
+	if (m_movement && m_combat) {
+		bool lock = m_combat->IsKicking();
+		if (m_animation && m_animation->IsGunMode()) lock = true;
+		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+		if (m_animation) {
+			int cur = m_animation->GetCurrentAnimation();
+			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
+			if (m_animation->IsAnimationPlaying() && isAttackAnim) {
+				lock = true;
+			}
+		}
+		m_movement->SetInputLocked(lock);
+	}
 }
 
 void Character::Update(float deltaTime) {
@@ -174,31 +185,19 @@ void Character::Update(float deltaTime) {
             Vector3 p = m_movement->GetPosition();
             m_movement->SetPosition(p.x + dx, p.y);
         }
-        if (m_combat->IsInCombo() && m_combat->GetComboTimer() > 0.0f) {
-            m_combat->HandlePunchCombo(m_animation.get(), m_movement.get());
-        }
-        if (m_combat->IsInAxeCombo() && m_combat->GetAxeComboTimer() > 0.0f) {
-            switch (m_weapon) {
-                case WeaponType::Axe:
-                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 20, 21, 22);
-                    break;
-                case WeaponType::Sword:
-                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 23, 24, 25);
-                    break;
-                case WeaponType::Pipe:
-                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 26, 27, 28);
-                    break;
-                default:
-                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 20, 21, 22);
-                    break;
-            }
-        }
     }
 
-    if (m_movement && m_combat) {
-        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
-        m_movement->SetInputLocked(lock);
-    }
+	if (m_movement && m_combat) {
+		bool lock = m_combat->IsKicking();
+		if (m_animation) {
+			int cur = m_animation->GetCurrentAnimation();
+			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
+			if (m_animation->IsAnimationPlaying() && isAttackAnim) {
+				lock = true;
+			}
+		}
+		m_movement->SetInputLocked(lock);
+	}
 }
 
 void Character::Draw(Camera* camera) {
