@@ -187,6 +187,8 @@ public:
     float GetDieTimer() const { return m_dieTimer; }
     void SetFacingLeft(bool facingLeft) { m_facingLeft = facingLeft; }
     bool HasDieLanded() const { return m_dieLanded; }
+    bool IsRunningLeft() const { return m_isRunningLeft; }
+    bool IsRunningRight() const { return m_isRunningRight; }
     
     // Platform collision methods
     void AddPlatform(float x, float y, float width, float height);

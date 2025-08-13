@@ -224,15 +224,13 @@ Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) con
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement) return;
 
-    // Werewolf mode: restrict to werewolf animations only (ID 60 sheet)
+    // Werewolf mode: ensure texture/anim bank is the werewolf sheet, but let HandleMovementAnimations pick the state
     if (m_isWerewolf) {
-        // Ensure the character body uses werewolf texture 60 and play idle by default
         if (m_characterObject) {
             const std::vector<int>& texIds = m_characterObject->GetTextureIds();
             int currentTex = texIds.empty() ? -1 : texIds[0];
             if (currentTex != 60) {
                 m_characterObject->SetTexture(60, 0);
-                // Reinitialize animations to werewolf sheet layout from RM.txt (ID 60)
                 if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
                     if (!m_animManager) {
                         m_animManager = std::make_shared<AnimationManager>();
@@ -243,15 +241,30 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
                         anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
                     }
                     m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                    m_lastAnimation = -1;
                 }
-                m_lastAnimation = -1;
             }
         }
-        // Force idle when not jumping/moving; additional werewolf moves will be added later
-        if (m_animManager) {
-            int cur = m_animManager->GetCurrentAnimation();
-            if (cur != 0) {
-                m_animManager->Play(0, true);
+        // Drive werewolf anims by movement state
+        if (movement && m_animManager) {
+            int desired = 0;
+            bool loop = true;
+            if (movement->IsJumping()) {
+                desired = 5; loop = false;
+            } else {
+                CharState st = movement->GetState();
+                bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
+                bool isRunning = movement->IsRunningLeft() || movement->IsRunningRight();
+                if (isMoving && isRunning) { desired = 2; loop = true; }
+                else if (isMoving) { desired = 4; loop = true; }
+                else { desired = 0; loop = true; }
+            }
+            int cur = GetCurrentAnimation();
+            if (cur != desired || (desired == 5 && !m_animManager->IsPlaying())) {
+                m_animManager->Play(desired, loop);
+                m_lastAnimation = desired;
+            } else {
+                m_animManager->Resume();
             }
         }
         return;
@@ -374,6 +387,8 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
+
+    if (m_isWerewolf) { return; }
 
     // Grenade mode: allow aiming like gun mode
     if (m_grenadeMode) {
@@ -584,18 +599,13 @@ void CharacterAnimation::PlayAnimation(int animIndex, bool loop) {
             }
         }
     }
-    if (m_isWerewolf) {
-        // Map standard indices to werewolf indices if needed in future; for now idle only
-        animIndex = 0;
-        loop = true;
-    }
     if (m_animManager) {
         bool allowReplay = (animIndex == 19 || animIndex == 17) ||
                           (animIndex >= 10 && animIndex <= 12) ||
                           (animIndex >= 20 && animIndex <= 22) ||
                           (animIndex == 8 || animIndex == 9) ||
                           (animIndex == 3);
-        
+
         if (m_lastAnimation != animIndex || allowReplay) {
             m_animManager->Play(animIndex, loop);
             m_lastAnimation = animIndex;
