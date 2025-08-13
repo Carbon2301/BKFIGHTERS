@@ -1267,6 +1267,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == 'M' || key == 'm') {
+        if (m_player2.IsWerewolf()) {
+            return;
+        }
         bool was = m_player2.IsGunMode();
         if (bIsPressed) {
             bool hasGun = (m_player2GunTexId >= 0);
@@ -1293,6 +1296,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == '2') {
+        if (m_player.IsWerewolf()) {
+            return;
+        }
         bool was = m_player.IsGunMode();
         if (bIsPressed) {
             bool hasGun = (m_player1GunTexId >= 0);
@@ -1357,6 +1363,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == '3') {
+        if (m_player.IsWerewolf()) {
+            return;
+        }
         if (bIsPressed) {
             if (!m_player.IsGunMode() && m_p1Bombs > 0) {
                 bool entering = !m_player.IsGrenadeMode();
@@ -1384,6 +1393,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
+        if (m_player2.IsWerewolf()) {
+            return;
+        }
         if (bIsPressed) {
             if (!m_player2.IsGunMode() && m_p2Bombs > 0) {
                 bool entering2 = !m_player2.IsGrenadeMode();

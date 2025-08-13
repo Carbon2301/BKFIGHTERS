@@ -302,6 +302,9 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
     }
 
     if (m_gunMode) {
+        if (m_isWerewolf) {
+            return;
+        }
         return;
     }
     
@@ -374,6 +377,9 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
 
     // Grenade mode: allow aiming like gun mode
     if (m_grenadeMode) {
+        if (m_isWerewolf) {
+            m_grenadeMode = false;
+        } else {
         // Allow turning; when turn happens, reset aim like gun mode
         bool currentLeft = movement->IsFacingLeft();
         bool wantLeft = keyStates[inputConfig.moveLeftKey];
@@ -397,6 +403,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         PlayAnimation(31, true);
         PlayTopAnimation(7, true);
         return;
+        }
     }
 
     if (m_gunMode) {

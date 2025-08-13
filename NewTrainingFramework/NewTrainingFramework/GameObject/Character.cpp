@@ -49,6 +49,10 @@ void Character::SetWerewolfMode(bool enabled) {
     if (m_animation) {
         m_animation->SetWerewolfMode(enabled);
     }
+    if (enabled) {
+        SetGunMode(false);
+        SetGrenadeMode(false);
+    }
 }
 
 bool Character::IsWerewolf() const {
