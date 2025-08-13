@@ -412,7 +412,7 @@ ANINUM 6
 * Animation 0: Idle
 0 8 1000
 * Animation 1: Combo 
-16 15 1000
+16 15 1200
 * Animation 2: Run
 32 9 750
 * Animation 3: Pounce

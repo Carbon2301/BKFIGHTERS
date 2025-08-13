@@ -80,6 +80,7 @@ private:
     // Grenade throw visual mode
     bool m_grenadeMode = false;
     bool m_isWerewolf = false;
+    bool m_werewolfComboActive = false;
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
@@ -134,6 +135,7 @@ public:
     // Werewolf mode control
     void SetWerewolfMode(bool enabled);
     bool IsWerewolf() const { return m_isWerewolf; }
+    void TriggerWerewolfCombo();
 
     void GetTopFrameUV(float& u0, float& v0, float& u1, float& v1) const;
     int GetHeadTextureId() const { return (m_objectId == 1000) ? 8 : 9; }

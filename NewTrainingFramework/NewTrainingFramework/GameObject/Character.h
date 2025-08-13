@@ -49,6 +49,7 @@ public:
     // Werewolf API
     void SetWerewolfMode(bool enabled);
     bool IsWerewolf() const;
+    void TriggerWerewolfCombo();
     
     // Core update
     void Update(float deltaTime);

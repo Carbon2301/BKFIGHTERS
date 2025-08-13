@@ -59,6 +59,12 @@ bool Character::IsWerewolf() const {
     return m_animation ? m_animation->IsWerewolf() : false;
 }
 
+void Character::TriggerWerewolfCombo() {
+    if (m_animation) {
+        m_animation->TriggerWerewolfCombo();
+    }
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);

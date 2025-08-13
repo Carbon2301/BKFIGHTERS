@@ -1342,7 +1342,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
 
     if (bIsPressed && key == '1') { 
-        if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
+        if (m_player.IsWerewolf()) {
+            m_player.TriggerWerewolfCombo();
+        } else if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
             m_player.SetGunMode(false);
             m_player.SetGrenadeMode(false);
             m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
@@ -1352,7 +1354,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (bIsPressed && (key == 'N' || key == 'n')) {
-        if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
+        if (m_player2.IsWerewolf()) {
+            m_player2.TriggerWerewolfCombo();
+        } else if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
             m_player2.SetGunMode(false);
             m_player2.SetGrenadeMode(false);
             m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;

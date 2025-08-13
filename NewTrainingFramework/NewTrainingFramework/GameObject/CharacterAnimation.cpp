@@ -247,6 +247,18 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         }
         // Drive werewolf anims by movement state
         if (movement && m_animManager) {
+            if (m_werewolfComboActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 1) {
+                    m_animManager->Play(1, false);
+                    m_lastAnimation = 1;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_werewolfComboActive = false;
+                }
+                return;
+            }
+
             int desired = 0;
             bool loop = true;
             if (movement->IsJumping()) {
@@ -850,6 +862,7 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
 
 void CharacterAnimation::SetWerewolfMode(bool enabled) {
     m_isWerewolf = enabled;
+    m_werewolfComboActive = false;
     if (enabled) {
         // Disable gun/grenade overlays when werewolf
         m_gunMode = false;
@@ -890,5 +903,14 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
             m_animManager->Play(0, true);
             m_lastAnimation = 0;
         }
+    }
+}
+
+void CharacterAnimation::TriggerWerewolfCombo() {
+    if (!m_isWerewolf) return;
+    m_werewolfComboActive = true;
+    if (m_animManager) {
+        m_animManager->Play(1, false);
+        m_lastAnimation = 1;
     }
 }
