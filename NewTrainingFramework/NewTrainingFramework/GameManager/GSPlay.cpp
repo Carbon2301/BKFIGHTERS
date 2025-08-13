@@ -1297,6 +1297,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == 'M' || key == 'm') {
+        if (m_player2.IsBatDemon()) {
+            if (bIsPressed) return;
+        }
         if (m_player2.IsWerewolf()) {
             if (bIsPressed) { m_player2.TriggerWerewolfPounce(); }
             return;
@@ -1327,6 +1330,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == '2') {
+        if (m_player.IsBatDemon()) {
+            if (bIsPressed) return;
+        }
         if (m_player.IsWerewolf()) {
             if (bIsPressed) { m_player.TriggerWerewolfPounce(); }
             return;
@@ -1357,18 +1363,36 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
 
-    // Werewolf transform keys
+    if (bIsPressed && key == '5') {
+        bool toBat = !m_player.IsBatDemon();
+        m_player.SetGunMode(false);
+        m_player.SetGrenadeMode(false);
+        if (toBat) { m_player.SetWerewolfMode(false); }
+        m_player.SetBatDemonMode(toBat);
+        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+    }
+    if (bIsPressed && (key == '?' || key == '/' || key == 0xBF)) {
+        bool toBat2 = !m_player2.IsBatDemon();
+        m_player2.SetGunMode(false);
+        m_player2.SetGrenadeMode(false);
+        if (toBat2) { m_player2.SetWerewolfMode(false); }
+        m_player2.SetBatDemonMode(toBat2);
+        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+    }
+
     if (bIsPressed && key == '4') {
         bool toWerewolf = !m_player.IsWerewolf();
         m_player.SetGunMode(false);
         m_player.SetGrenadeMode(false);
+        if (toWerewolf) { m_player.SetBatDemonMode(false); }
         m_player.SetWerewolfMode(toWerewolf);
         if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
     }
-    if (bIsPressed && (key == '.' || key == 0xBE)) { // '.' key
+    if (bIsPressed && (key == '.' || key == 0xBE)) { 
         bool toWerewolf2 = !m_player2.IsWerewolf();
         m_player2.SetGunMode(false);
         m_player2.SetGrenadeMode(false);
+        if (toWerewolf2) { m_player2.SetBatDemonMode(false); }
         m_player2.SetWerewolfMode(toWerewolf2);
         if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
     }
@@ -1407,6 +1431,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == '3') {
+        if (m_player.IsBatDemon()) {
+            return;
+        }
         if (m_player.IsWerewolf()) {
             return;
         }
@@ -1436,7 +1463,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             }
         }
     }
-    if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
+    if (key == ',' || key == 0xBC) { 
+        if (m_player2.IsBatDemon()) {
+            return;
+        }
         if (m_player2.IsWerewolf()) {
             return;
         }

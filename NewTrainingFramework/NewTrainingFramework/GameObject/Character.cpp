@@ -45,6 +45,20 @@ bool Character::IsGrenadeMode() const {
     return m_animation ? m_animation->IsGrenadeMode() : false;
 }
 
+void Character::SetBatDemonMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetBatDemonMode(enabled);
+    }
+    if (enabled) {
+        SetGunMode(false);
+        SetGrenadeMode(false);
+    }
+}
+
+bool Character::IsBatDemon() const {
+    return m_animation ? m_animation->IsBatDemon() : false;
+}
+
 void Character::SetWerewolfMode(bool enabled) {
     if (m_animation) {
         m_animation->SetWerewolfMode(enabled);

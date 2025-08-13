@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 43
+# 2DTexture 44
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -421,6 +421,16 @@ ANINUM 6
 64 11 700
 * Animation 5: Jump
 80 11 500
+
+ID 61
+FILE "../Resources/Fighter/Monster/BatDemon/BatDemon.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 16 4
+ANINUM 2
+* Animation 0: Fly
+0 9 1000
+* Animation 1: Slash
+16 7 700
 
 # Shader 1
 ID 0

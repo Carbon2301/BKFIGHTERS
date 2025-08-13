@@ -46,6 +46,9 @@ public:
     bool IsGunMode() const;
     void SetGrenadeMode(bool enabled);
     bool IsGrenadeMode() const;
+    // BatDemon API
+    void SetBatDemonMode(bool enabled);
+    bool IsBatDemon() const;
     // Werewolf API
     void SetWerewolfMode(bool enabled);
     bool IsWerewolf() const;
