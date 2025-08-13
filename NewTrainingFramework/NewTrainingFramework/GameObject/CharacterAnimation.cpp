@@ -96,6 +96,10 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             m_werewolfPounceCooldownTimer -= deltaTime;
             if (m_werewolfPounceCooldownTimer < 0.0f) m_werewolfPounceCooldownTimer = 0.0f;
         }
+        if (m_werewolfComboHitWindowTimer > 0.0f) {
+            m_werewolfComboHitWindowTimer -= deltaTime;
+            if (m_werewolfComboHitWindowTimer < 0.0f) m_werewolfComboHitWindowTimer = 0.0f;
+        }
     }
 
     // Handle turn timing
@@ -955,6 +959,7 @@ void CharacterAnimation::TriggerWerewolfCombo() {
     if (!m_isWerewolf) return;
     if (m_werewolfComboCooldownTimer > 0.0f || m_werewolfComboActive) return;
     m_werewolfComboActive = true;
+    m_werewolfComboHitWindowTimer = m_werewolfComboHitWindow;
     if (m_animManager) {
         m_animManager->Play(1, false);
         m_lastAnimation = 1;

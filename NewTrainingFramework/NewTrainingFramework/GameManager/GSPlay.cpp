@@ -651,12 +651,22 @@ void GSPlay::Update(float deltaTime) {
     UpdateHudAmmoAnim(deltaTime);
     UpdateHudBombDigits();
     
-    if (m_player.CheckHitboxCollision(m_player2)) {
-        m_player2.TriggerGetHit(m_player);
+    if (m_player.CheckHitboxCollision(m_player2) || (m_player.IsWerewolf() && m_player.GetAnimation() && m_player.GetAnimation()->IsWerewolf() && m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+        if (m_player.IsWerewolf() && m_player.GetAnimation() && (m_player.GetAnimation()->GetCurrentAnimation() == 1 && m_player.IsAnimationPlaying() || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+            m_player2.TakeDamage(100.0f);
+            m_player2.TriggerGetHit(m_player);
+        } else {
+            m_player2.TriggerGetHit(m_player);
+        }
     }
     
-    if (m_player2.CheckHitboxCollision(m_player)) {
-        m_player.TriggerGetHit(m_player2);
+    if (m_player2.CheckHitboxCollision(m_player) || (m_player2.IsWerewolf() && m_player2.GetAnimation() && m_player2.GetAnimation()->IsWerewolf() && m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+        if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (m_player2.GetAnimation()->GetCurrentAnimation() == 1 && m_player2.IsAnimationPlaying() || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+            m_player.TakeDamage(100.0f);
+            m_player.TriggerGetHit(m_player2);
+        } else {
+            m_player.TriggerGetHit(m_player2);
+        }
     }
     
     Camera* camera = SceneManager::GetInstance()->GetActiveCamera();

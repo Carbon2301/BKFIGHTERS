@@ -74,6 +74,14 @@ void Character::TriggerWerewolfCombo() {
     if (m_animation) {
         m_animation->TriggerWerewolfCombo();
     }
+    if (m_animation && m_movement && m_combat && m_animation->IsWerewolf()) {
+        bool facingLeft = m_animation->IsFacingLeft(m_movement.get());
+        float w = 0.3f;
+        float h = 0.17f;
+        float ox = facingLeft ? -0.03f : 0.03f;
+        float oy = -0.02f;
+        m_combat->ShowHitbox(w, h, ox, oy);
+    }
 }
 
 void Character::TriggerWerewolfPounce() {
