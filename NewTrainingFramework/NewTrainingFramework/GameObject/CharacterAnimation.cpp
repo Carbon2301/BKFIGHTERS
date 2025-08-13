@@ -77,6 +77,38 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         m_topAnimManager->Update(deltaTime);
     }
 
+    if (m_isWerewolf && movement) {
+        if (movement->IsJumping()) {
+            m_werewolfAirTimer += deltaTime;
+        } else {
+            m_werewolfAirTimer = 0.0f;
+        }
+        if (m_werewolfPounceActive) {
+            float dir = movement->IsFacingLeft() ? -1.0f : 1.0f;
+            Vector3 pos = movement->GetPosition();
+            movement->SetPosition(pos.x + dir * m_werewolfPounceSpeed * deltaTime, pos.y);
+            if (combat && m_werewolfPounceHitWindowTimer > 0.0f) {
+                float w = 0.15f;
+                float h = 0.2f;
+                float ox = (dir < 0.0f) ? -0.12f : 0.12f;
+                float oy = -0.1f;
+                combat->ShowHitbox(w, h, ox, oy);
+            }
+        }
+        if (m_werewolfComboCooldownTimer > 0.0f) {
+            m_werewolfComboCooldownTimer -= deltaTime;
+            if (m_werewolfComboCooldownTimer < 0.0f) m_werewolfComboCooldownTimer = 0.0f;
+        }
+        if (m_werewolfPounceCooldownTimer > 0.0f) {
+            m_werewolfPounceCooldownTimer -= deltaTime;
+            if (m_werewolfPounceCooldownTimer < 0.0f) m_werewolfPounceCooldownTimer = 0.0f;
+        }
+        if (m_werewolfComboHitWindowTimer > 0.0f) {
+            m_werewolfComboHitWindowTimer -= deltaTime;
+            if (m_werewolfComboHitWindowTimer < 0.0f) m_werewolfComboHitWindowTimer = 0.0f;
+        }
+    }
+
     // Handle turn timing
     if (m_gunMode && movement && m_isTurning) {
         m_turnTimer += deltaTime;
@@ -157,7 +189,11 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         
         m_characterObject->SetCustomUV(u0, v0, u1, v1);
         Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
-        m_characterObject->SetPosition(position);
+        if (m_isWerewolf) {
+            m_characterObject->SetPosition(position.x, position.y + m_werewolfBodyOffsetY, position.z);
+        } else {
+            m_characterObject->SetPosition(position);
+        }
         
         if (camera) {
             m_characterObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
@@ -184,7 +220,8 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         
         float finalOffsetX = offsetX + m_recoilOffsetX;
         float finalOffsetY = m_topOffsetY + m_recoilOffsetY;
-        m_topObject->SetPosition(position.x + finalOffsetX, position.y + finalOffsetY, position.z);
+        float bodyY = m_isWerewolf ? (position.y + m_werewolfBodyOffsetY) : position.y;
+        m_topObject->SetPosition(position.x + finalOffsetX, bodyY + finalOffsetY, position.z);
         
         float faceSign = m_gunMode ? 
                         ((movement && movement->IsFacingLeft()) ? -1.0f : 1.0f) : 
@@ -196,7 +233,6 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    // Draw grenade top overlay when active (reuse top layer with aim rotation similar to gun)
     if (m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
@@ -206,7 +242,8 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_topObject->SetCustomUV(u0, v0, u1, v1);
         Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
         float offsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
-        m_topObject->SetPosition(position.x + offsetX, position.y + m_topOffsetY, position.z);
+        float bodyY2 = m_isWerewolf ? (position.y + m_werewolfBodyOffsetY) : position.y;
+        m_topObject->SetPosition(position.x + offsetX, bodyY2 + m_topOffsetY, position.z);
         float faceSign = (movement && movement->IsFacingLeft()) ? -1.0f : 1.0f;
         m_topObject->SetRotation(0.0f, 0.0f, faceSign * m_aimAngleDeg * 3.14159265f / 180.0f);
         if (camera) {
@@ -223,6 +260,82 @@ Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) con
 
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement) return;
+
+    // Werewolf mode
+    if (m_isWerewolf) {
+        if (m_characterObject) {
+            const std::vector<int>& texIds = m_characterObject->GetTextureIds();
+            int currentTex = texIds.empty() ? -1 : texIds[0];
+            if (currentTex != 60) {
+                m_characterObject->SetTexture(60, 0);
+                if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
+                    if (!m_animManager) {
+                        m_animManager = std::make_shared<AnimationManager>();
+                    }
+                    std::vector<AnimationData> anims;
+                    anims.reserve(texData->animations.size());
+                    for (const auto& a : texData->animations) {
+                        anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                    }
+                    m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                    m_lastAnimation = -1;
+                }
+            }
+        }
+        // Drive werewolf anims by movement state
+        if (movement && m_animManager) {
+            bool physJumping = movement->IsJumping();
+            if (!physJumping) { m_werewolfAirTimer = 0.0f; }
+            bool considerJumping = (m_werewolfAirTimer >= WEREWOLF_AIR_DEBOUNCE);
+
+            // Pounce overrides combo and movement
+            if (m_werewolfPounceActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 3) {
+                    m_animManager->Play(3, false);
+                    m_lastAnimation = 3;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_werewolfPounceActive = false;
+                    m_werewolfPounceCooldownTimer = m_werewolfPounceCooldown;
+                }
+                return;
+            }
+            if (m_werewolfComboActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 1) {
+                    m_animManager->Play(1, false);
+                    m_lastAnimation = 1;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_werewolfComboActive = false;
+                    m_werewolfComboCooldownTimer = m_werewolfComboCooldown;
+                }
+                return;
+            }
+
+            int desired = 0;
+            bool loop = true;
+            if (considerJumping) {
+                desired = 5; loop = false;
+            } else {
+                CharState st = movement->GetState();
+                bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
+                bool isRunning = movement->IsRunningLeft() || movement->IsRunningRight();
+                if (isMoving && isRunning) { desired = 2; loop = true; }
+                else if (isMoving) { desired = 4; loop = true; }
+                else { desired = 0; loop = true; }
+            }
+            int cur = GetCurrentAnimation();
+            if (cur != desired || (desired == 5 && !m_animManager->IsPlaying())) {
+                m_animManager->Play(desired, loop);
+                m_lastAnimation = desired;
+            } else {
+                m_animManager->Resume();
+            }
+        }
+        return;
+    }
 
     if (!m_hardLandingActive && movement->ConsumeHardLandingRequested()) {
         StartHardLanding(movement);
@@ -269,6 +382,9 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
     }
 
     if (m_gunMode) {
+        if (m_isWerewolf) {
+            return;
+        }
         return;
     }
     
@@ -339,8 +455,13 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
 
+    if (m_isWerewolf) { return; }
+
     // Grenade mode: allow aiming like gun mode
     if (m_grenadeMode) {
+        if (m_isWerewolf) {
+            m_grenadeMode = false;
+        } else {
         // Allow turning; when turn happens, reset aim like gun mode
         bool currentLeft = movement->IsFacingLeft();
         bool wantLeft = keyStates[inputConfig.moveLeftKey];
@@ -364,6 +485,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         PlayAnimation(31, true);
         PlayTopAnimation(7, true);
         return;
+        }
     }
 
     if (m_gunMode) {
@@ -550,7 +672,7 @@ void CharacterAnimation::PlayAnimation(int animIndex, bool loop) {
                           (animIndex >= 20 && animIndex <= 22) ||
                           (animIndex == 8 || animIndex == 9) ||
                           (animIndex == 3);
-        
+
         if (m_lastAnimation != animIndex || allowReplay) {
             m_animManager->Play(animIndex, loop);
             m_lastAnimation = animIndex;
@@ -790,5 +912,75 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
             m_gunTopAnimReload  = -1;
             m_recoilStrengthMul  = 1.0f;
             break;
+    }
+}
+
+void CharacterAnimation::SetWerewolfMode(bool enabled) {
+    m_isWerewolf = enabled;
+    m_werewolfComboActive = false;
+    m_werewolfPounceActive = false;
+    if (enabled) {
+        // Disable gun/grenade overlays when werewolf
+        m_gunMode = false;
+        m_grenadeMode = false;
+        // Switch texture immediately and start werewolf Idle
+        if (m_characterObject) {
+            m_characterObject->SetTexture(60, 0);
+        }
+        if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
+            if (!m_animManager) {
+                m_animManager = std::make_shared<AnimationManager>();
+            }
+            std::vector<AnimationData> anims;
+            anims.reserve(texData->animations.size());
+            for (const auto& a : texData->animations) {
+                anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+            }
+            m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+            m_animManager->Play(0, true);
+            m_lastAnimation = 0;
+        }
+    } else {
+        // Restore original player body texture and animations
+        int bodyTexId = (m_objectId == 1000) ? 10 : 11;
+        if (m_characterObject) {
+            m_characterObject->SetTexture(bodyTexId, 0);
+        }
+        if (auto texData = ResourceManager::GetInstance()->GetTextureData(bodyTexId)) {
+            if (!m_animManager) {
+                m_animManager = std::make_shared<AnimationManager>();
+            }
+            std::vector<AnimationData> anims;
+            anims.reserve(texData->animations.size());
+            for (const auto& a : texData->animations) {
+                anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+            }
+            m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+            m_animManager->Play(0, true);
+            m_lastAnimation = 0;
+        }
+    }
+}
+
+void CharacterAnimation::TriggerWerewolfCombo() {
+    if (!m_isWerewolf) return;
+    if (m_werewolfComboCooldownTimer > 0.0f || m_werewolfComboActive) return;
+    m_werewolfComboActive = true;
+    m_werewolfComboHitWindowTimer = m_werewolfComboHitWindow;
+    if (m_animManager) {
+        m_animManager->Play(1, false);
+        m_lastAnimation = 1;
+    }
+}
+
+void CharacterAnimation::TriggerWerewolfPounce() {
+    if (!m_isWerewolf) return;
+    if (m_werewolfPounceCooldownTimer > 0.0f || m_werewolfPounceActive) return;
+    m_werewolfComboActive = false;
+    m_werewolfPounceActive = true;
+    m_werewolfPounceHitWindowTimer = m_werewolfPounceHitWindow;
+    if (m_animManager) {
+        m_animManager->Play(3, false);
+        m_lastAnimation = 3;
     }
 }

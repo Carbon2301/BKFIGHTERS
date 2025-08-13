@@ -79,6 +79,22 @@ private:
 
     // Grenade throw visual mode
     bool m_grenadeMode = false;
+    bool m_isWerewolf = false;
+    bool m_werewolfComboActive = false;
+    bool m_werewolfPounceActive = false;
+    float m_werewolfBodyOffsetY = 0.0f;
+    float m_werewolfAirTimer = 0.0f;
+    static constexpr float WEREWOLF_AIR_DEBOUNCE = 0.06f;
+    float m_werewolfPounceSpeed = 1.0f;
+    float m_werewolfPounceCooldownTimer = 0.0f;
+    float m_werewolfPounceCooldown = 0.25f;
+    float m_werewolfPounceHitWindowTimer = 0.0f;
+    float m_werewolfPounceHitWindow = 0.12f;
+    // Combo cooldown
+    float m_werewolfComboCooldownTimer = 0.0f;
+    float m_werewolfComboCooldown = 0.25f;
+    float m_werewolfComboHitWindowTimer = 0.0f;
+    float m_werewolfComboHitWindow = 0.15f;
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
@@ -130,10 +146,21 @@ public:
 
     void SetGrenadeMode(bool enabled);
     bool IsGrenadeMode() const { return m_grenadeMode; }
+    // Werewolf mode control
+    void SetWerewolfMode(bool enabled);
+    bool IsWerewolf() const { return m_isWerewolf; }
+    void TriggerWerewolfCombo();
+    void TriggerWerewolfPounce();
+    void SetWerewolfBodyOffsetY(float oy) { m_werewolfBodyOffsetY = oy; }
+    void SetWerewolfPounceSpeed(float v) { m_werewolfPounceSpeed = v; }
+    void SetWerewolfPounceCooldown(float seconds) { m_werewolfPounceCooldown = seconds; }
+    void SetWerewolfComboCooldown(float seconds) { m_werewolfComboCooldown = seconds; }
+    bool IsWerewolfComboHitWindowActive() const { return m_werewolfComboHitWindowTimer > 0.0f; }
+    bool IsWerewolfPounceHitWindowActive() const { return m_werewolfPounceHitWindowTimer > 0.0f; }
 
     void GetTopFrameUV(float& u0, float& v0, float& u1, float& v1) const;
     int GetHeadTextureId() const { return (m_objectId == 1000) ? 8 : 9; }
-    int GetBodyTextureId() const { return (m_objectId == 1000) ? 10 : 11; }
+    int GetBodyTextureId() const { return m_isWerewolf ? 60 : ((m_objectId == 1000) ? 10 : 11); }
     float GetTopOffsetX() const { return m_topOffsetX; }
     float GetTopOffsetY() const { return m_topOffsetY; }
 

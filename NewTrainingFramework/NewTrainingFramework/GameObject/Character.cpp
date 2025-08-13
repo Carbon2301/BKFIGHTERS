@@ -45,6 +45,51 @@ bool Character::IsGrenadeMode() const {
     return m_animation ? m_animation->IsGrenadeMode() : false;
 }
 
+void Character::SetWerewolfMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetWerewolfMode(enabled);
+    }
+    if (enabled) {
+        SetGunMode(false);
+        SetGrenadeMode(false);
+        if (m_movement) {
+            m_movement->SetMoveSpeedMultiplier(1.5f);
+            m_movement->SetRunSpeedMultiplier(2.0f);
+            m_movement->SetJumpForceMultiplier(1.5f);
+        }
+    } else {
+        if (m_movement) {
+            m_movement->SetMoveSpeedMultiplier(1.0f);
+            m_movement->SetRunSpeedMultiplier(1.0f);
+            m_movement->SetJumpForceMultiplier(1.0f);
+        }
+    }
+}
+
+bool Character::IsWerewolf() const {
+    return m_animation ? m_animation->IsWerewolf() : false;
+}
+
+void Character::TriggerWerewolfCombo() {
+    if (m_animation) {
+        m_animation->TriggerWerewolfCombo();
+    }
+    if (m_animation && m_movement && m_combat && m_animation->IsWerewolf()) {
+        bool facingLeft = m_animation->IsFacingLeft(m_movement.get());
+        float w = 0.3f;
+        float h = 0.17f;
+        float ox = facingLeft ? -0.03f : 0.03f;
+        float oy = -0.02f;
+        m_combat->ShowHitbox(w, h, ox, oy);
+    }
+}
+
+void Character::TriggerWerewolfPounce() {
+    if (m_animation) {
+        m_animation->TriggerWerewolfPounce();
+    }
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);
@@ -80,20 +125,25 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     }
     
     if (m_movement && m_combat) {
-        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
-        if (m_animation && m_animation->IsHardLandingActive()) {
-            lock = true;
-            SetGunMode(false);
-            SetGrenadeMode(false);
-        }
-        if (m_animation && m_animation->IsGunMode()) lock = true;
-        if (m_animation && m_animation->IsGrenadeMode()) lock = true;
-        if (m_animation && m_animation->IsHardLandingActive()) lock = true;
-        if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
-            m_movement->ForceSit(false);
-        }
-        lock = m_movement->IsInputLocked() || lock;
-        m_movement->SetInputLocked(lock);
+		bool lock = m_combat->IsKicking();
+		if (m_animation && m_animation->IsHardLandingActive()) {
+			lock = true;
+			SetGunMode(false);
+			SetGrenadeMode(false);
+		}
+		if (m_animation && m_animation->IsGunMode()) lock = true;
+		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+		if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
+			m_movement->ForceSit(false);
+		}
+		if (m_animation) {
+			int cur = m_animation->GetCurrentAnimation();
+			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
+			if (m_animation->IsAnimationPlaying() && isAttackAnim) {
+				lock = true;
+			}
+		}
+		m_movement->SetInputLocked(lock);
     }
     
     m_movement->UpdateWithHurtbox(deltaTime, keyStates, 
@@ -153,13 +203,19 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     if (inputManager->IsKeyJustPressed(inputConfig.dieKey)) {
         HandleDie();
     }
-    if (m_movement && m_combat) {
-        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
-        if (m_animation && m_animation->IsGunMode()) lock = true;
-        if (m_animation && m_animation->IsGrenadeMode()) lock = true;
-        lock = m_movement->IsInputLocked() || lock;
-        m_movement->SetInputLocked(lock);
-    }
+	if (m_movement && m_combat) {
+		bool lock = m_combat->IsKicking();
+		if (m_animation && m_animation->IsGunMode()) lock = true;
+		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+		if (m_animation) {
+			int cur = m_animation->GetCurrentAnimation();
+			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
+			if (m_animation->IsAnimationPlaying() && isAttackAnim) {
+				lock = true;
+			}
+		}
+		m_movement->SetInputLocked(lock);
+	}
 }
 
 void Character::Update(float deltaTime) {
@@ -174,31 +230,19 @@ void Character::Update(float deltaTime) {
             Vector3 p = m_movement->GetPosition();
             m_movement->SetPosition(p.x + dx, p.y);
         }
-        if (m_combat->IsInCombo() && m_combat->GetComboTimer() > 0.0f) {
-            m_combat->HandlePunchCombo(m_animation.get(), m_movement.get());
-        }
-        if (m_combat->IsInAxeCombo() && m_combat->GetAxeComboTimer() > 0.0f) {
-            switch (m_weapon) {
-                case WeaponType::Axe:
-                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 20, 21, 22);
-                    break;
-                case WeaponType::Sword:
-                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 23, 24, 25);
-                    break;
-                case WeaponType::Pipe:
-                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 26, 27, 28);
-                    break;
-                default:
-                    m_combat->HandleWeaponCombo(m_animation.get(), m_movement.get(), 20, 21, 22);
-                    break;
-            }
-        }
     }
 
-    if (m_movement && m_combat) {
-        bool lock = m_combat->IsInCombo() || m_combat->IsInAxeCombo() || m_combat->IsKicking();
-        m_movement->SetInputLocked(lock);
-    }
+	if (m_movement && m_combat) {
+		bool lock = m_combat->IsKicking();
+		if (m_animation) {
+			int cur = m_animation->GetCurrentAnimation();
+			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
+			if (m_animation->IsAnimationPlaying() && isAttackAnim) {
+				lock = true;
+			}
+		}
+		m_movement->SetInputLocked(lock);
+	}
 }
 
 void Character::Draw(Camera* camera) {
@@ -471,6 +515,27 @@ float Character::GetHurtboxOffsetX() const {
 float Character::GetHurtboxOffsetY() const {
     return m_hitbox ? m_hitbox->GetHurtboxOffsetY() : 0.0f;
 }
+
+bool Character::IsWerewolfComboActive() const {
+    if (m_animation) {
+        return m_animation->IsWerewolf() && (m_animation->GetCurrentAnimation() == 1) && m_animation->IsAnimationPlaying();
+    }
+    return false;
+}
+
+bool Character::IsWerewolfPounceActive() const {
+    if (m_animation) {
+        return m_animation->IsWerewolf() && (m_animation->GetCurrentAnimation() == 3) && m_animation->IsAnimationPlaying();
+    }
+    return false;
+}
+
+void Character::SetWerewolfHurtboxIdle(float w, float h, float ox, float oy)   { if (m_hitbox) m_hitbox->SetWerewolfHurtboxIdle(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxWalk(float w, float h, float ox, float oy)   { if (m_hitbox) m_hitbox->SetWerewolfHurtboxWalk(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxRun(float w, float h, float ox, float oy)    { if (m_hitbox) m_hitbox->SetWerewolfHurtboxRun(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxJump(float w, float h, float ox, float oy)   { if (m_hitbox) m_hitbox->SetWerewolfHurtboxJump(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxCombo(float w, float h, float ox, float oy)  { if (m_hitbox) m_hitbox->SetWerewolfHurtboxCombo(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxPounce(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetWerewolfHurtboxPounce(w, h, ox, oy); }
 
 float Character::GetHitboxWidth() const {
     return m_combat ? m_combat->GetHitboxWidth() : 0.0f;

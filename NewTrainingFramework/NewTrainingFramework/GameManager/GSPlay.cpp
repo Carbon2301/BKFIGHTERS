@@ -161,6 +161,21 @@ void GSPlay::Init() {
     m_player2.SetHurtboxFacingLeft(P2_HURTBOX_FACE_LEFT.w,  P2_HURTBOX_FACE_LEFT.h,  P2_HURTBOX_FACE_LEFT.ox,  P2_HURTBOX_FACE_LEFT.oy);
     m_player2.SetHurtboxFacingRight(P2_HURTBOX_FACE_RIGHT.w, P2_HURTBOX_FACE_RIGHT.h, P2_HURTBOX_FACE_RIGHT.ox, P2_HURTBOX_FACE_RIGHT.oy);
     m_player2.SetHurtboxCrouchRoll(P2_HURTBOX_CROUCH.w,     P2_HURTBOX_CROUCH.h,     P2_HURTBOX_CROUCH.ox,     P2_HURTBOX_CROUCH.oy);
+
+    // Player 1 werewolf
+    m_player.SetWerewolfHurtboxIdle   (0.19f, 0.19f,  0.015f, -0.1f);
+    m_player.SetWerewolfHurtboxWalk   (0.19f, 0.23f, 0.015f, -0.08f);
+    m_player.SetWerewolfHurtboxRun    (0.24f, 0.19f, 0.02f, -0.1f);
+    m_player.SetWerewolfHurtboxJump   (0.19f, 0.19f, 0.015f, -0.1f);
+    m_player.SetWerewolfHurtboxCombo  (0.19f, 0.23f, 0.015f, -0.08f);
+    m_player.SetWerewolfHurtboxPounce (0.24f, 0.19f, 0.02f, -0.1f);
+    // Player 2 werewolf
+    m_player2.SetWerewolfHurtboxIdle    (0.19f, 0.19f, 0.015f, -0.1f);
+    m_player2.SetWerewolfHurtboxWalk    (0.19f, 0.23f, 0.015f, -0.08f);
+    m_player2.SetWerewolfHurtboxRun     (0.24f, 0.19f, 0.02f, -0.1f);
+    m_player2.SetWerewolfHurtboxJump    (0.19f, 0.19f, 0.015f, -0.1f);
+    m_player2.SetWerewolfHurtboxCombo   (0.19f, 0.23f, 0.015f, -0.08f);
+    m_player2.SetWerewolfHurtboxPounce  (0.24f, 0.19f, 0.02f, -0.1f);
     
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
@@ -637,11 +652,27 @@ void GSPlay::Update(float deltaTime) {
     UpdateHudBombDigits();
     
     if (m_player.CheckHitboxCollision(m_player2)) {
-        m_player2.TriggerGetHit(m_player);
+        if (m_player.IsWerewolf() && m_player.GetAnimation() && (((m_player.GetAnimation()->GetCurrentAnimation() == 1) && m_player.IsAnimationPlaying()) || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+            m_player2.TakeDamage(100.0f);
+            m_player2.TriggerGetHit(m_player);
+        } else if (m_player.IsWerewolf() && m_player.GetAnimation() && ((m_player.GetAnimation()->GetCurrentAnimation() == 3 && m_player.IsAnimationPlaying()))) {
+            m_player2.TakeDamage(100.0f);
+            m_player2.TriggerGetHit(m_player);
+        } else {
+            m_player2.TriggerGetHit(m_player);
+        }
     }
     
     if (m_player2.CheckHitboxCollision(m_player)) {
-        m_player.TriggerGetHit(m_player2);
+        if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (((m_player2.GetAnimation()->GetCurrentAnimation() == 1) && m_player2.IsAnimationPlaying()) || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+            m_player.TakeDamage(100.0f);
+            m_player.TriggerGetHit(m_player2);
+        } else if (m_player2.IsWerewolf() && m_player2.GetAnimation() && ((m_player2.GetAnimation()->GetCurrentAnimation() == 3 && m_player2.IsAnimationPlaying()))) {
+            m_player.TakeDamage(100.0f);
+            m_player.TriggerGetHit(m_player2);
+        } else {
+            m_player.TriggerGetHit(m_player2);
+        }
     }
     
     Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
@@ -667,7 +698,6 @@ void GSPlay::Update(float deltaTime) {
     // Update fan rotation
     UpdateFanRotation(deltaTime);
 
-    // Update item lifetimes (20s total; blink after 12s)
     {
         SceneManager* scene = SceneManager::GetInstance();
         const float LIFETIME = 20.0f;
@@ -1267,6 +1297,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == 'M' || key == 'm') {
+        if (m_player2.IsWerewolf()) {
+            if (bIsPressed) { m_player2.TriggerWerewolfPounce(); }
+            return;
+        }
         bool was = m_player2.IsGunMode();
         if (bIsPressed) {
             bool hasGun = (m_player2GunTexId >= 0);
@@ -1293,6 +1327,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == '2') {
+        if (m_player.IsWerewolf()) {
+            if (bIsPressed) { m_player.TriggerWerewolfPounce(); }
+            return;
+        }
         bool was = m_player.IsGunMode();
         if (bIsPressed) {
             bool hasGun = (m_player1GunTexId >= 0);
@@ -1319,8 +1357,30 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
 
+    // Werewolf transform keys
+    if (bIsPressed && key == '4') {
+        bool toWerewolf = !m_player.IsWerewolf();
+        m_player.SetGunMode(false);
+        m_player.SetGrenadeMode(false);
+        m_player.SetWerewolfMode(toWerewolf);
+        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+    }
+    if (bIsPressed && (key == '.' || key == 0xBE)) { // '.' key
+        bool toWerewolf2 = !m_player2.IsWerewolf();
+        m_player2.SetGunMode(false);
+        m_player2.SetGrenadeMode(false);
+        m_player2.SetWerewolfMode(toWerewolf2);
+        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+    }
+
     if (bIsPressed && key == '1') { 
-        if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
+        if (m_player.IsWerewolf()) {
+            m_player.TriggerWerewolfCombo();
+            if (m_player.CheckHitboxCollision(m_player2)) {
+                m_player2.TakeDamage(100.0f);
+                m_player2.TriggerGetHit(m_player);
+            }
+        } else if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
             m_player.SetGunMode(false);
             m_player.SetGrenadeMode(false);
             m_p1ShotPending = false; m_p1BurstActive = false; m_p1ReloadPending = false;
@@ -1330,7 +1390,13 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (bIsPressed && (key == 'N' || key == 'n')) {
-        if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
+        if (m_player2.IsWerewolf()) {
+            m_player2.TriggerWerewolfCombo();
+            if (m_player2.CheckHitboxCollision(m_player)) {
+                m_player.TakeDamage(100.0f);
+                m_player.TriggerGetHit(m_player2);
+            }
+        } else if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
             m_player2.SetGunMode(false);
             m_player2.SetGrenadeMode(false);
             m_p2ShotPending = false; m_p2BurstActive = false; m_p2ReloadPending = false;
@@ -1341,6 +1407,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == '3') {
+        if (m_player.IsWerewolf()) {
+            return;
+        }
         if (bIsPressed) {
             if (!m_player.IsGunMode() && m_p1Bombs > 0) {
                 bool entering = !m_player.IsGrenadeMode();
@@ -1368,6 +1437,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == ',' || key == 0xBC) { // ',' key (VK_OEM_COMMA)
+        if (m_player2.IsWerewolf()) {
+            return;
+        }
         if (bIsPressed) {
             if (!m_player2.IsGunMode() && m_p2Bombs > 0) {
                 bool entering2 = !m_player2.IsGrenadeMode();

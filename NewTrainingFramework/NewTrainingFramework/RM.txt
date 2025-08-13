@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 41
+# 2DTexture 43
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -403,6 +403,24 @@ TILING GL_CLAMP_TO_EDGE
 ID 53
 FILE "../Resources/Fighter/Bomb/Bomb_HUD.tga"
 TILING GL_CLAMP_TO_EDGE
+
+ID 60
+FILE "../Resources/Fighter/Monster/Werewolf/WereWolf.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 16 8
+ANINUM 6
+* Animation 0: Idle
+0 8 1000
+* Animation 1: Combo 
+16 15 700
+* Animation 2: Run
+32 9 350
+* Animation 3: Pounce
+48 7 400
+* Animation 4: Walk
+64 11 700
+* Animation 5: Jump
+80 11 500
 
 # Shader 1
 ID 0
