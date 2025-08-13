@@ -46,6 +46,9 @@ public:
     bool IsGunMode() const;
     void SetGrenadeMode(bool enabled);
     bool IsGrenadeMode() const;
+    // Werewolf API
+    void SetWerewolfMode(bool enabled);
+    bool IsWerewolf() const;
     
     // Core update
     void Update(float deltaTime);

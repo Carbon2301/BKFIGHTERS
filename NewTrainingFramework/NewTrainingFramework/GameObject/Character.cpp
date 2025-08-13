@@ -45,6 +45,16 @@ bool Character::IsGrenadeMode() const {
     return m_animation ? m_animation->IsGrenadeMode() : false;
 }
 
+void Character::SetWerewolfMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetWerewolfMode(enabled);
+    }
+}
+
+bool Character::IsWerewolf() const {
+    return m_animation ? m_animation->IsWerewolf() : false;
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);

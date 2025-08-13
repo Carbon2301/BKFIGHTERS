@@ -1319,6 +1319,22 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
 
+    // Werewolf transform keys
+    if (bIsPressed && key == '4') {
+        bool toWerewolf = !m_player.IsWerewolf();
+        m_player.SetGunMode(false);
+        m_player.SetGrenadeMode(false);
+        m_player.SetWerewolfMode(toWerewolf);
+        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+    }
+    if (bIsPressed && (key == '.' || key == 0xBE)) { // '.' key
+        bool toWerewolf2 = !m_player2.IsWerewolf();
+        m_player2.SetGunMode(false);
+        m_player2.SetGrenadeMode(false);
+        m_player2.SetWerewolfMode(toWerewolf2);
+        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+    }
+
     if (bIsPressed && key == '1') { 
         if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
             m_player.SetGunMode(false);

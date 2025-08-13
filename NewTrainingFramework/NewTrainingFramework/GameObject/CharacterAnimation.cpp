@@ -224,6 +224,39 @@ Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) con
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement) return;
 
+    // Werewolf mode: restrict to werewolf animations only (ID 60 sheet)
+    if (m_isWerewolf) {
+        // Ensure the character body uses werewolf texture 60 and play idle by default
+        if (m_characterObject) {
+            const std::vector<int>& texIds = m_characterObject->GetTextureIds();
+            int currentTex = texIds.empty() ? -1 : texIds[0];
+            if (currentTex != 60) {
+                m_characterObject->SetTexture(60, 0);
+                // Reinitialize animations to werewolf sheet layout from RM.txt (ID 60)
+                if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
+                    if (!m_animManager) {
+                        m_animManager = std::make_shared<AnimationManager>();
+                    }
+                    std::vector<AnimationData> anims;
+                    anims.reserve(texData->animations.size());
+                    for (const auto& a : texData->animations) {
+                        anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                    }
+                    m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                }
+                m_lastAnimation = -1;
+            }
+        }
+        // Force idle when not jumping/moving; additional werewolf moves will be added later
+        if (m_animManager) {
+            int cur = m_animManager->GetCurrentAnimation();
+            if (cur != 0) {
+                m_animManager->Play(0, true);
+            }
+        }
+        return;
+    }
+
     if (!m_hardLandingActive && movement->ConsumeHardLandingRequested()) {
         StartHardLanding(movement);
         return;
@@ -544,6 +577,11 @@ void CharacterAnimation::PlayAnimation(int animIndex, bool loop) {
             }
         }
     }
+    if (m_isWerewolf) {
+        // Map standard indices to werewolf indices if needed in future; for now idle only
+        animIndex = 0;
+        loop = true;
+    }
     if (m_animManager) {
         bool allowReplay = (animIndex == 19 || animIndex == 17) ||
                           (animIndex >= 10 && animIndex <= 12) ||
@@ -790,5 +828,50 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
             m_gunTopAnimReload  = -1;
             m_recoilStrengthMul  = 1.0f;
             break;
+    }
+}
+
+void CharacterAnimation::SetWerewolfMode(bool enabled) {
+    m_isWerewolf = enabled;
+    if (enabled) {
+        // Disable gun/grenade overlays when werewolf
+        m_gunMode = false;
+        m_grenadeMode = false;
+        // Switch texture immediately and start werewolf Idle
+        if (m_characterObject) {
+            m_characterObject->SetTexture(60, 0);
+        }
+        if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
+            if (!m_animManager) {
+                m_animManager = std::make_shared<AnimationManager>();
+            }
+            std::vector<AnimationData> anims;
+            anims.reserve(texData->animations.size());
+            for (const auto& a : texData->animations) {
+                anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+            }
+            m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+            m_animManager->Play(0, true);
+            m_lastAnimation = 0;
+        }
+    } else {
+        // Restore original player body texture and animations
+        int bodyTexId = (m_objectId == 1000) ? 10 : 11;
+        if (m_characterObject) {
+            m_characterObject->SetTexture(bodyTexId, 0);
+        }
+        if (auto texData = ResourceManager::GetInstance()->GetTextureData(bodyTexId)) {
+            if (!m_animManager) {
+                m_animManager = std::make_shared<AnimationManager>();
+            }
+            std::vector<AnimationData> anims;
+            anims.reserve(texData->animations.size());
+            for (const auto& a : texData->animations) {
+                anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+            }
+            m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+            m_animManager->Play(0, true);
+            m_lastAnimation = 0;
+        }
     }
 }
