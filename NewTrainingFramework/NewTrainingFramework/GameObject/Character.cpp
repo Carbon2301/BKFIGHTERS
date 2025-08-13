@@ -52,6 +52,17 @@ void Character::SetWerewolfMode(bool enabled) {
     if (enabled) {
         SetGunMode(false);
         SetGrenadeMode(false);
+        if (m_movement) {
+            m_movement->SetMoveSpeedMultiplier(1.5f);
+            m_movement->SetRunSpeedMultiplier(2.0f);
+            m_movement->SetJumpForceMultiplier(1.5f);
+        }
+    } else {
+        if (m_movement) {
+            m_movement->SetMoveSpeedMultiplier(1.0f);
+            m_movement->SetRunSpeedMultiplier(1.0f);
+            m_movement->SetJumpForceMultiplier(1.0f);
+        }
     }
 }
 

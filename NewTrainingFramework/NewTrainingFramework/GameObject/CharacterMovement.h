@@ -149,6 +149,11 @@ private:
     static const float DIE_SLOWMO_DURATION;
     static const float DIE_SLOWMO_SCALE;
 
+    // Speed multipliers
+    float m_moveSpeedMultiplier = 1.0f; 
+    float m_runSpeedMultiplier  = 1.0f; 
+    float m_jumpForceMultiplier = 1.0f;
+
 public:
     CharacterMovement();
     CharacterMovement(const PlayerInputConfig& inputConfig);
@@ -238,4 +243,12 @@ public:
     // Static input configurations
     static const PlayerInputConfig PLAYER1_INPUT;
     static const PlayerInputConfig PLAYER2_INPUT;
+
+    // Multipliers control
+    void SetMoveSpeedMultiplier(float mul) { m_moveSpeedMultiplier = mul; }
+    void SetRunSpeedMultiplier(float mul)  { m_runSpeedMultiplier  = mul; }
+    void SetJumpForceMultiplier(float mul) { m_jumpForceMultiplier = mul; }
+    float GetMoveSpeedMultiplier() const { return m_moveSpeedMultiplier; }
+    float GetRunSpeedMultiplier()  const { return m_runSpeedMultiplier; }
+    float GetJumpForceMultiplier() const { return m_jumpForceMultiplier; }
 }; 

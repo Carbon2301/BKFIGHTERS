@@ -85,6 +85,7 @@ private:
     float m_werewolfBodyOffsetY = 0.0f;
     float m_werewolfAirTimer = 0.0f;
     static constexpr float WEREWOLF_AIR_DEBOUNCE = 0.06f;
+    float m_werewolfPounceSpeed = 1.0f;
 
     // Helper methods
     void UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat);
@@ -142,6 +143,7 @@ public:
     void TriggerWerewolfCombo();
     void TriggerWerewolfPounce();
     void SetWerewolfBodyOffsetY(float oy) { m_werewolfBodyOffsetY = oy; }
+    void SetWerewolfPounceSpeed(float v) { m_werewolfPounceSpeed = v; }
 
     void GetTopFrameUV(float& u0, float& v0, float& u1, float& v1) const;
     int GetHeadTextureId() const { return (m_objectId == 1000) ? 8 : 9; }

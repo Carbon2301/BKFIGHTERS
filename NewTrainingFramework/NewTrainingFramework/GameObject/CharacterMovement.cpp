@@ -164,20 +164,19 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
         if (m_isRolling && rollHeldLeft) {
             m_state = CharState::MoveLeft;
             m_facingLeft = true;
-            m_posX -= MOVE_SPEED * 1.5f * deltaTime;
+            m_posX -= MOVE_SPEED * (1.5f * m_moveSpeedMultiplier) * deltaTime;
         } else if (m_isRolling && rollHeldRight) {
             m_state = CharState::MoveRight;
             m_facingLeft = false;
-            m_posX += MOVE_SPEED * 1.5f * deltaTime;
+            m_posX += MOVE_SPEED * (1.5f * m_moveSpeedMultiplier) * deltaTime;
         } else if (!isOtherAction) {
             if (keyStates[moveLeftKey]) {
                 m_facingLeft = true;
                 m_state = CharState::MoveLeft;
-                if (m_isRunningLeft) {
-                    m_posX -= MOVE_SPEED * 1.5f * deltaTime;
-                } else {
-                    m_posX -= MOVE_SPEED * 0.8f * deltaTime;
-                }
+                float walkMul = 0.8f * m_moveSpeedMultiplier;
+                float runMul  = (1.5f * m_moveSpeedMultiplier) * m_runSpeedMultiplier;
+                if (m_isRunningLeft) { m_posX -= MOVE_SPEED * runMul  * deltaTime; }
+                else                 { m_posX -= MOVE_SPEED * walkMul * deltaTime; }
                 if (!m_isOnPlatform && m_posY <= m_groundY + 0.05f) {
                     m_isJumping = false;
                     m_posY = m_groundY;
@@ -185,11 +184,10 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
             } else if (keyStates[moveRightKey]) {
                 m_facingLeft = false;
                 m_state = CharState::MoveRight;
-                if (m_isRunningRight) {
-                    m_posX += MOVE_SPEED * 1.5f * deltaTime;
-                } else {
-                    m_posX += MOVE_SPEED * 0.8f * deltaTime;
-                }
+                float walkMul = 0.8f * m_moveSpeedMultiplier;
+                float runMul  = (1.5f * m_moveSpeedMultiplier) * m_runSpeedMultiplier;
+                if (m_isRunningRight) { m_posX += MOVE_SPEED * runMul  * deltaTime; }
+                else                  { m_posX += MOVE_SPEED * walkMul * deltaTime; }
                 if (!m_isOnPlatform && m_posY <= m_groundY + 0.05f) {
                     m_isJumping = false;
                     m_posY = m_groundY;
@@ -215,7 +213,7 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
         if (!m_isJumping && (m_posY <= m_groundY + 0.01f || m_isOnPlatform)) {
             m_isSitting = false;
             m_isJumping = true;
-            m_jumpVelocity = JUMP_FORCE;
+            m_jumpVelocity = JUMP_FORCE * m_jumpForceMultiplier;
             m_jumpStartY = m_posY;
             m_highestYInAir = m_posY;
             m_isOnPlatform = false;
@@ -236,19 +234,17 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
         if (isMovingLeft) {
             m_facingLeft = true;
             m_state = CharState::MoveLeft;
-            if (m_isRunningLeft) {
-                m_posX -= MOVE_SPEED * 1.5f * deltaTime;
-            } else {
-                m_posX -= MOVE_SPEED * 0.8f * deltaTime;
-            }
+            float walkMul = 0.8f * m_moveSpeedMultiplier;
+            float runMul  = (1.5f * m_moveSpeedMultiplier) * m_runSpeedMultiplier;
+            if (m_isRunningLeft) { m_posX -= MOVE_SPEED * runMul  * deltaTime; }
+            else                 { m_posX -= MOVE_SPEED * walkMul * deltaTime; }
         } else if (isMovingRight) {
             m_facingLeft = false;
             m_state = CharState::MoveRight;
-            if (m_isRunningRight) {
-                m_posX += MOVE_SPEED * 1.5f * deltaTime;
-            } else {
-                m_posX += MOVE_SPEED * 0.8f * deltaTime;
-            }
+            float walkMul = 0.8f * m_moveSpeedMultiplier;
+            float runMul  = (1.5f * m_moveSpeedMultiplier) * m_runSpeedMultiplier;
+            if (m_isRunningRight) { m_posX += MOVE_SPEED * runMul  * deltaTime; }
+            else                  { m_posX += MOVE_SPEED * walkMul * deltaTime; }
         }
         
         float newY = m_posY;

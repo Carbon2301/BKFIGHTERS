@@ -412,15 +412,15 @@ ANINUM 6
 * Animation 0: Idle
 0 8 1000
 * Animation 1: Combo 
-16 15 1200
+16 15 700
 * Animation 2: Run
-32 9 750
+32 9 350
 * Animation 3: Pounce
-48 7 550
+48 7 400
 * Animation 4: Walk
-64 11 1000
+64 11 700
 * Animation 5: Jump
-80 11 750
+80 11 500
 
 # Shader 1
 ID 0

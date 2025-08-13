@@ -84,10 +84,9 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             m_werewolfAirTimer = 0.0f;
         }
         if (m_werewolfPounceActive) {
-            const float POUNCE_SPEED = 0.6f;
             float dir = movement->IsFacingLeft() ? -1.0f : 1.0f;
             Vector3 pos = movement->GetPosition();
-            movement->SetPosition(pos.x + dir * POUNCE_SPEED * deltaTime, pos.y);
+            movement->SetPosition(pos.x + dir * m_werewolfPounceSpeed * deltaTime, pos.y);
         }
     }
 
