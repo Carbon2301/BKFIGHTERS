@@ -23,6 +23,15 @@ private:
     Hurtbox m_facingLeftHurtbox;
     Hurtbox m_facingRightHurtbox;
     Hurtbox m_crouchRollHurtbox;
+
+    struct WerewolfHurtboxes {
+        Hurtbox idle;
+        Hurtbox walk;
+        Hurtbox run;
+        Hurtbox jump;
+        Hurtbox combo;
+        Hurtbox pounce;
+    } m_werewolfHurtboxes;
     
     Character* m_character;
 
@@ -44,6 +53,14 @@ public:
     void SetHurtboxFacingRight(float width, float height, float offsetX, float offsetY);
     void SetHurtboxCrouchRoll(float width, float height, float offsetX, float offsetY);
     void DrawHurtbox(Camera* camera, bool forceShow = false);
+
+    // Werewolf hurtbox setters
+    void SetWerewolfHurtboxIdle  (float width, float height, float offsetX, float offsetY);
+    void SetWerewolfHurtboxWalk  (float width, float height, float offsetX, float offsetY);
+    void SetWerewolfHurtboxRun   (float width, float height, float offsetX, float offsetY);
+    void SetWerewolfHurtboxJump  (float width, float height, float offsetX, float offsetY);
+    void SetWerewolfHurtboxCombo (float width, float height, float offsetX, float offsetY);
+    void SetWerewolfHurtboxPounce(float width, float height, float offsetX, float offsetY);
     
     float GetHurtboxWidth() const;
     float GetHurtboxHeight() const;

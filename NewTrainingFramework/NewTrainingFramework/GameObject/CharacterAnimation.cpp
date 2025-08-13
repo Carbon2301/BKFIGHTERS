@@ -77,12 +77,18 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         m_topAnimManager->Update(deltaTime);
     }
 
-    // Apply forward movement during werewolf pounce
-    if (m_isWerewolf && m_werewolfPounceActive && movement) {
-        const float POUNCE_SPEED = 0.6f; // units per second (faster than normal run)
-        float dir = movement->IsFacingLeft() ? -1.0f : 1.0f;
-        Vector3 pos = movement->GetPosition();
-        movement->SetPosition(pos.x + dir * POUNCE_SPEED * deltaTime, pos.y);
+    if (m_isWerewolf && movement) {
+        if (movement->IsJumping()) {
+            m_werewolfAirTimer += deltaTime;
+        } else {
+            m_werewolfAirTimer = 0.0f;
+        }
+        if (m_werewolfPounceActive) {
+            const float POUNCE_SPEED = 0.6f;
+            float dir = movement->IsFacingLeft() ? -1.0f : 1.0f;
+            Vector3 pos = movement->GetPosition();
+            movement->SetPosition(pos.x + dir * POUNCE_SPEED * deltaTime, pos.y);
+        }
     }
 
     // Handle turn timing
@@ -165,7 +171,11 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         
         m_characterObject->SetCustomUV(u0, v0, u1, v1);
         Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
-        m_characterObject->SetPosition(position);
+        if (m_isWerewolf) {
+            m_characterObject->SetPosition(position.x, position.y + m_werewolfBodyOffsetY, position.z);
+        } else {
+            m_characterObject->SetPosition(position);
+        }
         
         if (camera) {
             m_characterObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
@@ -192,7 +202,8 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         
         float finalOffsetX = offsetX + m_recoilOffsetX;
         float finalOffsetY = m_topOffsetY + m_recoilOffsetY;
-        m_topObject->SetPosition(position.x + finalOffsetX, position.y + finalOffsetY, position.z);
+        float bodyY = m_isWerewolf ? (position.y + m_werewolfBodyOffsetY) : position.y;
+        m_topObject->SetPosition(position.x + finalOffsetX, bodyY + finalOffsetY, position.z);
         
         float faceSign = m_gunMode ? 
                         ((movement && movement->IsFacingLeft()) ? -1.0f : 1.0f) : 
@@ -204,7 +215,6 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    // Draw grenade top overlay when active (reuse top layer with aim rotation similar to gun)
     if (m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
@@ -214,7 +224,8 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_topObject->SetCustomUV(u0, v0, u1, v1);
         Vector3 position = movement ? movement->GetPosition() : Vector3(0, 0, 0);
         float offsetX = (movement && movement->IsFacingLeft()) ? -m_topOffsetX : m_topOffsetX;
-        m_topObject->SetPosition(position.x + offsetX, position.y + m_topOffsetY, position.z);
+        float bodyY2 = m_isWerewolf ? (position.y + m_werewolfBodyOffsetY) : position.y;
+        m_topObject->SetPosition(position.x + offsetX, bodyY2 + m_topOffsetY, position.z);
         float faceSign = (movement && movement->IsFacingLeft()) ? -1.0f : 1.0f;
         m_topObject->SetRotation(0.0f, 0.0f, faceSign * m_aimAngleDeg * 3.14159265f / 180.0f);
         if (camera) {
@@ -232,7 +243,7 @@ Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) con
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement) return;
 
-    // Werewolf mode: ensure texture/anim bank is the werewolf sheet, but let HandleMovementAnimations pick the state
+    // Werewolf mode
     if (m_isWerewolf) {
         if (m_characterObject) {
             const std::vector<int>& texIds = m_characterObject->GetTextureIds();
@@ -255,6 +266,10 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         }
         // Drive werewolf anims by movement state
         if (movement && m_animManager) {
+            bool physJumping = movement->IsJumping();
+            if (!physJumping) { m_werewolfAirTimer = 0.0f; }
+            bool considerJumping = (m_werewolfAirTimer >= WEREWOLF_AIR_DEBOUNCE);
+
             // Pounce overrides combo and movement
             if (m_werewolfPounceActive) {
                 int cur = GetCurrentAnimation();
@@ -281,7 +296,7 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
 
             int desired = 0;
             bool loop = true;
-            if (movement->IsJumping()) {
+            if (considerJumping) {
                 desired = 5; loop = false;
             } else {
                 CharState st = movement->GetState();

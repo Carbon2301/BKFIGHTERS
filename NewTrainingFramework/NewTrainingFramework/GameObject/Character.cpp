@@ -497,6 +497,27 @@ float Character::GetHurtboxOffsetY() const {
     return m_hitbox ? m_hitbox->GetHurtboxOffsetY() : 0.0f;
 }
 
+bool Character::IsWerewolfComboActive() const {
+    if (m_animation) {
+        return m_animation->IsWerewolf() && (m_animation->GetCurrentAnimation() == 1) && m_animation->IsAnimationPlaying();
+    }
+    return false;
+}
+
+bool Character::IsWerewolfPounceActive() const {
+    if (m_animation) {
+        return m_animation->IsWerewolf() && (m_animation->GetCurrentAnimation() == 3) && m_animation->IsAnimationPlaying();
+    }
+    return false;
+}
+
+void Character::SetWerewolfHurtboxIdle(float w, float h, float ox, float oy)   { if (m_hitbox) m_hitbox->SetWerewolfHurtboxIdle(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxWalk(float w, float h, float ox, float oy)   { if (m_hitbox) m_hitbox->SetWerewolfHurtboxWalk(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxRun(float w, float h, float ox, float oy)    { if (m_hitbox) m_hitbox->SetWerewolfHurtboxRun(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxJump(float w, float h, float ox, float oy)   { if (m_hitbox) m_hitbox->SetWerewolfHurtboxJump(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxCombo(float w, float h, float ox, float oy)  { if (m_hitbox) m_hitbox->SetWerewolfHurtboxCombo(w, h, ox, oy); }
+void Character::SetWerewolfHurtboxPounce(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetWerewolfHurtboxPounce(w, h, ox, oy); }
+
 float Character::GetHitboxWidth() const {
     return m_combat ? m_combat->GetHitboxWidth() : 0.0f;
 }

@@ -105,9 +105,40 @@ void CharacterHitbox::SetHurtboxCrouchRoll(float width, float height, float offs
     m_crouchRollHurtbox = {width, height, offsetX, offsetY};
 }
 
+void CharacterHitbox::SetWerewolfHurtboxIdle(float width, float height, float offsetX, float offsetY)   { m_werewolfHurtboxes.idle   = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetWerewolfHurtboxWalk(float width, float height, float offsetX, float offsetY)   { m_werewolfHurtboxes.walk   = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetWerewolfHurtboxRun(float width, float height, float offsetX, float offsetY)    { m_werewolfHurtboxes.run    = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetWerewolfHurtboxJump(float width, float height, float offsetX, float offsetY)   { m_werewolfHurtboxes.jump   = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetWerewolfHurtboxCombo(float width, float height, float offsetX, float offsetY)  { m_werewolfHurtboxes.combo  = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetWerewolfHurtboxPounce(float width, float height, float offsetX, float offsetY) { m_werewolfHurtboxes.pounce = {width, height, offsetX, offsetY}; }
+
 void CharacterHitbox::GetActiveHurtbox(Hurtbox& out) const {
     out = m_defaultHurtbox;
     if (!m_character) return;
+    if (m_character->IsWerewolf()) {
+        if (m_character->IsJumping() && m_werewolfHurtboxes.jump.isSet()) {
+            out = m_werewolfHurtboxes.jump;
+        } else if (m_character->IsWerewolfPounceActive() && m_werewolfHurtboxes.pounce.isSet()) {
+            out = m_werewolfHurtboxes.pounce;
+        } else if (m_character->IsWerewolfComboActive() && m_werewolfHurtboxes.combo.isSet()) {
+            out = m_werewolfHurtboxes.combo;
+        } else {
+            CharState st = m_character->GetState();
+            bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
+            bool isRunning = m_character->GetMovement() && (m_character->GetMovement()->IsRunningLeft() || m_character->GetMovement()->IsRunningRight());
+            if (isMoving && isRunning && m_werewolfHurtboxes.run.isSet()) {
+                out = m_werewolfHurtboxes.run;
+            } else if (isMoving && m_werewolfHurtboxes.walk.isSet()) {
+                out = m_werewolfHurtboxes.walk;
+            } else if (m_werewolfHurtboxes.idle.isSet()) {
+                out = m_werewolfHurtboxes.idle;
+            }
+        }
+        if (m_character->IsFacingLeft()) {
+            out.offsetX = -out.offsetX;
+        }
+        return;
+    }
     const bool sit = m_character->IsSitting();
     const bool roll = m_character->GetMovement() ? m_character->GetMovement()->IsRolling() : false;
     CharState st = m_character->GetState();

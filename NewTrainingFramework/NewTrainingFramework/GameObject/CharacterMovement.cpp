@@ -178,6 +178,10 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
                 } else {
                     m_posX -= MOVE_SPEED * 0.8f * deltaTime;
                 }
+                if (!m_isOnPlatform && m_posY <= m_groundY + 0.05f) {
+                    m_isJumping = false;
+                    m_posY = m_groundY;
+                }
             } else if (keyStates[moveRightKey]) {
                 m_facingLeft = false;
                 m_state = CharState::MoveRight;
@@ -185,6 +189,10 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
                     m_posX += MOVE_SPEED * 1.5f * deltaTime;
                 } else {
                     m_posX += MOVE_SPEED * 0.8f * deltaTime;
+                }
+                if (!m_isOnPlatform && m_posY <= m_groundY + 0.05f) {
+                    m_isJumping = false;
+                    m_posY = m_groundY;
                 }
             } else if (keyStates[m_inputConfig.sitKey]) {
                 m_state = CharState::Idle;

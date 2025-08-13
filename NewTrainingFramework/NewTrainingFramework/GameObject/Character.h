@@ -157,4 +157,16 @@ public:
      void SuppressNextPunch() { m_suppressNextPunch = true; }
      CharacterAnimation* GetAnimation() const { return m_animation.get(); }
 
+     // Werewolf action state queries for hurtbox selection
+     bool IsWerewolfComboActive() const;
+     bool IsWerewolfPounceActive() const;
+
+	 // Werewolf hurtbox setters (forwarders)
+	 void SetWerewolfHurtboxIdle(float w, float h, float ox, float oy);
+	 void SetWerewolfHurtboxWalk(float w, float h, float ox, float oy);
+	 void SetWerewolfHurtboxRun(float w, float h, float ox, float oy);
+	 void SetWerewolfHurtboxJump(float w, float h, float ox, float oy);
+	 void SetWerewolfHurtboxCombo(float w, float h, float ox, float oy);
+	 void SetWerewolfHurtboxPounce(float w, float h, float ox, float oy);
+
 }; 
