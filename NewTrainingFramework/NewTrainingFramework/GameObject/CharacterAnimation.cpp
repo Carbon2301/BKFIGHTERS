@@ -200,7 +200,7 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    if ((m_gunMode || m_recoilActive) && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+    if (!m_isBatDemon && (m_gunMode || m_recoilActive) && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
         
@@ -233,7 +233,7 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    if (m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+    if (!m_isBatDemon && m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
         if (movement && movement->IsFacingLeft()) {
@@ -260,6 +260,39 @@ Vector3 CharacterAnimation::GetTopWorldPosition(CharacterMovement* movement) con
 
 void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, CharacterCombat* combat) {
     if (!movement) return;
+
+    // BatDemon mode
+    if (m_isBatDemon) {
+        if (m_characterObject) {
+            const std::vector<int>& texIds = m_characterObject->GetTextureIds();
+            int currentTex = texIds.empty() ? -1 : texIds[0];
+            if (currentTex != 61) {
+                m_characterObject->SetTexture(61, 0);
+                if (auto texData = ResourceManager::GetInstance()->GetTextureData(61)) {
+                    if (!m_animManager) {
+                        m_animManager = std::make_shared<AnimationManager>();
+                    }
+                    std::vector<AnimationData> anims;
+                    anims.reserve(texData->animations.size());
+                    for (const auto& a : texData->animations) {
+                        anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                    }
+                    m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                    m_lastAnimation = -1;
+                }
+            }
+        }
+        if (m_animManager) {
+            int cur = GetCurrentAnimation();
+            if (cur != 0) {
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            } else {
+                m_animManager->Resume();
+            }
+        }
+        return;
+    }
 
     // Werewolf mode
     if (m_isWerewolf) {
@@ -385,6 +418,13 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         if (m_isWerewolf) {
             return;
         }
+        if (m_isBatDemon) {
+            m_gunMode = false;
+            m_isTurning = false;
+            m_gunEntering = false;
+            // fall back to BatDemon render path
+            return;
+        }
         return;
     }
     
@@ -455,6 +495,8 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
 
+    if (m_isBatDemon) { return; }
+
     if (m_isWerewolf) { return; }
 
     // Grenade mode: allow aiming like gun mode
@@ -462,6 +504,10 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         if (m_isWerewolf) {
             m_grenadeMode = false;
         } else {
+        if (m_isBatDemon) {
+            m_grenadeMode = false;
+            return;
+        }
         // Allow turning; when turn happens, reset aim like gun mode
         bool currentLeft = movement->IsFacingLeft();
         bool wantLeft = keyStates[inputConfig.moveLeftKey];
@@ -705,6 +751,9 @@ bool CharacterAnimation::IsFacingLeft(CharacterMovement* movement) const {
 } 
 
 void CharacterAnimation::SetGunMode(bool enabled) {
+    if (m_isBatDemon && enabled) {
+        return;
+    }
     if (enabled && !m_gunMode) {
         unsigned int nowMsEnter = SDL_GetTicks();
         bool isSticky = (m_lastShotTickMs != 0 && (nowMsEnter - m_lastShotTickMs) <= STICKY_AIM_WINDOW_MS);
@@ -730,6 +779,9 @@ void CharacterAnimation::SetGunMode(bool enabled) {
 }
 
 void CharacterAnimation::SetGrenadeMode(bool enabled) {
+    if (m_isBatDemon && enabled) {
+        return;
+    }
     if (enabled && !m_grenadeMode) {
         // Initialize aim like entering gun mode
         unsigned int nowMsEnter = SDL_GetTicks();
@@ -750,6 +802,71 @@ void CharacterAnimation::SetGrenadeMode(bool enabled) {
         m_gunEntering = false;
     }
     m_grenadeMode = enabled;
+}
+
+void CharacterAnimation::SetBatDemonMode(bool enabled) {
+    m_isBatDemon = enabled;
+    if (enabled) {
+        // Disable overlays
+        m_gunMode = false;
+        m_grenadeMode = false;
+        // Switch texture and start Fly
+        if (m_characterObject) {
+            m_characterObject->SetTexture(61, 0);
+        }
+        if (auto texData = ResourceManager::GetInstance()->GetTextureData(61)) {
+            if (!m_animManager) {
+                m_animManager = std::make_shared<AnimationManager>();
+            }
+            std::vector<AnimationData> anims;
+            anims.reserve(texData->animations.size());
+            for (const auto& a : texData->animations) {
+                anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+            }
+            m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+            // Animation 0: Fly
+            m_animManager->Play(0, true);
+            m_lastAnimation = 0;
+        }
+    } else {
+        // Restore original player body or werewolf depending on state
+        if (m_isWerewolf) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(60, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else {
+            int bodyTexId = (m_objectId == 1000) ? 10 : 11;
+            if (m_characterObject) {
+                m_characterObject->SetTexture(bodyTexId, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(bodyTexId)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        }
+    }
 }
 
 void CharacterAnimation::GetCurrentFrameUV(float& u0, float& v0, float& u1, float& v1) const {

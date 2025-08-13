@@ -82,6 +82,8 @@ void CharacterMovement::Update(float deltaTime, const bool* keyStates) {
     
     if (m_isDying) {
         HandleDie(deltaTime);
+    } else if (m_noClipNoGravity) {
+        UpdateNoClip(deltaTime, keyStates);
     } else {
         HandleMovement(deltaTime, keyStates);
         HandleJump(deltaTime, keyStates);
@@ -459,7 +461,10 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
         HandleDie(deltaTime);
         return;
     }
-    
+    if (m_noClipNoGravity) {
+        UpdateNoClip(deltaTime, keyStates);
+        return;
+    }
     Vector3 currentPos(m_posX, m_posY, 0.0f);
     
     bool handledLadder = HandleLadderWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
@@ -533,6 +538,18 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
             }
         }
     }
+}
+
+void CharacterMovement::UpdateNoClip(float deltaTime, const bool* keyStates) {
+    if (!keyStates) return;
+    const PlayerInputConfig& ic = GetInputConfig();
+    float speed = MOVE_SPEED * 2.0f * m_moveSpeedMultiplier;
+    if (keyStates[ic.moveLeftKey])  { m_posX -= speed * deltaTime; m_facingLeft = true;  m_state = CharState::MoveLeft; }
+    if (keyStates[ic.moveRightKey]) { m_posX += speed * deltaTime; m_facingLeft = false; m_state = CharState::MoveRight; }
+    if (keyStates[ic.jumpKey])      { m_posY += speed * deltaTime; }
+    if (keyStates[ic.sitKey])       { m_posY -= speed * deltaTime; }
+    m_isJumping = false;
+    m_isOnPlatform = false;
 }
 bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
     if (m_inputLocked) {
