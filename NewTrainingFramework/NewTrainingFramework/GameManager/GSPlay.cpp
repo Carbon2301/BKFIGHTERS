@@ -2154,9 +2154,11 @@ void GSPlay::TryCompletePendingShots() {
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
             if (currentGunTex == 45) {
-                SoundManager::Instance().PlaySFXByID(10, 0); 
+                SoundManager::Instance().PlaySFXByID(10, 0);
             } else if (currentGunTex == 46) {
                 SoundManager::Instance().PlaySFXByID(15, 0);
+            } else if (currentGunTex == 40) {
+                SoundManager::Instance().PlaySFXByID(13, 0);
             }
         }
     };
