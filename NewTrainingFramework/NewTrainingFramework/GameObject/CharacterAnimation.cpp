@@ -87,6 +87,13 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             float dir = movement->IsFacingLeft() ? -1.0f : 1.0f;
             Vector3 pos = movement->GetPosition();
             movement->SetPosition(pos.x + dir * m_werewolfPounceSpeed * deltaTime, pos.y);
+            if (combat && m_werewolfPounceHitWindowTimer > 0.0f) {
+                float w = 0.15f;
+                float h = 0.2f;
+                float ox = (dir < 0.0f) ? -0.12f : 0.12f;
+                float oy = -0.1f;
+                combat->ShowHitbox(w, h, ox, oy);
+            }
         }
         if (m_werewolfComboCooldownTimer > 0.0f) {
             m_werewolfComboCooldownTimer -= deltaTime;
@@ -971,6 +978,7 @@ void CharacterAnimation::TriggerWerewolfPounce() {
     if (m_werewolfPounceCooldownTimer > 0.0f || m_werewolfPounceActive) return;
     m_werewolfComboActive = false;
     m_werewolfPounceActive = true;
+    m_werewolfPounceHitWindowTimer = m_werewolfPounceHitWindow;
     if (m_animManager) {
         m_animManager->Play(3, false);
         m_lastAnimation = 3;
