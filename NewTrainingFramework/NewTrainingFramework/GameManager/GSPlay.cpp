@@ -1268,6 +1268,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     
     if (key == 'M' || key == 'm') {
         if (m_player2.IsWerewolf()) {
+            if (bIsPressed) { m_player2.TriggerWerewolfPounce(); }
             return;
         }
         bool was = m_player2.IsGunMode();
@@ -1297,6 +1298,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     if (key == '2') {
         if (m_player.IsWerewolf()) {
+            if (bIsPressed) { m_player.TriggerWerewolfPounce(); }
             return;
         }
         bool was = m_player.IsGunMode();

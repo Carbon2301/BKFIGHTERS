@@ -77,6 +77,14 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         m_topAnimManager->Update(deltaTime);
     }
 
+    // Apply forward movement during werewolf pounce
+    if (m_isWerewolf && m_werewolfPounceActive && movement) {
+        const float POUNCE_SPEED = 0.6f; // units per second (faster than normal run)
+        float dir = movement->IsFacingLeft() ? -1.0f : 1.0f;
+        Vector3 pos = movement->GetPosition();
+        movement->SetPosition(pos.x + dir * POUNCE_SPEED * deltaTime, pos.y);
+    }
+
     // Handle turn timing
     if (m_gunMode && movement && m_isTurning) {
         m_turnTimer += deltaTime;
@@ -247,6 +255,18 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         }
         // Drive werewolf anims by movement state
         if (movement && m_animManager) {
+            // Pounce overrides combo and movement
+            if (m_werewolfPounceActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 3) {
+                    m_animManager->Play(3, false);
+                    m_lastAnimation = 3;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_werewolfPounceActive = false;
+                }
+                return;
+            }
             if (m_werewolfComboActive) {
                 int cur = GetCurrentAnimation();
                 if (cur != 1) {
@@ -863,6 +883,7 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
 void CharacterAnimation::SetWerewolfMode(bool enabled) {
     m_isWerewolf = enabled;
     m_werewolfComboActive = false;
+    m_werewolfPounceActive = false;
     if (enabled) {
         // Disable gun/grenade overlays when werewolf
         m_gunMode = false;
@@ -912,5 +933,15 @@ void CharacterAnimation::TriggerWerewolfCombo() {
     if (m_animManager) {
         m_animManager->Play(1, false);
         m_lastAnimation = 1;
+    }
+}
+
+void CharacterAnimation::TriggerWerewolfPounce() {
+    if (!m_isWerewolf) return;
+    m_werewolfComboActive = false;
+    m_werewolfPounceActive = true;
+    if (m_animManager) {
+        m_animManager->Play(3, false);
+        m_lastAnimation = 3;
     }
 }

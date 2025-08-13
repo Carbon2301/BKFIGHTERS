@@ -65,6 +65,12 @@ void Character::TriggerWerewolfCombo() {
     }
 }
 
+void Character::TriggerWerewolfPounce() {
+    if (m_animation) {
+        m_animation->TriggerWerewolfPounce();
+    }
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);

@@ -416,7 +416,7 @@ ANINUM 6
 * Animation 2: Run
 32 9 750
 * Animation 3: Pounce
-48 7 750
+48 7 550
 * Animation 4: Walk
 64 11 1000
 * Animation 5: Jump

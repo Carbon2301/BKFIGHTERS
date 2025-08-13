@@ -50,6 +50,7 @@ public:
     void SetWerewolfMode(bool enabled);
     bool IsWerewolf() const;
     void TriggerWerewolfCombo();
+    void TriggerWerewolfPounce();
     
     // Core update
     void Update(float deltaTime);
