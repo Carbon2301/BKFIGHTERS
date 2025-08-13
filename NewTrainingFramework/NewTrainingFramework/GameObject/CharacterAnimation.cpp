@@ -495,6 +495,8 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     const PlayerInputConfig& inputConfig = movement->GetInputConfig();
     bool isShiftPressed = keyStates[16];
 
+    if (m_isBatDemon) { return; }
+
     if (m_isWerewolf) { return; }
 
     // Grenade mode: allow aiming like gun mode

@@ -138,6 +138,9 @@ private:
 
     void QueueFallDamageFromDrop(float dropDistance);
 
+    bool m_noClipNoGravity = false;
+    void UpdateNoClip(float deltaTime, const bool* keyStates);
+
     // Constants
     static const float JUMP_FORCE;
     static const float GRAVITY;
@@ -251,4 +254,7 @@ public:
     float GetMoveSpeedMultiplier() const { return m_moveSpeedMultiplier; }
     float GetRunSpeedMultiplier()  const { return m_runSpeedMultiplier; }
     float GetJumpForceMultiplier() const { return m_jumpForceMultiplier; }
+
+    void SetNoClipNoGravity(bool enabled) { m_noClipNoGravity = enabled; m_isJumping = false; m_isOnPlatform = false; }
+    bool IsNoClipNoGravity() const { return m_noClipNoGravity; }
 }; 

@@ -428,7 +428,7 @@ TILING GL_CLAMP_TO_EDGE
 SIZE 16 4
 ANINUM 2
 * Animation 0: Fly
-0 9 1000
+0 9 750
 * Animation 1: Slash
 16 7 700
 

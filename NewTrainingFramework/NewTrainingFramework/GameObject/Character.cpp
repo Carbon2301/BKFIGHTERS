@@ -52,6 +52,14 @@ void Character::SetBatDemonMode(bool enabled) {
     if (enabled) {
         SetGunMode(false);
         SetGrenadeMode(false);
+        if (m_movement) {
+            m_movement->SetNoClipNoGravity(true);
+        }
+    }
+    else {
+        if (m_movement) {
+            m_movement->SetNoClipNoGravity(false);
+        }
     }
 }
 
