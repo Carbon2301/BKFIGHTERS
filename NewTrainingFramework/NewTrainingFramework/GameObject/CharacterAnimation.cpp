@@ -77,6 +77,13 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         m_topAnimManager->Update(deltaTime);
     }
 
+    if (m_isBatDemon) {
+        if (m_batSlashCooldownTimer > 0.0f) {
+            m_batSlashCooldownTimer -= deltaTime;
+            if (m_batSlashCooldownTimer < 0.0f) m_batSlashCooldownTimer = 0.0f;
+        }
+    }
+
     if (m_isWerewolf && movement) {
         if (movement->IsJumping()) {
             m_werewolfAirTimer += deltaTime;
@@ -283,12 +290,24 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
             }
         }
         if (m_animManager) {
-            int cur = GetCurrentAnimation();
-            if (cur != 0) {
-                m_animManager->Play(0, true);
-                m_lastAnimation = 0;
+            if (m_batSlashActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 1) {
+                    m_animManager->Play(1, false);
+                    m_lastAnimation = 1;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_batSlashActive = false;
+                    m_batSlashCooldownTimer = m_batSlashCooldown;
+                }
             } else {
-                m_animManager->Resume();
+                int cur = GetCurrentAnimation();
+                if (cur != 0) {
+                    m_animManager->Play(0, true);
+                    m_lastAnimation = 0;
+                } else {
+                    m_animManager->Resume();
+                }
             }
         }
         return;
@@ -806,6 +825,7 @@ void CharacterAnimation::SetGrenadeMode(bool enabled) {
 
 void CharacterAnimation::SetBatDemonMode(bool enabled) {
     m_isBatDemon = enabled;
+    m_batSlashActive = false;
     if (enabled) {
         // Disable overlays
         m_gunMode = false;
@@ -866,6 +886,17 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
                 m_lastAnimation = 0;
             }
         }
+    }
+}
+
+void CharacterAnimation::TriggerBatDemonSlash() {
+    if (!m_isBatDemon) return;
+    if (m_batSlashCooldownTimer > 0.0f) return;
+    if (m_batSlashActive) return;
+    m_batSlashActive = true;
+    if (m_animManager) {
+        m_animManager->Play(1, false);
+        m_lastAnimation = 1;
     }
 }
 

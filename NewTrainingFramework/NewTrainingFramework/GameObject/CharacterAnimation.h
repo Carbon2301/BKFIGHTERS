@@ -81,6 +81,9 @@ private:
     bool m_grenadeMode = false;
     bool m_isBatDemon = false;
     bool m_isWerewolf = false;
+    bool m_batSlashActive = false;
+    float m_batSlashCooldownTimer = 0.0f;
+    float m_batSlashCooldown = 0.5f;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -88,12 +91,12 @@ private:
     static constexpr float WEREWOLF_AIR_DEBOUNCE = 0.06f;
     float m_werewolfPounceSpeed = 1.0f;
     float m_werewolfPounceCooldownTimer = 0.0f;
-    float m_werewolfPounceCooldown = 0.25f;
+    float m_werewolfPounceCooldown = 0.5f;
     float m_werewolfPounceHitWindowTimer = 0.0f;
     float m_werewolfPounceHitWindow = 0.12f;
     // Combo cooldown
     float m_werewolfComboCooldownTimer = 0.0f;
-    float m_werewolfComboCooldown = 0.25f;
+    float m_werewolfComboCooldown = 0.5f;
     float m_werewolfComboHitWindowTimer = 0.0f;
     float m_werewolfComboHitWindow = 0.15f;
 
@@ -150,6 +153,9 @@ public:
     // BatDemon mode control
     void SetBatDemonMode(bool enabled);
     bool IsBatDemon() const { return m_isBatDemon; }
+    void TriggerBatDemonSlash();
+    void SetBatDemonSlashCooldown(float seconds) { m_batSlashCooldown = seconds; }
+    float GetBatDemonSlashCooldownRemaining() const { return m_batSlashCooldownTimer; }
     // Werewolf mode control
     void SetWerewolfMode(bool enabled);
     bool IsWerewolf() const { return m_isWerewolf; }

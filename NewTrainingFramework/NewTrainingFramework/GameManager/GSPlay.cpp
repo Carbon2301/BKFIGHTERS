@@ -1398,7 +1398,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
 
     if (bIsPressed && key == '1') { 
-        if (m_player.IsWerewolf()) {
+        if (m_player.IsBatDemon()) {
+            m_player.TriggerBatDemonSlash();
+        } else if (m_player.IsWerewolf()) {
             m_player.TriggerWerewolfCombo();
             if (m_player.CheckHitboxCollision(m_player2)) {
                 m_player2.TakeDamage(100.0f);
@@ -1414,7 +1416,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (bIsPressed && (key == 'N' || key == 'n')) {
-        if (m_player2.IsWerewolf()) {
+        if (m_player2.IsBatDemon()) {
+            m_player2.TriggerBatDemonSlash();
+        } else if (m_player2.IsWerewolf()) {
             m_player2.TriggerWerewolfCombo();
             if (m_player2.CheckHitboxCollision(m_player)) {
                 m_player.TakeDamage(100.0f);

@@ -49,6 +49,7 @@ public:
     // BatDemon API
     void SetBatDemonMode(bool enabled);
     bool IsBatDemon() const;
+    void TriggerBatDemonSlash();
     // Werewolf API
     void SetWerewolfMode(bool enabled);
     bool IsWerewolf() const;

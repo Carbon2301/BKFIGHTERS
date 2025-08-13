@@ -67,6 +67,12 @@ bool Character::IsBatDemon() const {
     return m_animation ? m_animation->IsBatDemon() : false;
 }
 
+void Character::TriggerBatDemonSlash() {
+    if (m_animation) {
+        m_animation->TriggerBatDemonSlash();
+    }
+}
+
 void Character::SetWerewolfMode(bool enabled) {
     if (m_animation) {
         m_animation->SetWerewolfMode(enabled);
