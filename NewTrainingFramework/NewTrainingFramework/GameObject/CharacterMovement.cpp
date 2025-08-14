@@ -556,6 +556,10 @@ bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* key
         return false;
     }
     if (!m_ladderCollision) return false;
+    if (!m_ladderEnabled) {
+        m_isOnLadder = false;
+        return false;
+    }
 
     if (!m_isOnLadder) {
         float cx, top, bottom;
@@ -577,23 +581,27 @@ bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* key
             float now = SDL_GetTicks() / 1000.0f;
 
             if (requireDoubleTap) {
-                if (upKey && !m_prevUpKey) {
-                    if (now - m_lastUpTapTimeForLadder < DOUBLE_TAP_THRESHOLD) {
-                        m_upTapCountForLadder++;
-                    } else {
-                        m_upTapCountForLadder = 1;
+                if (m_allowLadderDoubleTap) {
+                    if (upKey && !m_prevUpKey) {
+                        if (now - m_lastUpTapTimeForLadder < DOUBLE_TAP_THRESHOLD) {
+                            m_upTapCountForLadder++;
+                        } else {
+                            m_upTapCountForLadder = 1;
+                        }
+                        m_lastUpTapTimeForLadder = now;
                     }
-                    m_lastUpTapTimeForLadder = now;
-                }
-                if (downKey && !m_prevDownKeyForLadder) {
-                    if (now - m_lastDownTapTimeForLadder < DOUBLE_TAP_THRESHOLD) {
-                        m_downTapCountForLadder++;
-                    } else {
-                        m_downTapCountForLadder = 1;
+                    if (downKey && !m_prevDownKeyForLadder) {
+                        if (now - m_lastDownTapTimeForLadder < DOUBLE_TAP_THRESHOLD) {
+                            m_downTapCountForLadder++;
+                        } else {
+                            m_downTapCountForLadder = 1;
+                        }
+                        m_lastDownTapTimeForLadder = now;
                     }
-                    m_lastDownTapTimeForLadder = now;
+                    canEnter = (m_upTapCountForLadder >= 2) || (m_downTapCountForLadder >= 2);
+                } else {
+                    canEnter = false;
                 }
-                canEnter = (m_upTapCountForLadder >= 2) || (m_downTapCountForLadder >= 2);
             } else {
                 canEnter = (upKey && !m_prevUpKey) || (downKey && !m_prevDownKeyForLadder);
             }
