@@ -1297,6 +1297,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == 'M' || key == 'm') {
+        if (m_player2.IsOrc()) {
+            return;
+        }
         if (m_player2.IsKitsune()) {
             return;
         }
@@ -1333,6 +1336,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == '2') {
+        if (m_player.IsOrc()) {
+            return;
+        }
         if (m_player.IsKitsune()) {
             return;
         }
@@ -1420,6 +1426,23 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
     }
 
+    if (bIsPressed && key == '7') {
+        bool toOrc = !m_player.IsOrc();
+        m_player.SetGunMode(false);
+        m_player.SetGrenadeMode(false);
+        if (toOrc) { m_player.SetBatDemonMode(false); m_player.SetWerewolfMode(false); m_player.SetKitsuneMode(false); }
+        m_player.SetOrcMode(toOrc);
+        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+    }
+    if (bIsPressed && (key == 'L' || key == 'l')) {
+        bool toOrc2 = !m_player2.IsOrc();
+        m_player2.SetGunMode(false);
+        m_player2.SetGrenadeMode(false);
+        if (toOrc2) { m_player2.SetBatDemonMode(false); m_player2.SetWerewolfMode(false); m_player2.SetKitsuneMode(false); }
+        m_player2.SetOrcMode(toOrc2);
+        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+    }
+
     if (bIsPressed && key == '1') { 
         if (m_player.IsWerewolf()) {
             m_player.TriggerWerewolfCombo();
@@ -1463,6 +1486,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         if (m_player.IsWerewolf()) {
             return;
         }
+        if (m_player.IsOrc()) {
+            return;
+        }
         if (bIsPressed) {
             if (!m_player.IsGunMode() && m_p1Bombs > 0) {
                 bool entering = !m_player.IsGrenadeMode();
@@ -1482,7 +1508,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 if (remain <= 0.0f || m_p1GrenadeExplodedInHand) {
                 } else {
                     if (remain < 0.2f) remain = 0.2f;
-                    if (m_p1Bombs > 0) { SpawnBombFromCharacter(m_player, remain); m_p1Bombs -= 1; UpdateHudBombDigits(); }
+                    if (m_p1Bombs > 0 && !m_player.IsOrc()) { SpawnBombFromCharacter(m_player, remain); m_p1Bombs -= 1; UpdateHudBombDigits(); }
                 }
                 m_p1GrenadePressTime = -1.0f;
                 m_p1GrenadeExplodedInHand = false;
@@ -1490,6 +1516,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == ',' || key == 0xBC) { 
+        if (m_player2.IsOrc()) {
+            return;
+        }
         if (m_player2.IsKitsune()) {
             return;
         }
@@ -1518,7 +1547,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 if (remain <= 0.0f || m_p2GrenadeExplodedInHand) {
                 } else {
                     if (remain < 0.2f) remain = 0.2f;
-                    if (m_p2Bombs > 0) { SpawnBombFromCharacter(m_player2, remain); m_p2Bombs -= 1; UpdateHudBombDigits(); }
+                    if (m_p2Bombs > 0 && !m_player2.IsOrc()) { SpawnBombFromCharacter(m_player2, remain); m_p2Bombs -= 1; UpdateHudBombDigits(); }
                 }
                 m_p2GrenadePressTime = -1.0f;
                 m_p2GrenadeExplodedInHand = false;
@@ -2106,6 +2135,7 @@ void GSPlay::DrawBloods(Camera* cam) {
 void GSPlay::TryCompletePendingShots() {
     auto tryFinish = [&](Character& ch, bool& pendingFlag, float& startTime){
         if (!pendingFlag) return;
+        if (ch.IsOrc()) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
         // Require minimum time for anim0 + anim1 display
         float elapsed = m_gameTime - startTime;
         if (elapsed < GetGunRequiredTime()) return;
@@ -2256,7 +2286,7 @@ void GSPlay::UpdateGunBursts() {
                 SoundManager::Instance().PlaySFXByID(12, 0); // GunM4A1
             }
         } else {
-            SpawnBulletFromCharacter(ch);
+            if (!ch.IsOrc()) { SpawnBulletFromCharacter(ch); }
             if (gunTex == 45) {
                 SoundManager::Instance().PlaySFXByID(10, 0); // GunDEagle
             } else if (gunTex == 40) {

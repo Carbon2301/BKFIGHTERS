@@ -452,6 +452,20 @@ ANINUM 7
 * Animation 6: Explode
 96 10 800
 
+ID 63
+FILE "../Resources/Fighter/Monster/Orc/Orc.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 8 4
+ANINUM 4
+* Animation 0: Idle
+0 5 500
+* Animation 1: Walk
+8 7 700
+* Animation 2: Meteor Strike
+16 6 600
+* Animation 3: Tsunami
+24 6 600
+
 # Shader 1
 ID 0
 VS "../Resources/Shaders/TriangleShaderVS.vs"

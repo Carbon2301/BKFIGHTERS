@@ -141,6 +141,24 @@ bool Character::IsKitsune() const {
     return m_animation ? m_animation->IsKitsune() : false;
 }
 
+void Character::SetOrcMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetOrcMode(enabled);
+    }
+    if (enabled) {
+        SetGunMode(false);
+        SetGrenadeMode(false);
+        if (m_movement) {
+            m_movement->SetNoClipNoGravity(false);
+            m_movement->SetInputLocked(false);
+        }
+    }
+}
+
+bool Character::IsOrc() const {
+    return m_animation ? m_animation->IsOrc() : false;
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);
