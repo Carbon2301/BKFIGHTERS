@@ -2502,19 +2502,20 @@ void GSPlay::UpdateCloudMovement(float deltaTime) {
 void GSPlay::UpdateFanRotation(float deltaTime) {
     SceneManager* sceneManager = SceneManager::GetInstance();
     
-    int fanIds[] = {800, 801, 802, 803};
+    int fanIds[] = {800, 801, 802, 803, 804, 805, 806, 807, 808, 809, 810, 811, 812, 813, 814};
     const float FAN_ROTATION_SPEED = 90.0f;
     
     for (int fanId : fanIds) {
         Object* fan = sceneManager->GetObject(fanId);
         if (fan) {
             const Vector3& currentRotation = fan->GetRotation();
-            float newZRotation = currentRotation.z + FAN_ROTATION_SPEED * deltaTime;
-            
+            float speed = (fanId == 814) ? (FAN_ROTATION_SPEED * 0.5f) : FAN_ROTATION_SPEED;
+            float newZRotation = currentRotation.z + speed * deltaTime;
+
             if (newZRotation >= 360.0f) {
                 newZRotation -= 360.0f;
             }
-            
+
             fan->SetRotation(currentRotation.x, currentRotation.y, newZRotation);
         }
     }

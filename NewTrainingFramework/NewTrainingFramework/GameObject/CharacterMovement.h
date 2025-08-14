@@ -121,7 +121,7 @@ private:
     // Hard landing detection
     float m_highestYInAir = 0.0f;
     bool  m_hardLandingRequested = false;
-    static constexpr float HARD_LANDING_DROP_THRESHOLD = 0.4f;
+    static constexpr float HARD_LANDING_DROP_THRESHOLD = 0.6f;
 
     bool  m_rollCadenceActive = false;
     bool  m_rollPhaseIsRoll = true;
