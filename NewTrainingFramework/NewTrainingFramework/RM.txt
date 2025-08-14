@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 44
+# 2DTexture 45
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/background_stage_1.tga"
 TILING GL_REPEAT
@@ -431,6 +431,26 @@ ANINUM 2
 0 9 750
 * Animation 1: Slash
 16 7 700
+
+ID 62
+FILE "../Resources/Fighter/Monster/Kitsune/Kitsune.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 16 8
+ANINUM 2
+* Animation 0: Idle
+0 8 750
+* Animation 1: Walk
+16 8 750
+* Animation 2: Run
+32 8 750
+* Animation 3: Energy orb
+48 7 700
+* Animation 4: Fade away
+64 10 800
+* Animation 5: Fade in
+80 10 800
+* Animation 6: Explode
+96 10 800
 
 # Shader 1
 ID 0

@@ -1297,6 +1297,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == 'M' || key == 'm') {
+        if (m_player2.IsKitsune()) {
+            return;
+        }
         if (m_player2.IsBatDemon()) {
             if (bIsPressed) return;
         }
@@ -1330,6 +1333,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == '2') {
+        if (m_player.IsKitsune()) {
+            return;
+        }
         if (m_player.IsBatDemon()) {
             if (bIsPressed) return;
         }
@@ -1397,6 +1403,23 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
     }
 
+    if (bIsPressed && key == '6') {
+        bool toKitsune = !m_player.IsKitsune();
+        m_player.SetGunMode(false);
+        m_player.SetGrenadeMode(false);
+        if (toKitsune) { m_player.SetBatDemonMode(false); m_player.SetWerewolfMode(false); }
+        m_player.SetKitsuneMode(toKitsune);
+        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+    }
+    if (bIsPressed && (key == 'K' || key == 'k')) {
+        bool toKitsune2 = !m_player2.IsKitsune();
+        m_player2.SetGunMode(false);
+        m_player2.SetGrenadeMode(false);
+        if (toKitsune2) { m_player2.SetBatDemonMode(false); m_player2.SetWerewolfMode(false); }
+        m_player2.SetKitsuneMode(toKitsune2);
+        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+    }
+
     if (bIsPressed && key == '1') { 
         if (m_player.IsWerewolf()) {
             m_player.TriggerWerewolfCombo();
@@ -1431,6 +1454,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == '3') {
+        if (m_player.IsKitsune()) {
+            return;
+        }
         if (m_player.IsBatDemon()) {
             return;
         }
@@ -1464,6 +1490,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == ',' || key == 0xBC) { 
+        if (m_player2.IsKitsune()) {
+            return;
+        }
         if (m_player2.IsBatDemon()) {
             return;
         }
