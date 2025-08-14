@@ -192,7 +192,11 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     bool punchDown = inputManager->IsKeyJustPressed(inputConfig.punchKey);
     if (m_combat) m_combat->SetAttackPressed(punchDown);
-    if (!m_movement->IsInputLocked() && !IsGrenadeMode() && punchDown) {
+    if (m_animation && m_animation->IsBatDemon()) {
+        if (punchDown) {
+            m_animation->TriggerBatDemonSlash();
+        }
+    } else if (!m_movement->IsInputLocked() && !IsGrenadeMode() && punchDown) {
         if (m_suppressNextPunch) {
             m_suppressNextPunch = false;
         } else {
@@ -210,7 +214,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         }
     }
     
-    if (!m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
+    if (!(m_animation && m_animation->IsBatDemon()) && !m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         if (!m_movement->IsJumping()) {
         HandleKick();
         }
