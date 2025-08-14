@@ -126,6 +126,13 @@ void Character::SetKitsuneMode(bool enabled) {
         if (m_movement) {
             m_movement->SetNoClipNoGravity(false);
             m_movement->SetInputLocked(false);
+            m_movement->SetMoveSpeedMultiplier(1.2f);
+            m_movement->SetRunSpeedMultiplier(1.2f);
+        }
+    } else {
+        if (m_movement) {
+            m_movement->SetMoveSpeedMultiplier(1.0f);
+            m_movement->SetRunSpeedMultiplier(1.0f);
         }
     }
 }

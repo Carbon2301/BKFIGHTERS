@@ -409,10 +409,16 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
             }
         }
         if (m_animManager) {
+            int desired = 0;
+            if (movement) {
+                CharState st = movement->GetState();
+                bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
+                if (isMoving) { desired = 1; }
+            }
             int cur = GetCurrentAnimation();
-            if (cur != 0) {
-                m_animManager->Play(0, true);
-                m_lastAnimation = 0;
+            if (cur != desired) {
+                m_animManager->Play(desired, true);
+                m_lastAnimation = desired;
             } else {
                 m_animManager->Resume();
             }
