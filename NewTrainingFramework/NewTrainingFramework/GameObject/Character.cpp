@@ -167,7 +167,7 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
     Object* originalObj = SceneManager::GetInstance()->GetObject(objectId);
     if (originalObj) {
         const Vector3& originalPos = originalObj->GetPosition();
-        m_movement->Initialize(originalPos.x, originalPos.y, -3.0f);
+        m_movement->Initialize(originalPos.x, originalPos.y, -1000.0f);
     } else {
         m_movement->Initialize(0.0f, 0.0f, 0.0f);
     }

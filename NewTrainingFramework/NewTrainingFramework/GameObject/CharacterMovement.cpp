@@ -64,34 +64,9 @@ void CharacterMovement::Initialize(float startX, float startY, float groundY) {
     m_knockdownTimer = 0.0f;
     m_knockdownComplete = false;
     m_attackerFacingLeft = false;
-    m_isFallingThroughPlatform = false;
-    m_fallThroughTimer = 0.0f;
+    m_isRolling = false;
     m_isOnPlatform = false;
     m_currentPlatformY = groundY;
-    m_currentMovingPlatformId = -1;
-    m_isOnLadder = false;
-    m_invertHorizontal = false;
-    m_rollCadenceActive = false;
-    m_rollPhaseIsRoll = true;
-    m_rollPhaseTimer = 0.0f;
-    m_inputLocked = false;
-    m_justStartedUpwardJump = false;
-    m_lastLeftPressTime = -1.0f;
-    m_lastRightPressTime = -1.0f;
-    m_prevLeftKey = false;
-    m_prevRightKey = false;
-    m_lastDownPressTime = -1.0f;
-    m_prevDownKey = false;
-    m_lastUpTapTimeForLadder = -1.0f;
-    m_lastDownTapTimeForLadder = -1.0f;
-    m_prevDownKeyForLadder = false;
-    m_prevUpKey = false;
-    m_upTapCountForLadder = 0;
-    m_downTapCountForLadder = 0;
-    m_teleportLockTimer = 0.0f;
-    m_lastTeleportFromId = -1;
-    m_noClipNoGravity = false;
-    m_isRolling = false;
     m_highestYInAir = startY;
     m_hardLandingRequested = false;
     m_hasPendingFallDamage = false;
@@ -521,6 +496,10 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
                                                          exitPos)) {
                 m_posX = exitPos.x;
                 m_posY = exitPos.y;
+                m_jumpVelocity = 0.0f;
+                m_highestYInAir = m_posY;
+                m_hardLandingRequested = false;
+                m_hasPendingFallDamage = false;
                 m_teleportLockTimer = TELEPORT_LOCK_DURATION;
                 m_lastTeleportFromId = fromId;
                 if (movingRight) {
