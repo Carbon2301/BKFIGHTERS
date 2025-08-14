@@ -57,6 +57,10 @@ public:
      // Kitsune API
      void SetKitsuneMode(bool enabled);
      bool IsKitsune() const;
+
+     // Orc API
+     void SetOrcMode(bool enabled);
+     bool IsOrc() const;
     
     // Core update
     void Update(float deltaTime);

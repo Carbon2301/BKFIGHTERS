@@ -205,7 +205,7 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    if (!m_isBatDemon && !m_isKitsune && (m_gunMode || m_recoilActive) && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+    if (!m_isBatDemon && !m_isKitsune && !m_isOrc && (m_gunMode || m_recoilActive) && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
         
@@ -238,7 +238,7 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    if (!m_isBatDemon && !m_isKitsune && m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+    if (!m_isBatDemon && !m_isKitsune && !m_isOrc && m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
         if (movement && movement->IsFacingLeft()) {
@@ -427,6 +427,45 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         return;
     }
 
+    // Orc mode
+    if (m_isOrc) {
+        if (m_characterObject) {
+            const std::vector<int>& texIds = m_characterObject->GetTextureIds();
+            int currentTex = texIds.empty() ? -1 : texIds[0];
+            if (currentTex != 63) {
+                m_characterObject->SetTexture(63, 0);
+                if (auto texData = ResourceManager::GetInstance()->GetTextureData(63)) {
+                    if (!m_animManager) {
+                        m_animManager = std::make_shared<AnimationManager>();
+                    }
+                    std::vector<AnimationData> anims;
+                    anims.reserve(texData->animations.size());
+                    for (const auto& a : texData->animations) {
+                        anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                    }
+                    m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                    m_lastAnimation = -1;
+                }
+            }
+        }
+        if (m_animManager) {
+            int cur = GetCurrentAnimation();
+            int desired = 0;
+            if (movement) {
+                CharState st = movement->GetState();
+                bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
+                if (isMoving) { desired = 1; } // Walk
+            }
+            if (cur != desired) {
+                m_animManager->Play(desired, true);
+                m_lastAnimation = desired;
+            } else {
+                m_animManager->Resume();
+            }
+        }
+        return;
+    }
+
     if (!m_hardLandingActive && movement->ConsumeHardLandingRequested()) {
         StartHardLanding(movement);
         return;
@@ -467,6 +506,7 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
 
     if (m_grenadeMode) {
         if (m_isKitsune) { m_grenadeMode = false; return; }
+        if (m_isOrc) { m_grenadeMode = false; return; }
         PlayAnimation(31, true);
         PlayTopAnimation(7, true);
         return;
@@ -484,6 +524,7 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
             // fall back to BatDemon render path
             return;
         }
+        if (m_isOrc) { m_gunMode = false; return; }
         return;
     }
     
@@ -1201,6 +1242,106 @@ void CharacterAnimation::SetKitsuneMode(bool enabled) {
                 m_characterObject->SetTexture(61, 0);
             }
             if (auto texData = ResourceManager::GetInstance()->GetTextureData(61)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else {
+            int bodyTexId = (m_objectId == 1000) ? 10 : 11;
+            if (m_characterObject) {
+                m_characterObject->SetTexture(bodyTexId, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(bodyTexId)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        }
+    }
+}
+
+void CharacterAnimation::SetOrcMode(bool enabled) {
+    m_isOrc = enabled;
+    if (enabled) {
+        m_gunMode = false;
+        m_grenadeMode = false;
+        m_isBatDemon = false;
+        m_isWerewolf = false;
+        m_isKitsune = false;
+        m_topAnimManager.reset();
+        m_topObject.reset();
+        if (m_characterObject) {
+            m_characterObject->SetTexture(63, 0);
+        }
+        if (auto texData = ResourceManager::GetInstance()->GetTextureData(63)) {
+            if (!m_animManager) {
+                m_animManager = std::make_shared<AnimationManager>();
+            }
+            std::vector<AnimationData> anims;
+            anims.reserve(texData->animations.size());
+            for (const auto& a : texData->animations) {
+                anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+            }
+            m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+            m_animManager->Play(0, true); // Idle
+            m_lastAnimation = 0;
+        }
+    } else {
+        if (m_isWerewolf) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(60, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else if (m_isBatDemon) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(61, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(61)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else if (m_isKitsune) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(62, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(62)) {
                 if (!m_animManager) {
                     m_animManager = std::make_shared<AnimationManager>();
                 }

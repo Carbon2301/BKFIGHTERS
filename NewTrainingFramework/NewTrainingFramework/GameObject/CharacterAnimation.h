@@ -82,6 +82,7 @@ private:
     bool m_isBatDemon = false;
     bool m_isWerewolf = false;
     bool m_isKitsune = false;
+    bool m_isOrc = false;
     bool m_batSlashActive = false;
     float m_batSlashCooldownTimer = 0.0f;
     static constexpr float BAT_SLASH_COOLDOWN = 0.5f;
@@ -171,7 +172,7 @@ public:
 
     void GetTopFrameUV(float& u0, float& v0, float& u1, float& v1) const;
     int GetHeadTextureId() const { return (m_objectId == 1000) ? 8 : 9; }
-    int GetBodyTextureId() const { return m_isBatDemon ? 61 : (m_isWerewolf ? 60 : (m_isKitsune ? 62 : ((m_objectId == 1000) ? 10 : 11))); }
+    int GetBodyTextureId() const { return m_isBatDemon ? 61 : (m_isWerewolf ? 60 : (m_isKitsune ? 62 : (m_isOrc ? 63 : ((m_objectId == 1000) ? 10 : 11)))); }
     float GetTopOffsetX() const { return m_topOffsetX; }
     float GetTopOffsetY() const { return m_topOffsetY; }
 
@@ -181,6 +182,10 @@ public:
     // Kitsune mode control
     void SetKitsuneMode(bool enabled);
     bool IsKitsune() const { return m_isKitsune; }
+
+    // Orc mode control
+    void SetOrcMode(bool enabled);
+    bool IsOrc() const { return m_isOrc; }
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);
