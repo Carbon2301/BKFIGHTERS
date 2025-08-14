@@ -215,8 +215,8 @@ void GSPlay::Init() {
     Object* liftPlatform = sceneManager->GetObject(30);
     if (liftPlatform) {
         liftPlatform->SetLiftPlatform(true, 
-            0.49f, -0.862f, 0.0f,  // Start position
-            0.49f, 0.33f, 0.0f,   // End position
+            1.375005f, -1.301985f, 0.0f,  // Start position
+            1.375005f, 0.217009f, 0.0f,   // End position
             0.2f, 1.0f);          // Speed: 0.2 units/sec, Pause time: 1.0 second
         std::cout << "Lift platform (ID 30) configured successfully" << std::endl;
 
