@@ -413,7 +413,8 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
             if (movement) {
                 CharState st = movement->GetState();
                 bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
-                if (isMoving) { desired = 1; }
+                bool isRunning = movement->IsRunningLeft() || movement->IsRunningRight();
+                if (isMoving) { desired = isRunning ? 2 : 1; }
             }
             int cur = GetCurrentAnimation();
             if (cur != desired) {

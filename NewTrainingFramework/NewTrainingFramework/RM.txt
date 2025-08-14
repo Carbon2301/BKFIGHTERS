@@ -436,7 +436,7 @@ ID 62
 FILE "../Resources/Fighter/Monster/Kitsune/Kitsune.tga"
 TILING GL_CLAMP_TO_EDGE
 SIZE 16 8
-ANINUM 2
+ANINUM 7
 * Animation 0: Idle
 0 8 750
 * Animation 1: Walk
