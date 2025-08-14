@@ -54,6 +54,9 @@ public:
     bool IsWerewolf() const;
     void TriggerWerewolfCombo();
     void TriggerWerewolfPounce();
+     // Kitsune API
+     void SetKitsuneMode(bool enabled);
+     bool IsKitsune() const;
     
     // Core update
     void Update(float deltaTime);

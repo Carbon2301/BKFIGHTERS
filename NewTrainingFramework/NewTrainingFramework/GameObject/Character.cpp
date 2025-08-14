@@ -116,6 +116,31 @@ void Character::TriggerWerewolfPounce() {
     }
 }
 
+void Character::SetKitsuneMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetKitsuneMode(enabled);
+    }
+    if (enabled) {
+        SetGunMode(false);
+        SetGrenadeMode(false);
+        if (m_movement) {
+            m_movement->SetNoClipNoGravity(false);
+            m_movement->SetInputLocked(false);
+            m_movement->SetMoveSpeedMultiplier(1.2f);
+            m_movement->SetRunSpeedMultiplier(1.2f);
+        }
+    } else {
+        if (m_movement) {
+            m_movement->SetMoveSpeedMultiplier(1.0f);
+            m_movement->SetRunSpeedMultiplier(1.0f);
+        }
+    }
+}
+
+bool Character::IsKitsune() const {
+    return m_animation ? m_animation->IsKitsune() : false;
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);
@@ -196,7 +221,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     bool punchDown = inputManager->IsKeyJustPressed(inputConfig.punchKey);
     if (m_combat) m_combat->SetAttackPressed(punchDown);
-    if (m_animation && m_animation->IsBatDemon()) {
+    if (m_animation && (m_animation->IsBatDemon() || m_animation->IsKitsune())) {
         if (punchDown) {
             m_animation->TriggerBatDemonSlash();
         }
@@ -218,7 +243,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         }
     }
     
-    if (!(m_animation && m_animation->IsBatDemon()) && !m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
+    if (!(m_animation && (m_animation->IsBatDemon() || m_animation->IsKitsune())) && !m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         if (!m_movement->IsJumping()) {
         HandleKick();
         }
