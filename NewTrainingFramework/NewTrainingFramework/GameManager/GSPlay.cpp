@@ -652,6 +652,7 @@ void GSPlay::Update(float deltaTime) {
     m_prevRollingP2 = rollingP2;
     UpdateBullets(deltaTime);
     UpdateEnergyOrbProjectiles(deltaTime);
+    UpdateLightningEffects(deltaTime);
     
     if (m_player.IsKitsuneEnergyOrbAnimationComplete()) {
         SpawnEnergyOrbProjectile(m_player);
@@ -757,6 +758,7 @@ void GSPlay::Draw() {
     DrawHudPortraits();
     if (cam) { DrawBullets(cam); }
     if (cam) { DrawEnergyOrbProjectiles(cam); }
+    if (cam) { DrawLightningEffects(cam); }
     if (cam) { DrawBombs(cam); }
     if (cam) { DrawExplosions(cam); }
     if (cam) { DrawBloods(cam); }
@@ -2732,6 +2734,7 @@ void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
         projectile = m_energyOrbProjectiles.back().get();
         projectile->Initialize();
         projectile->SetWallCollision(m_wallCollision.get());
+        projectile->SetExplosionCallback([this](float x) { SpawnLightningEffect(x); });
     }
     
     if (projectile) {
@@ -2772,4 +2775,107 @@ void GSPlay::DetonatePlayerProjectiles(int playerId) {
             projectile->TriggerExplosion();
         }
     }
+}
+
+void GSPlay::SpawnLightningEffect(float x) {
+    LightningEffect* lightning = nullptr;
+    
+    for (auto& effect : m_lightningEffects) {
+        if (!effect.isActive) {
+            lightning = &effect;
+            break;
+        }
+    }
+    
+    if (!lightning && m_lightningEffects.size() < MAX_LIGHTNING_EFFECTS) {
+        m_lightningEffects.push_back(LightningEffect{});
+        lightning = &m_lightningEffects.back();
+    }
+    
+    if (lightning) {
+        int objIndex = CreateOrAcquireLightningObject();
+        if (objIndex >= 0) {
+            lightning->x = x;
+            lightning->lifetime = 0.0f;
+            lightning->maxLifetime = 3.0f; // 3s
+            lightning->objectIndex = objIndex;
+            lightning->isActive = true;
+            lightning->currentFrame = 0;
+            lightning->frameTimer = 0.0f;
+            lightning->frameDuration = 3.0f / 30.0f;
+            
+            // Set lightning object position and scale
+            if (objIndex < (int)m_lightningObjects.size() && m_lightningObjects[objIndex]) {
+                m_lightningObjects[objIndex]->SetPosition(x, 0.0f, 0.0f);
+                m_lightningObjects[objIndex]->SetScale(1.0f, -3.9f, 1.0f);
+                
+                float frameWidth = 1.0f / 32.0f;
+                float uStart = 0.0f;
+                float uEnd = frameWidth;
+                m_lightningObjects[objIndex]->SetCustomUV(uStart, 1.0f, uEnd, 0.0f);
+            }
+        }
+    }
+}
+
+void GSPlay::UpdateLightningEffects(float deltaTime) {
+    for (auto& lightning : m_lightningEffects) {
+        if (lightning.isActive) {
+            lightning.lifetime += deltaTime;
+            lightning.frameTimer += deltaTime;
+            
+            if (lightning.frameTimer >= lightning.frameDuration) {
+                lightning.frameTimer = 0.0f;
+                lightning.currentFrame++;
+                
+                if (lightning.objectIndex >= 0 && lightning.objectIndex < (int)m_lightningObjects.size() && m_lightningObjects[lightning.objectIndex]) {
+                    float frameWidth = 1.0f / 32.0f;
+                    float uStart = lightning.currentFrame * frameWidth;
+                    float uEnd = uStart + frameWidth;
+                    m_lightningObjects[lightning.objectIndex]->SetCustomUV(uStart, 1.0f, uEnd, 0.0f); 
+                }
+            }
+            
+            if (lightning.lifetime >= lightning.maxLifetime) {
+                lightning.isActive = false;
+                if (lightning.objectIndex >= 0 && lightning.objectIndex < (int)m_freeLightningSlots.size()) {
+                    m_freeLightningSlots.push_back(lightning.objectIndex);
+                }
+            }
+        }
+    }
+}
+
+void GSPlay::DrawLightningEffects(Camera* camera) {
+    for (auto& lightning : m_lightningEffects) {
+        if (lightning.isActive && lightning.objectIndex >= 0 && lightning.objectIndex < (int)m_lightningObjects.size()) {
+            if (m_lightningObjects[lightning.objectIndex]) {
+                m_lightningObjects[lightning.objectIndex]->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+            }
+        }
+    }
+}
+
+int GSPlay::CreateOrAcquireLightningObject() {
+    if (!m_freeLightningSlots.empty()) {
+        int idx = m_freeLightningSlots.back();
+        m_freeLightningSlots.pop_back();
+        if (m_lightningObjects[idx]) {
+            m_lightningObjects[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    
+    std::unique_ptr<Object> obj = std::make_unique<Object>(60000 + (int)m_lightningObjects.size());
+    
+    obj->SetModel(0);
+    obj->SetTexture(64, 0);
+    obj->SetShader(0);
+    obj->SetScale(1.0f, -3.6f, 1.0f);
+    obj->SetVisible(true);
+    
+    obj->MakeModelInstanceCopy();
+    
+    m_lightningObjects.push_back(std::move(obj));
+    return (int)m_lightningObjects.size() - 1;
 }

@@ -206,6 +206,25 @@ private:
     void UpdateEnergyOrbProjectiles(float deltaTime);
     void DrawEnergyOrbProjectiles(class Camera* camera);
     void DetonatePlayerProjectiles(int playerId);
+    
+    struct LightningEffect {
+        float x;
+        float lifetime;
+        float maxLifetime;
+        int objectIndex;
+        bool isActive;
+        int currentFrame;
+        float frameTimer;
+        float frameDuration;
+    };
+    std::vector<LightningEffect> m_lightningEffects;
+    std::vector<std::unique_ptr<Object>> m_lightningObjects;
+    std::vector<int> m_freeLightningSlots;
+    static constexpr int MAX_LIGHTNING_EFFECTS = 1000;
+    void SpawnLightningEffect(float x);
+    void UpdateLightningEffects(float deltaTime);
+    void DrawLightningEffects(class Camera* camera);
+    int CreateOrAcquireLightningObject();
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
     bool  m_p1ReloadPending = false;

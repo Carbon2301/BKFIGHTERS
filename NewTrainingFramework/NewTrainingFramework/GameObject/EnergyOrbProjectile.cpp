@@ -18,7 +18,8 @@ EnergyOrbProjectile::EnergyOrbProjectile()
     , m_currentAnimation(0)
     , m_animationLoop(true)
     , m_wallCollision(nullptr)
-    , m_ownerId(0) {
+    , m_ownerId(0)
+    , m_explosionCallback(nullptr) {
 }
 
 EnergyOrbProjectile::~EnergyOrbProjectile() {
@@ -141,6 +142,10 @@ void EnergyOrbProjectile::TriggerExplosion() {
     m_explosionTimer = 0.0f;
     
     m_velocity = Vector3(0.0f, 0.0f, 0.0f);
+    
+    if (m_explosionCallback) {
+        m_explosionCallback(m_position.x);
+    }
     
     if (m_animManager) {
         m_animManager->Play(1, false);

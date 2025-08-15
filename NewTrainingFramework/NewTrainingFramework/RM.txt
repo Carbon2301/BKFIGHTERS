@@ -472,7 +472,7 @@ TILING GL_CLAMP_TO_EDGE
 SIZE 32 1
 ANINUM 1
 * Animation 0: Lightning
-0 30 3500
+0 30 3000
 
 ID 65
 FILE "../Resources/Fighter/Monster/Kitsune/Fire_2.tga"

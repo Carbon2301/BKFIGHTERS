@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <functional>
 #include "../../Utilities/Math.h"
 #include "Object.h"
 #include "AnimationManager.h"
@@ -32,12 +33,15 @@ private:
     
     int m_ownerId;
     
+    std::function<void(float)> m_explosionCallback;
+    
 public:
     EnergyOrbProjectile();
     ~EnergyOrbProjectile();
     
     void Initialize();
     void SetWallCollision(WallCollision* wallCollision) { m_wallCollision = wallCollision; }
+    void SetExplosionCallback(std::function<void(float)> callback) { m_explosionCallback = callback; }
     void Spawn(const Vector3& position, const Vector3& direction, float speed, int ownerId);
     void Update(float deltaTime);
     void Draw(class Camera* camera);
