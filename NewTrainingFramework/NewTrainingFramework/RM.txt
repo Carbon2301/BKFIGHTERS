@@ -506,6 +506,14 @@ ID 70
 FILE "../Resources/Fighter/Stages/Stage_1/windWheel.tga"
 TILING GL_REPEAT
 
+ID 74
+FILE "../Resources/Fighter/Monster/Orc/Fire_Appear.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 16 1
+ANINUM 1
+* Animation 0: Fire Orc Appear
+0 11 1000
+
 # Shader 1
 ID 0
 VS "../Resources/Shaders/TriangleShaderVS.vs"

@@ -85,6 +85,15 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             }
         }
     }
+    if (m_orcAppearActive && m_orcAppearAnim) {
+        m_orcAppearAnim->Update(deltaTime);
+        if (!m_orcAppearAnim->IsPlaying()) {
+            m_orcAppearActive = false;
+            if (m_orcAppearObject) {
+                m_orcAppearObject->SetVisible(false);
+            }
+        }
+    }
 
     if (m_batSlashCooldownTimer > 0.0f) {
         m_batSlashCooldownTimer -= deltaTime;
@@ -276,6 +285,14 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_orcFireObject->SetCustomUV(u0, v0, u1, v1);
         if (camera) {
             m_orcFireObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+    if (m_orcAppearActive && m_orcAppearObject && m_orcAppearObject->GetModelId() >= 0 && m_orcAppearObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_orcAppearAnim->GetUV(u0, v0, u1, v1);
+        m_orcAppearObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_orcAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
 }
@@ -1373,6 +1390,9 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
         m_orcFireActive = false;
         m_orcFireAnim.reset();
         m_orcFireObject.reset();
+        m_orcAppearActive = false;
+        m_orcAppearAnim.reset();
+        m_orcAppearObject.reset();
         if (m_characterObject) {
             m_characterObject->SetTexture(63, 0);
         }
@@ -1395,6 +1415,9 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
         m_orcFireActive = false;
         m_orcFireAnim.reset();
         m_orcFireObject.reset();
+        m_orcAppearActive = false;
+        m_orcAppearAnim.reset();
+        m_orcAppearObject.reset();
         if (m_isWerewolf) {
             if (m_characterObject) {
                 m_characterObject->SetTexture(60, 0);
@@ -1586,5 +1609,35 @@ void CharacterAnimation::GetOrcFireAabb(float& left, float& right, float& bottom
         top = pos.y + halfH;
     } else {
         left = right = bottom = top = 0.0f;
+    }
+}
+
+void CharacterAnimation::TriggerOrcAppearEffectAt(float x, float y) {
+    if (!m_orcAppearAnim) {
+        m_orcAppearAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_orcAppearObject) {
+        m_orcAppearObject = std::make_unique<Object>(m_objectId + 21000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_orcAppearObject->SetModel(originalObj->GetModelId());
+            m_orcAppearObject->SetShader(originalObj->GetShaderId());
+            m_orcAppearObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(74)) {
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_orcAppearAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_orcAppearAnim->Play(0, false);
+        m_orcAppearActive = true;
+        if (m_orcAppearObject) {
+            m_orcAppearObject->SetTexture(74, 0);
+            m_orcAppearObject->SetVisible(true);
+            m_orcAppearObject->SetPosition(x, y + ORC_APPEAR_Y_OFFSET, 0.0f);
+            m_orcAppearObject->SetScale(0.8f, 0.8f, 0.0f);
+        }
     }
 }

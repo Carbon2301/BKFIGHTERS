@@ -178,6 +178,10 @@ void Character::SetOrcMode(bool enabled) {
             m_movement->SetLadderDoubleTapEnabled(false);
             m_movement->SetLadderEnabled(false);
         }
+        if (m_animation) {
+            Vector3 pos = GetPosition();
+            m_animation->TriggerOrcAppearEffectAt(pos.x, pos.y);
+        }
     } else {
         if (m_movement) {
             m_movement->SetLadderDoubleTapEnabled(true);

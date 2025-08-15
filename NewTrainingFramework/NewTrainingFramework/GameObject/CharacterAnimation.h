@@ -95,6 +95,10 @@ private:
     bool m_orcFireActive = false;
     std::shared_ptr<AnimationManager> m_orcFireAnim;
     std::unique_ptr<class Object> m_orcFireObject;
+    bool m_orcAppearActive = false;
+    std::shared_ptr<AnimationManager> m_orcAppearAnim;
+    std::unique_ptr<class Object> m_orcAppearObject;
+    static constexpr float ORC_APPEAR_Y_OFFSET = 0.19f;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -132,6 +136,7 @@ public:
     void Update(float deltaTime, CharacterMovement* movement, CharacterCombat* combat);
     void Draw(Camera* camera, CharacterMovement* movement);
     void DrawOrcFire(Camera* camera);
+    void DrawOrcAppear(Camera* camera);
     
     // Animation control
     void PlayAnimation(int animIndex, bool loop);
@@ -207,6 +212,7 @@ public:
     bool IsOrcFlameBurstActive() const { return m_orcFlameBurstActive; }
     bool IsOrcFireActive() const { return m_orcFireActive; }
     void GetOrcFireAabb(float& left, float& right, float& bottom, float& top) const;
+    void TriggerOrcAppearEffectAt(float x, float y);
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);
