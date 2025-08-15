@@ -187,6 +187,12 @@ void Character::TriggerOrcMeteorStrike() {
     }
 }
 
+void Character::TriggerOrcFlameBurst() {
+    if (m_animation) {
+        m_animation->TriggerOrcFlameBurst();
+    }
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);

@@ -91,6 +91,7 @@ private:
     static constexpr float KITSUNE_ENERGY_ORB_COOLDOWN = 0.5f;
     bool m_kitsuneEnergyOrbAnimationComplete = false;
     bool m_orcMeteorStrikeActive = false;
+    bool m_orcFlameBurstActive = false;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -197,7 +198,9 @@ public:
     void SetOrcMode(bool enabled);
     bool IsOrc() const { return m_isOrc; }
     void TriggerOrcMeteorStrike();
+    void TriggerOrcFlameBurst();
     bool IsOrcMeteorStrikeActive() const { return m_orcMeteorStrikeActive; }
+    bool IsOrcFlameBurstActive() const { return m_orcFlameBurstActive; }
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);

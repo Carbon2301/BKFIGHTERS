@@ -1547,6 +1547,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
         
         if (m_player2.IsOrc()) {
+            if (bIsPressed) { m_player2.TriggerOrcFlameBurst(); }
             return;
         }
         if (m_player2.IsKitsune()) {
@@ -1590,6 +1591,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
         
         if (m_player.IsOrc()) {
+            if (bIsPressed) { m_player.TriggerOrcFlameBurst(); }
             return;
         }
         if (m_player.IsKitsune()) {

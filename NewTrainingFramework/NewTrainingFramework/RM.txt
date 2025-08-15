@@ -463,7 +463,7 @@ ANINUM 4
 8 7 700
 * Animation 2: Meteor Strike
 16 6 600
-* Animation 3: Tsunami
+* Animation 3: Flame burst
 24 6 600
 
 ID 64
@@ -493,6 +493,14 @@ ANINUM 2
 0 6 500
 * Animation 1: Fade Away
 16 10 800
+
+ID 67
+FILE "../Resources/Fighter/Monster/Orc/Fire.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 1 25
+ANINUM 1
+* Animation 0: Fire
+0 25 3000
 
 ID 70
 FILE "../Resources/Fighter/Stages/Stage_1/windWheel.tga"

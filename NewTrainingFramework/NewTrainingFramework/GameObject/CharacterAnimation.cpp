@@ -485,19 +485,37 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
                     }
                 }
                 return;
+            } else if (m_orcFlameBurstActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 3) {
+                    m_animManager->Play(3, false);
+                    m_lastAnimation = 3;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_orcFlameBurstActive = false;
+                    if (movement) {
+                        movement->SetInputLocked(false);
+                    }
+                    m_animManager->Play(0, true);
+                } else {
+                    if (movement) {
+                        movement->SetInputLocked(true);
+                    }
+                }
+                return;
             }
             
             int cur = GetCurrentAnimation();
             int desired = 0;
-            if (movement && !m_orcMeteorStrikeActive) {
+            if (movement && !m_orcMeteorStrikeActive && !m_orcFlameBurstActive) {
                 CharState st = movement->GetState();
                 bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
                 if (isMoving) { desired = 1; } // Walk
             }
-            if (cur != desired && !m_orcMeteorStrikeActive) {
+            if (cur != desired && !m_orcMeteorStrikeActive && !m_orcFlameBurstActive) {
                 m_animManager->Play(desired, true);
                 m_lastAnimation = desired;
-            } else if (!m_orcMeteorStrikeActive) {
+            } else if (!m_orcMeteorStrikeActive && !m_orcFlameBurstActive) {
                 m_animManager->Resume();
             }
         }
@@ -633,7 +651,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         return;
     }
     
-    if (m_isOrc && m_orcMeteorStrikeActive) {
+    if (m_isOrc && (m_orcMeteorStrikeActive || m_orcFlameBurstActive)) {
         return;
     }
     
@@ -1331,6 +1349,7 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
         m_isWerewolf = false;
         m_isKitsune = false;
         m_orcMeteorStrikeActive = false;
+        m_orcFlameBurstActive = false;
         m_topAnimManager.reset();
         m_topObject.reset();
         if (m_characterObject) {
@@ -1351,6 +1370,7 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
         }
     } else {
         m_orcMeteorStrikeActive = false;
+        m_orcFlameBurstActive = false;
         if (m_isWerewolf) {
             if (m_characterObject) {
                 m_characterObject->SetTexture(60, 0);
@@ -1489,5 +1509,15 @@ void CharacterAnimation::TriggerOrcMeteorStrike() {
         m_animManager->Play(2, false);
         m_lastAnimation = 2;
         m_orcMeteorStrikeActive = true;
+    }
+}
+
+void CharacterAnimation::TriggerOrcFlameBurst() {
+    if (!m_isOrc) return;
+    if (m_orcMeteorStrikeActive || m_orcFlameBurstActive) return;
+    if (m_animManager) {
+        m_animManager->Play(3, false);
+        m_lastAnimation = 3;
+        m_orcFlameBurstActive = true;
     }
 }

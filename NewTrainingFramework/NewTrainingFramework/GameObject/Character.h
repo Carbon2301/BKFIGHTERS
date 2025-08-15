@@ -65,6 +65,7 @@ public:
      void SetOrcMode(bool enabled);
      bool IsOrc() const;
      void TriggerOrcMeteorStrike();
+     void TriggerOrcFlameBurst();
     
     // Core update
     void Update(float deltaTime);
