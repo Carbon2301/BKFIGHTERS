@@ -112,6 +112,11 @@ void CharacterHitbox::SetWerewolfHurtboxJump(float width, float height, float of
 void CharacterHitbox::SetWerewolfHurtboxCombo(float width, float height, float offsetX, float offsetY)  { m_werewolfHurtboxes.combo  = {width, height, offsetX, offsetY}; }
 void CharacterHitbox::SetWerewolfHurtboxPounce(float width, float height, float offsetX, float offsetY) { m_werewolfHurtboxes.pounce = {width, height, offsetX, offsetY}; }
 
+void CharacterHitbox::SetKitsuneHurtboxIdle(float width, float height, float offsetX, float offsetY)      { m_kitsuneHurtboxes.idle      = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetKitsuneHurtboxWalk(float width, float height, float offsetX, float offsetY)      { m_kitsuneHurtboxes.walk      = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetKitsuneHurtboxRun(float width, float height, float offsetX, float offsetY)       { m_kitsuneHurtboxes.run       = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetKitsuneHurtboxEnergyOrb(float width, float height, float offsetX, float offsetY) { m_kitsuneHurtboxes.energyOrb = {width, height, offsetX, offsetY}; }
+
 void CharacterHitbox::GetActiveHurtbox(Hurtbox& out) const {
     out = m_defaultHurtbox;
     if (!m_character) return;
@@ -133,6 +138,15 @@ void CharacterHitbox::GetActiveHurtbox(Hurtbox& out) const {
             } else if (m_werewolfHurtboxes.idle.isSet()) {
                 out = m_werewolfHurtboxes.idle;
             }
+        }
+        if (m_character->IsFacingLeft()) {
+            out.offsetX = -out.offsetX;
+        }
+        return;
+    }
+    if (m_character->IsKitsune()) {
+        if (m_kitsuneHurtboxes.idle.isSet()) {
+            out = m_kitsuneHurtboxes.idle;
         }
         if (m_character->IsFacingLeft()) {
             out.offsetX = -out.offsetX;

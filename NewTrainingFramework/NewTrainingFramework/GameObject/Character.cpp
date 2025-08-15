@@ -626,6 +626,11 @@ void Character::SetWerewolfHurtboxJump(float w, float h, float ox, float oy)   {
 void Character::SetWerewolfHurtboxCombo(float w, float h, float ox, float oy)  { if (m_hitbox) m_hitbox->SetWerewolfHurtboxCombo(w, h, ox, oy); }
 void Character::SetWerewolfHurtboxPounce(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetWerewolfHurtboxPounce(w, h, ox, oy); }
 
+void Character::SetKitsuneHurtboxIdle(float w, float h, float ox, float oy)      { if (m_hitbox) m_hitbox->SetKitsuneHurtboxIdle(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxWalk(float w, float h, float ox, float oy)      { if (m_hitbox) m_hitbox->SetKitsuneHurtboxWalk(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxRun(float w, float h, float ox, float oy)       { if (m_hitbox) m_hitbox->SetKitsuneHurtboxRun(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxEnergyOrb(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetKitsuneHurtboxEnergyOrb(w, h, ox, oy); }
+
 float Character::GetHitboxWidth() const {
     return m_combat ? m_combat->GetHitboxWidth() : 0.0f;
 }

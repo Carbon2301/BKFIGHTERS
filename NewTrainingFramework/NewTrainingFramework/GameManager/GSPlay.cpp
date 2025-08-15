@@ -177,6 +177,18 @@ void GSPlay::Init() {
     m_player2.SetWerewolfHurtboxCombo   (0.19f, 0.23f, 0.015f, -0.08f);
     m_player2.SetWerewolfHurtboxPounce  (0.24f, 0.19f, 0.02f, -0.1f);
     
+    // Player 1 Kitsune
+    m_player.SetKitsuneHurtboxIdle      (0.12f, 0.216f, -0.03f, -0.095f);
+    m_player.SetKitsuneHurtboxWalk      (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player.SetKitsuneHurtboxRun       (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player.SetKitsuneHurtboxEnergyOrb (0.15f, 0.18f, 0.0f, -0.05f);
+    
+    // Player 2 Kitsune
+    m_player2.SetKitsuneHurtboxIdle     (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player2.SetKitsuneHurtboxWalk     (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player2.SetKitsuneHurtboxRun      (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player2.SetKitsuneHurtboxEnergyOrb(0.15f, 0.18f, 0.0f, -0.05f);
+    
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
     m_player.GetMovement()->ClearMovingPlatforms();
@@ -2892,15 +2904,33 @@ void GSPlay::CheckLightningDamage() {
     for (auto& lightning : m_lightningEffects) {
         if (lightning.isActive && !lightning.hasDealtDamage) {
             Vector3 playerPos = m_player.GetPosition();
-            if (playerPos.x >= lightning.hitboxLeft && playerPos.x <= lightning.hitboxRight &&
-                playerPos.y >= lightning.hitboxBottom && playerPos.y <= lightning.hitboxTop) {
+            float playerHurtboxX = playerPos.x + m_player.GetHurtboxOffsetX();
+            float playerHurtboxY = playerPos.y + m_player.GetHurtboxOffsetY();
+            float playerHurtboxLeft = playerHurtboxX - m_player.GetHurtboxWidth() * 0.5f;
+            float playerHurtboxRight = playerHurtboxX + m_player.GetHurtboxWidth() * 0.5f;
+            float playerHurtboxTop = playerHurtboxY + m_player.GetHurtboxHeight() * 0.5f;
+            float playerHurtboxBottom = playerHurtboxY - m_player.GetHurtboxHeight() * 0.5f;
+            
+            bool collisionX1 = lightning.hitboxRight >= playerHurtboxLeft && lightning.hitboxLeft <= playerHurtboxRight;
+            bool collisionY1 = lightning.hitboxTop >= playerHurtboxBottom && lightning.hitboxBottom <= playerHurtboxTop;
+            
+            if (collisionX1 && collisionY1) {
                 m_player.TakeDamage(100);
                 lightning.hasDealtDamage = true;
             }
             
             Vector3 player2Pos = m_player2.GetPosition();
-            if (player2Pos.x >= lightning.hitboxLeft && player2Pos.x <= lightning.hitboxRight &&
-                player2Pos.y >= lightning.hitboxBottom && player2Pos.y <= lightning.hitboxTop) {
+            float player2HurtboxX = player2Pos.x + m_player2.GetHurtboxOffsetX();
+            float player2HurtboxY = player2Pos.y + m_player2.GetHurtboxOffsetY();
+            float player2HurtboxLeft = player2HurtboxX - m_player2.GetHurtboxWidth() * 0.5f;
+            float player2HurtboxRight = player2HurtboxX + m_player2.GetHurtboxWidth() * 0.5f;
+            float player2HurtboxTop = player2HurtboxY + m_player2.GetHurtboxHeight() * 0.5f;
+            float player2HurtboxBottom = player2HurtboxY - m_player2.GetHurtboxHeight() * 0.5f;
+            
+            bool collisionX2 = lightning.hitboxRight >= player2HurtboxLeft && lightning.hitboxLeft <= player2HurtboxRight;
+            bool collisionY2 = lightning.hitboxTop >= player2HurtboxBottom && lightning.hitboxBottom <= player2HurtboxTop;
+            
+            if (collisionX2 && collisionY2) {
                 m_player2.TakeDamage(100);
                 lightning.hasDealtDamage = true;
             }
