@@ -205,6 +205,7 @@ private:
     void SpawnEnergyOrbProjectile(Character& character);
     void UpdateEnergyOrbProjectiles(float deltaTime);
     void DrawEnergyOrbProjectiles(class Camera* camera);
+    void DetonatePlayerProjectiles(int playerId);
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
     bool  m_p1ReloadPending = false;

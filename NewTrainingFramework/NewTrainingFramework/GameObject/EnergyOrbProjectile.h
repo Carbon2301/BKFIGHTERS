@@ -30,13 +30,15 @@ private:
     // Wall collision system
     WallCollision* m_wallCollision;
     
+    int m_ownerId;
+    
 public:
     EnergyOrbProjectile();
     ~EnergyOrbProjectile();
     
     void Initialize();
     void SetWallCollision(WallCollision* wallCollision) { m_wallCollision = wallCollision; }
-    void Spawn(const Vector3& position, const Vector3& direction, float speed);
+    void Spawn(const Vector3& position, const Vector3& direction, float speed, int ownerId);
     void Update(float deltaTime);
     void Draw(class Camera* camera);
     
@@ -45,6 +47,8 @@ public:
     
     const Vector3& GetPosition() const { return m_position; }
     const Vector3& GetVelocity() const { return m_velocity; }
+    
+    int GetOwnerId() const { return m_ownerId; }
     
     void TriggerExplosion();
     bool IsExploding() const { return m_isExploding; }

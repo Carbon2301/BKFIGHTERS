@@ -1317,6 +1317,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == 'M' || key == 'm') {
+        if (bIsPressed) {
+            DetonatePlayerProjectiles(2);
+        }
+        
         if (m_player2.IsOrc()) {
             return;
         }
@@ -1356,6 +1360,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == '2') {
+        if (bIsPressed) {
+            DetonatePlayerProjectiles(1);
+        }
+        
         if (m_player.IsOrc()) {
             return;
         }
@@ -1463,6 +1471,8 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
     }
 
+
+    
     if (bIsPressed && key == '1') { 
         if (m_player.IsKitsune()) {
             m_player.TriggerKitsuneEnergyOrb();
@@ -1481,6 +1491,8 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             m_player.SuppressNextPunch();
         }
     }
+
+    
     if (bIsPressed && (key == 'N' || key == 'n')) {
         if (m_player2.IsKitsune()) {
             m_player2.TriggerKitsuneEnergyOrb();
@@ -2732,7 +2744,9 @@ void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
         
         Vector3 direction(facingLeft ? -1.0f : 1.0f, 0.0f, 0.0f);
         
-        projectile->Spawn(spawnPos, direction, 2.0f);
+        int ownerId = (&character == &m_player) ? 1 : 2;
+        
+        projectile->Spawn(spawnPos, direction, 2.0f, ownerId);
     }
 }
 
@@ -2748,6 +2762,14 @@ void GSPlay::DrawEnergyOrbProjectiles(Camera* camera) {
     for (auto& projectile : m_energyOrbProjectiles) {
         if (projectile->IsActive()) {
             projectile->Draw(camera);
+        }
+    }
+}
+
+void GSPlay::DetonatePlayerProjectiles(int playerId) {
+    for (auto& projectile : m_energyOrbProjectiles) {
+        if (projectile->IsActive() && !projectile->IsExploding() && projectile->GetOwnerId() == playerId) {
+            projectile->TriggerExplosion();
         }
     }
 }

@@ -17,7 +17,8 @@ EnergyOrbProjectile::EnergyOrbProjectile()
     , m_explosionDuration(0.5f)
     , m_currentAnimation(0)
     , m_animationLoop(true)
-    , m_wallCollision(nullptr) {
+    , m_wallCollision(nullptr)
+    , m_ownerId(0) {
 }
 
 EnergyOrbProjectile::~EnergyOrbProjectile() {
@@ -48,7 +49,7 @@ void EnergyOrbProjectile::Initialize() {
     }
 }
 
-void EnergyOrbProjectile::Spawn(const Vector3& position, const Vector3& direction, float speed) {
+void EnergyOrbProjectile::Spawn(const Vector3& position, const Vector3& direction, float speed, int ownerId) {
     m_position = position;
     Vector3 dir(direction.x, direction.y, direction.z);
     m_velocity = dir * speed;
@@ -59,6 +60,7 @@ void EnergyOrbProjectile::Spawn(const Vector3& position, const Vector3& directio
     m_explosionTimer = 0.0f;
     m_currentAnimation = 0;
     m_animationLoop = true;
+    m_ownerId = ownerId;
     
     if (m_animManager) {
         m_animManager->Play(0, true);
