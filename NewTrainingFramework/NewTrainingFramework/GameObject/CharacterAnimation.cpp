@@ -103,6 +103,15 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             }
         }
     }
+    if (m_batAppearActive && m_batAppearAnim) {
+        m_batAppearAnim->Update(deltaTime);
+        if (!m_batAppearAnim->IsPlaying()) {
+            m_batAppearActive = false;
+            if (m_batAppearObject) {
+                m_batAppearObject->SetVisible(false);
+            }
+        }
+    }
 
     if (m_batSlashCooldownTimer > 0.0f) {
         m_batSlashCooldownTimer -= deltaTime;
@@ -310,6 +319,14 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_werewolfAppearObject->SetCustomUV(u0, v0, u1, v1);
         if (camera) {
             m_werewolfAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+    if (m_batAppearActive && m_batAppearObject && m_batAppearObject->GetModelId() >= 0 && m_batAppearObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_batAppearAnim->GetUV(u0, v0, u1, v1);
+        m_batAppearObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_batAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
 }
@@ -1047,6 +1064,10 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
         m_batSlashActive = false;
         m_batSlashCooldownTimer = 0.0f;
         m_orcMeteorStrikeActive = false;
+        if (m_characterObject) {
+            const Vector3& pos = m_characterObject->GetPosition();
+            TriggerBatAppearEffectAt(pos.x, pos.y);
+        }
     } else {
         // Restore original player body or werewolf depending on state
         if (m_isWerewolf) {
@@ -1086,6 +1107,36 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
             }
         }
         m_orcMeteorStrikeActive = false;
+    }
+}
+
+void CharacterAnimation::TriggerBatAppearEffectAt(float x, float y) {
+    if (!m_batAppearAnim) {
+        m_batAppearAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_batAppearObject) {
+        m_batAppearObject = std::make_unique<Object>(m_objectId + 23000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_batAppearObject->SetModel(originalObj->GetModelId());
+            m_batAppearObject->SetShader(originalObj->GetShaderId());
+            m_batAppearObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(72)) { // BatDemon_Appear.tga
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_batAppearAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_batAppearAnim->Play(0, false);
+        m_batAppearActive = true;
+        if (m_batAppearObject) {
+            m_batAppearObject->SetTexture(72, 0);
+            m_batAppearObject->SetVisible(true);
+            m_batAppearObject->SetPosition(x, y + BAT_APPEAR_Y_OFFSET, 0.0f);
+            m_batAppearObject->SetScale(1.5f, 1.5f, 0.0f);
+        }
     }
 }
 

@@ -514,6 +514,14 @@ ANINUM 1
 * Animation 0: Werewolf Appear
 0 10 1000
 
+ID 72
+FILE "../Resources/Fighter/Monster/BatDemon/Batdemon_Appear.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 16 1
+ANINUM 1
+* Animation 0: Bat Demon Appear
+0 10 1000
+
 ID 74
 FILE "../Resources/Fighter/Monster/Orc/Fire_Appear.tga"
 TILING GL_CLAMP_TO_EDGE

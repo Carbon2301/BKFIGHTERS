@@ -103,6 +103,10 @@ private:
     std::shared_ptr<AnimationManager> m_werewolfAppearAnim;
     std::unique_ptr<class Object> m_werewolfAppearObject;
     static constexpr float WEREWOLF_APPEAR_Y_OFFSET = 0.05f;
+    bool m_batAppearActive = false;
+    std::shared_ptr<AnimationManager> m_batAppearAnim;
+    std::unique_ptr<class Object> m_batAppearObject;
+    static constexpr float BAT_APPEAR_Y_OFFSET = 0.05f;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -142,6 +146,7 @@ public:
     void DrawOrcFire(Camera* camera);
     void DrawOrcAppear(Camera* camera);
     void DrawWerewolfAppear(Camera* camera);
+    void DrawBatAppear(Camera* camera);
     
     // Animation control
     void PlayAnimation(int animIndex, bool loop);
@@ -219,6 +224,7 @@ public:
     void GetOrcFireAabb(float& left, float& right, float& bottom, float& top) const;
     void TriggerOrcAppearEffectAt(float x, float y);
     void TriggerWerewolfAppearEffectAt(float x, float y);
+    void TriggerBatAppearEffectAt(float x, float y);
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);
