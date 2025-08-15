@@ -666,6 +666,7 @@ void GSPlay::Update(float deltaTime) {
     UpdateEnergyOrbProjectiles(deltaTime);
     UpdateLightningEffects(deltaTime);
     UpdateFireRains(deltaTime);
+    UpdateFireRainSpawnQueue();
     CheckLightningDamage();
     
     if (m_player.IsKitsuneEnergyOrbAnimationComplete()) {
@@ -1035,6 +1036,34 @@ void GSPlay::DrawFireRains(Camera* camera) {
             frObj->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
+}
+
+void GSPlay::QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration) {
+    if (step <= 0.0f) return;
+    std::vector<float> xs;
+    for (float x = xStart; x <= xEnd + 1e-6f; x += step) {
+        xs.push_back(x);
+    }
+    for (float x : xs) {
+        float r = (float)rand() / (float)RAND_MAX;
+        float spawnOffset = r * duration;
+        m_fireRainSpawnQueue.push_back(FireRainEvent{ m_gameTime + spawnOffset, x });
+    }
+}
+
+void GSPlay::UpdateFireRainSpawnQueue() {
+    if (m_fireRainSpawnQueue.empty()) return;
+    size_t writeIdx = 0;
+    for (size_t i = 0; i < m_fireRainSpawnQueue.size(); ++i) {
+        const FireRainEvent& ev = m_fireRainSpawnQueue[i];
+        if (m_gameTime >= ev.spawnTime) {
+            SpawnFireRainAt(ev.x, 1.2f);
+        } else {
+            if (writeIdx != i) m_fireRainSpawnQueue[writeIdx] = ev;
+            ++writeIdx;
+        }
+    }
+    m_fireRainSpawnQueue.resize(writeIdx);
 }
 
 int GSPlay::CreateOrAcquireBombObjectFromProto(int protoObjectId) {
@@ -1672,7 +1701,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (bIsPressed && key == '1') { 
         if (m_player.IsOrc()) {
             m_player.TriggerOrcMeteorStrike();
-            SpawnFireRainAt(0.0f, 0.77f);
+            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f);
         } else if (m_player.IsKitsune()) {
             m_player.TriggerKitsuneEnergyOrb();
         } else if (m_player.IsWerewolf()) {
@@ -1695,7 +1724,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (bIsPressed && (key == 'N' || key == 'n')) {
         if (m_player2.IsOrc()) {
             m_player2.TriggerOrcMeteorStrike();
-            SpawnFireRainAt(0.0f, 0.77f);
+            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f);
         } else if (m_player2.IsKitsune()) {
             m_player2.TriggerKitsuneEnergyOrb();
         } else if (m_player2.IsWerewolf()) {

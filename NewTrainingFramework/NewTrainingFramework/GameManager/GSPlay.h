@@ -250,7 +250,7 @@ private:
     std::vector<FireRain> m_fireRains;
     std::vector<std::unique_ptr<Object>> m_fireRainObjects;
     std::vector<int> m_freeFireRainSlots;
-    static constexpr int MAX_FIRERAIN = 10000;
+    static constexpr int MAX_FIRERAIN = 100000;
     static constexpr float FIRE_RAIN_COLLISION_W = 0.05f;
     static constexpr float FIRE_RAIN_COLLISION_H = 0.05f;
     static constexpr float FIRE_RAIN_DAMAGE_W = 0.18f;
@@ -260,6 +260,12 @@ private:
     void UpdateFireRains(float deltaTime);
     void DrawFireRains(class Camera* camera);
     bool CheckFireRainWallCollision(const Vector3& pos, float halfW, float halfH) const;
+
+    // Fire Rain spawn 
+    struct FireRainEvent { float spawnTime; float x; };
+    std::vector<FireRainEvent> m_fireRainSpawnQueue;
+    void QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration);
+    void UpdateFireRainSpawnQueue();
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
     bool  m_p1ReloadPending = false;
