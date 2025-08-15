@@ -3095,6 +3095,9 @@ void GSPlay::SpawnLightningEffect(float x) {
                 float uStart = 0.0f;
                 float uEnd = frameWidth;
                 m_lightningObjects[objIndex]->SetCustomUV(uStart, 1.0f, uEnd, 0.0f);
+                if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                    cam->AddShake(0.05f, lightning->maxLifetime, 22.0f);
+                }
             }
         }
     }
@@ -3105,6 +3108,10 @@ void GSPlay::UpdateLightningEffects(float deltaTime) {
         if (lightning.isActive) {
             lightning.lifetime += deltaTime;
             lightning.frameTimer += deltaTime;
+
+            if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                cam->AddShake(0.03f, 0.08f, 22.0f);
+            }
             
             if (lightning.frameTimer >= lightning.frameDuration) {
                 lightning.frameTimer = 0.0f;

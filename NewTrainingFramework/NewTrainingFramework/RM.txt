@@ -446,9 +446,9 @@ ANINUM 7
 * Animation 3: Energy orb
 48 7 700
 * Animation 4: Fade away
-64 10 800
+64 10 1000
 * Animation 5: Fade in
-80 10 800
+80 10 1000
 * Animation 6: Explode
 96 10 800
 
@@ -520,6 +520,14 @@ TILING GL_CLAMP_TO_EDGE
 SIZE 16 1
 ANINUM 1
 * Animation 0: Bat Demon Appear
+0 10 1000
+
+ID 73
+FILE "../Resources/Fighter/Monster/Kitsune/Kitsune_Appear.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 16 1
+ANINUM 1
+* Animation 0: Kitsune Appear
 0 10 1000
 
 ID 74

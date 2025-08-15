@@ -112,6 +112,15 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             }
         }
     }
+    if (m_kitsuneAppearActive && m_kitsuneAppearAnim) {
+        m_kitsuneAppearAnim->Update(deltaTime);
+        if (!m_kitsuneAppearAnim->IsPlaying()) {
+            m_kitsuneAppearActive = false;
+            if (m_kitsuneAppearObject) {
+                m_kitsuneAppearObject->SetVisible(false);
+            }
+        }
+    }
 
     if (m_batSlashCooldownTimer > 0.0f) {
         m_batSlashCooldownTimer -= deltaTime;
@@ -327,6 +336,14 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_batAppearObject->SetCustomUV(u0, v0, u1, v1);
         if (camera) {
             m_batAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+    if (m_kitsuneAppearActive && m_kitsuneAppearObject && m_kitsuneAppearObject->GetModelId() >= 0 && m_kitsuneAppearObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_kitsuneAppearAnim->GetUV(u0, v0, u1, v1);
+        m_kitsuneAppearObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_kitsuneAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
 }
@@ -1420,6 +1437,11 @@ void CharacterAnimation::SetKitsuneMode(bool enabled) {
             m_animManager->Play(0, true);
             m_lastAnimation = 0;
         }
+        // Spawn Kitsune appear VFX at transform position
+        if (m_characterObject) {
+            const Vector3& pos = m_characterObject->GetPosition();
+            TriggerKitsuneAppearEffectAt(pos.x, pos.y);
+        }
     } else {
         if (m_isWerewolf) {
             if (m_characterObject) {
@@ -1473,6 +1495,36 @@ void CharacterAnimation::SetKitsuneMode(bool enabled) {
                 m_animManager->Play(0, true);
                 m_lastAnimation = 0;
             }
+        }
+    }
+}
+
+void CharacterAnimation::TriggerKitsuneAppearEffectAt(float x, float y) {
+    if (!m_kitsuneAppearAnim) {
+        m_kitsuneAppearAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_kitsuneAppearObject) {
+        m_kitsuneAppearObject = std::make_unique<Object>(m_objectId + 24000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_kitsuneAppearObject->SetModel(originalObj->GetModelId());
+            m_kitsuneAppearObject->SetShader(originalObj->GetShaderId());
+            m_kitsuneAppearObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(73)) { // Kitsune_Appear.tga (ID 73)
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_kitsuneAppearAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_kitsuneAppearAnim->Play(0, false);
+        m_kitsuneAppearActive = true;
+        if (m_kitsuneAppearObject) {
+            m_kitsuneAppearObject->SetTexture(73, 0);
+            m_kitsuneAppearObject->SetVisible(true);
+            m_kitsuneAppearObject->SetPosition(x, y + KITSUNE_APPEAR_Y_OFFSET, 0.0f);
+            m_kitsuneAppearObject->SetScale(0.8f, 0.8f, 0.0f);
         }
     }
 }

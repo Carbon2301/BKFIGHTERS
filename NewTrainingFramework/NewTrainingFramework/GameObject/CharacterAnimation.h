@@ -107,6 +107,10 @@ private:
     std::shared_ptr<AnimationManager> m_batAppearAnim;
     std::unique_ptr<class Object> m_batAppearObject;
     static constexpr float BAT_APPEAR_Y_OFFSET = 0.05f;
+    bool m_kitsuneAppearActive = false;
+    std::shared_ptr<AnimationManager> m_kitsuneAppearAnim;
+    std::unique_ptr<class Object> m_kitsuneAppearObject;
+    static constexpr float KITSUNE_APPEAR_Y_OFFSET = 0.05f;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -147,6 +151,7 @@ public:
     void DrawOrcAppear(Camera* camera);
     void DrawWerewolfAppear(Camera* camera);
     void DrawBatAppear(Camera* camera);
+    void DrawKitsuneAppear(Camera* camera);
     
     // Animation control
     void PlayAnimation(int animIndex, bool loop);
@@ -225,6 +230,7 @@ public:
     void TriggerOrcAppearEffectAt(float x, float y);
     void TriggerWerewolfAppearEffectAt(float x, float y);
     void TriggerBatAppearEffectAt(float x, float y);
+    void TriggerKitsuneAppearEffectAt(float x, float y);
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);
