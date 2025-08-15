@@ -33,6 +33,13 @@ private:
         Hurtbox pounce;
     } m_werewolfHurtboxes;
     
+    struct KitsuneHurtboxes {
+        Hurtbox idle;
+        Hurtbox walk;
+        Hurtbox run;
+        Hurtbox energyOrb;
+    } m_kitsuneHurtboxes;
+    
     Character* m_character;
 
     void GetActiveHurtbox(Hurtbox& out) const;
@@ -61,6 +68,12 @@ public:
     void SetWerewolfHurtboxJump  (float width, float height, float offsetX, float offsetY);
     void SetWerewolfHurtboxCombo (float width, float height, float offsetX, float offsetY);
     void SetWerewolfHurtboxPounce(float width, float height, float offsetX, float offsetY);
+    
+    // Kitsune hurtbox setters
+    void SetKitsuneHurtboxIdle     (float width, float height, float offsetX, float offsetY);
+    void SetKitsuneHurtboxWalk     (float width, float height, float offsetX, float offsetY);
+    void SetKitsuneHurtboxRun      (float width, float height, float offsetX, float offsetY);
+    void SetKitsuneHurtboxEnergyOrb(float width, float height, float offsetX, float offsetY);
     
     float GetHurtboxWidth() const;
     float GetHurtboxHeight() const;

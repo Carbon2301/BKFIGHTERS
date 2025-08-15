@@ -57,6 +57,9 @@ public:
      // Kitsune API
      void SetKitsuneMode(bool enabled);
      bool IsKitsune() const;
+     void TriggerKitsuneEnergyOrb();
+     bool IsKitsuneEnergyOrbAnimationComplete() const;
+     void ResetKitsuneEnergyOrbAnimationComplete();
 
      // Orc API
      void SetOrcMode(bool enabled);
@@ -171,12 +174,18 @@ public:
      bool IsWerewolfComboActive() const;
      bool IsWerewolfPounceActive() const;
 
-	 // Werewolf hurtbox setters (forwarders)
+	 // Werewolf hurtbox setters
 	 void SetWerewolfHurtboxIdle(float w, float h, float ox, float oy);
 	 void SetWerewolfHurtboxWalk(float w, float h, float ox, float oy);
 	 void SetWerewolfHurtboxRun(float w, float h, float ox, float oy);
 	 void SetWerewolfHurtboxJump(float w, float h, float ox, float oy);
 	 void SetWerewolfHurtboxCombo(float w, float h, float ox, float oy);
 	 void SetWerewolfHurtboxPounce(float w, float h, float ox, float oy);
+	 
+	 // Kitsune hurtbox setters
+	 void SetKitsuneHurtboxIdle(float w, float h, float ox, float oy);
+	 void SetKitsuneHurtboxWalk(float w, float h, float ox, float oy);
+	 void SetKitsuneHurtboxRun(float w, float h, float ox, float oy);
+	 void SetKitsuneHurtboxEnergyOrb(float w, float h, float ox, float oy);
 
 }; 

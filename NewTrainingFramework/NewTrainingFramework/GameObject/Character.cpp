@@ -128,17 +128,39 @@ void Character::SetKitsuneMode(bool enabled) {
             m_movement->SetInputLocked(false);
             m_movement->SetMoveSpeedMultiplier(1.2f);
             m_movement->SetRunSpeedMultiplier(1.2f);
+            m_movement->SetJumpForceMultiplier(1.2f);
+            m_movement->SetLadderDoubleTapEnabled(false);
+            m_movement->SetLadderEnabled(false);
         }
     } else {
         if (m_movement) {
             m_movement->SetMoveSpeedMultiplier(1.0f);
             m_movement->SetRunSpeedMultiplier(1.0f);
+            m_movement->SetJumpForceMultiplier(1.0f);
+            m_movement->SetLadderDoubleTapEnabled(true);
+            m_movement->SetLadderEnabled(true);
         }
     }
 }
 
 bool Character::IsKitsune() const {
     return m_animation ? m_animation->IsKitsune() : false;
+}
+
+void Character::TriggerKitsuneEnergyOrb() {
+    if (m_animation) {
+        m_animation->TriggerKitsuneEnergyOrb();
+    }
+}
+
+bool Character::IsKitsuneEnergyOrbAnimationComplete() const {
+    return m_animation ? m_animation->IsKitsuneEnergyOrbAnimationComplete() : false;
+}
+
+void Character::ResetKitsuneEnergyOrbAnimationComplete() {
+    if (m_animation) {
+        m_animation->ResetKitsuneEnergyOrbAnimationComplete();
+    }
 }
 
 void Character::SetOrcMode(bool enabled) {
@@ -609,6 +631,11 @@ void Character::SetWerewolfHurtboxRun(float w, float h, float ox, float oy)    {
 void Character::SetWerewolfHurtboxJump(float w, float h, float ox, float oy)   { if (m_hitbox) m_hitbox->SetWerewolfHurtboxJump(w, h, ox, oy); }
 void Character::SetWerewolfHurtboxCombo(float w, float h, float ox, float oy)  { if (m_hitbox) m_hitbox->SetWerewolfHurtboxCombo(w, h, ox, oy); }
 void Character::SetWerewolfHurtboxPounce(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetWerewolfHurtboxPounce(w, h, ox, oy); }
+
+void Character::SetKitsuneHurtboxIdle(float w, float h, float ox, float oy)      { if (m_hitbox) m_hitbox->SetKitsuneHurtboxIdle(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxWalk(float w, float h, float ox, float oy)      { if (m_hitbox) m_hitbox->SetKitsuneHurtboxWalk(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxRun(float w, float h, float ox, float oy)       { if (m_hitbox) m_hitbox->SetKitsuneHurtboxRun(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxEnergyOrb(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetKitsuneHurtboxEnergyOrb(w, h, ox, oy); }
 
 float Character::GetHitboxWidth() const {
     return m_combat ? m_combat->GetHitboxWidth() : 0.0f;

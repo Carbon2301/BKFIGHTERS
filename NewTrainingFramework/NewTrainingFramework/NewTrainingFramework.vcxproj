@@ -115,6 +115,7 @@
     <ClCompile Include="GameObject\CharacterMovement.cpp" />
     <ClCompile Include="GameObject\WallCollision.cpp" />
     <ClCompile Include="GameObject\InputManager.cpp" />
+    <ClCompile Include="GameObject\EnergyOrbProjectile.cpp" />
     <ClCompile Include="GameObject\Shaders.cpp" />
     <ClCompile Include="GameObject\TeleportCollision.cpp" />
     <ClCompile Include="Core\stdafx.cpp">
@@ -150,6 +151,7 @@
     <ClInclude Include="GameObject\TeleportCollision.h" />
     <ClInclude Include="GameObject\InputManager.h" />
     <ClInclude Include="GameObject\Shaders.h" />
+    <ClInclude Include="GameObject\EnergyOrbProjectile.h" />
     <ClInclude Include="Core\stdafx.h" />
     <ClInclude Include="Core\targetver.h" />
     <ClInclude Include="GameObject\Texture2D.h" />
