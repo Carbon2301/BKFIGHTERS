@@ -934,8 +934,10 @@ void GSPlay::UpdateFireRains(float deltaTime) {
             fr.position += fr.velocity * deltaTime;
 
             bool hitWall = CheckFireRainWallCollision(fr.position, FIRE_RAIN_COLLISION_W * 0.5f, FIRE_RAIN_COLLISION_H * 0.5f);
-            bool outOfBound = (fr.position.x < -10.0f || fr.position.x > 10.0f || fr.position.y < -10.0f);
-            if (hitWall || outOfBound || fr.lifetime >= fr.maxLifetime) {
+            if (hitWall) {
+                if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                    cam->AddShake(0.01f, 0.18f, 18.0f);
+                }
                 fr.isFading = true;
                 fr.fadeTimer = 0.0f;
                 if (fr.anim) fr.anim->Play(1, false);
