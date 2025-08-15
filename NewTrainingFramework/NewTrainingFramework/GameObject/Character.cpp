@@ -652,6 +652,11 @@ void Character::SetKitsuneHurtboxWalk(float w, float h, float ox, float oy)     
 void Character::SetKitsuneHurtboxRun(float w, float h, float ox, float oy)       { if (m_hitbox) m_hitbox->SetKitsuneHurtboxRun(w, h, ox, oy); }
 void Character::SetKitsuneHurtboxEnergyOrb(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetKitsuneHurtboxEnergyOrb(w, h, ox, oy); }
 
+void Character::SetOrcHurtboxIdle  (float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetOrcHurtboxIdle(w, h, ox, oy); }
+void Character::SetOrcHurtboxWalk  (float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetOrcHurtboxWalk(w, h, ox, oy); }
+void Character::SetOrcHurtboxMeteor(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetOrcHurtboxMeteor(w, h, ox, oy); }
+void Character::SetOrcHurtboxFlame (float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetOrcHurtboxFlame(w, h, ox, oy); }
+
 float Character::GetHitboxWidth() const {
     return m_combat ? m_combat->GetHitboxWidth() : 0.0f;
 }

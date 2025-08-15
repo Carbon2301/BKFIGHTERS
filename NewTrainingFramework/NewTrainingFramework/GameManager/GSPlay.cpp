@@ -184,10 +184,21 @@ void GSPlay::Init() {
     m_player.SetKitsuneHurtboxEnergyOrb (0.15f, 0.18f, 0.0f, -0.05f);
     
     // Player 2 Kitsune
-    m_player2.SetKitsuneHurtboxIdle     (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player2.SetKitsuneHurtboxIdle     (0.12f, 0.216f, -0.03f, -0.095f);
     m_player2.SetKitsuneHurtboxWalk     (0.15f, 0.18f, 0.0f, -0.05f);
     m_player2.SetKitsuneHurtboxRun      (0.15f, 0.18f, 0.0f, -0.05f);
     m_player2.SetKitsuneHurtboxEnergyOrb(0.15f, 0.18f, 0.0f, -0.05f);
+
+    // P1 Orc
+    m_player.SetOrcHurtboxIdle  (0.145f, 0.245f, 0.012f, -0.085f);
+    m_player.SetOrcHurtboxWalk  (0.125f, 0.245f, 0.012f, -0.085f);
+    m_player.SetOrcHurtboxMeteor(0.22f, 0.26f, 0.016f, -0.06f);
+    m_player.SetOrcHurtboxFlame (0.18f, 0.22f, 0.012f, -0.09f);
+    // P2 Orc
+    m_player2.SetOrcHurtboxIdle(0.145f, 0.245f, 0.012f, -0.085f);
+    m_player2.SetOrcHurtboxWalk(0.125f, 0.245f, 0.012f, -0.085f);
+    m_player2.SetOrcHurtboxMeteor(0.22f, 0.26f, 0.016f, -0.06f);
+    m_player2.SetOrcHurtboxFlame(0.18f, 0.22f, 0.012f, -0.09f);
     
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
