@@ -1573,3 +1573,18 @@ void CharacterAnimation::TriggerOrcFlameBurst() {
         }
     }
 }
+
+void CharacterAnimation::GetOrcFireAabb(float& left, float& right, float& bottom, float& top) const {
+    if (m_orcFireObject) {
+        const Vector3& pos = m_orcFireObject->GetPosition();
+        const Vector3& sc  = m_orcFireObject->GetScale();
+        float halfW = fabsf(sc.x) * 0.5f;
+        float halfH = fabsf(sc.y) * 0.5f;
+        left = pos.x - halfW;
+        right = pos.x + halfW;
+        bottom = pos.y - halfH;
+        top = pos.y + halfH;
+    } else {
+        left = right = bottom = top = 0.0f;
+    }
+}

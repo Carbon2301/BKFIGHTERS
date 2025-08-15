@@ -646,6 +646,39 @@ void GSPlay::Update(float deltaTime) {
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
 
+    auto checkFireDamage = [&](Character& source, Character& target){
+        CharacterAnimation* anim = source.GetAnimation();
+        if (!anim) return;
+        if (!anim->IsOrcFireActive()) return;
+        float l, r, b, t; anim->GetOrcFireAabb(l, r, b, t);
+        {
+            const float DAMAGE_Y_SCALE = 0.7f;
+            float centerY = 0.5f * (b + t);
+            float halfH = 0.5f * (t - b) * DAMAGE_Y_SCALE;
+            b = centerY - halfH;
+            t = centerY + halfH;
+        }
+        Vector3 pos = target.GetPosition();
+        float hx = pos.x + target.GetHurtboxOffsetX();
+        float hy = pos.y + target.GetHurtboxOffsetY();
+        float halfW = target.GetHurtboxWidth() * 0.5f;
+        float halfH = target.GetHurtboxHeight() * 0.5f;
+        float tl = hx - halfW, tr = hx + halfW, tb = hy - halfH, tt = hy + halfH;
+        bool overlapX = (r >= tl) && (l <= tr);
+        bool overlapY = (t >= tb) && (b <= tt);
+        if (overlapX && overlapY) {
+            float prev = target.GetHealth();
+            target.TakeDamage(100.0f);
+            target.CancelAllCombos();
+            if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
+            if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                target.TriggerDie();
+            }
+        }
+    };
+    checkFireDamage(m_player, m_player2);
+    checkFireDamage(m_player2, m_player);
+
     if (m_player.GetMovement() && m_player.GetMovement()->ConsumeJustStartedUpwardJump()) {
         SoundManager::Instance().PlaySFXByID(18, 0);
     }

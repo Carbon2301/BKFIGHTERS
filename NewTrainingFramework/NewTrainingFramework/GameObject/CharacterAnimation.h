@@ -205,6 +205,8 @@ public:
     void TriggerOrcFlameBurst();
     bool IsOrcMeteorStrikeActive() const { return m_orcMeteorStrikeActive; }
     bool IsOrcFlameBurstActive() const { return m_orcFlameBurstActive; }
+    bool IsOrcFireActive() const { return m_orcFireActive; }
+    void GetOrcFireAabb(float& left, float& right, float& bottom, float& top) const;
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);
