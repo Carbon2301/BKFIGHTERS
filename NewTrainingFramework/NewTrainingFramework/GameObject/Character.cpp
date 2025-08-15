@@ -181,6 +181,12 @@ bool Character::IsOrc() const {
     return m_animation ? m_animation->IsOrc() : false;
 }
 
+void Character::TriggerOrcMeteorStrike() {
+    if (m_animation) {
+        m_animation->TriggerOrcMeteorStrike();
+    }
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);
@@ -224,6 +230,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
 		}
 		if (m_animation && m_animation->IsGunMode()) lock = true;
 		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+		if (m_animation && m_animation->IsOrcMeteorStrikeActive()) lock = true;
 		if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
 			m_movement->ForceSit(false);
 		}
@@ -302,6 +309,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
 		bool lock = m_combat->IsKicking();
 		if (m_animation && m_animation->IsGunMode()) lock = true;
 		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+		if (m_animation && m_animation->IsOrcMeteorStrikeActive()) lock = true;
 		if (m_animation) {
 			int cur = m_animation->GetCurrentAnimation();
 			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
@@ -329,6 +337,7 @@ void Character::Update(float deltaTime) {
 
 	if (m_movement && m_combat) {
 		bool lock = m_combat->IsKicking();
+		if (m_animation && m_animation->IsOrcMeteorStrikeActive()) lock = true;
 		if (m_animation) {
 			int cur = m_animation->GetCurrentAnimation();
 			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);

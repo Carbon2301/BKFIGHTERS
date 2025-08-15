@@ -1489,7 +1489,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
 
     
     if (bIsPressed && key == '1') { 
-        if (m_player.IsKitsune()) {
+        if (m_player.IsOrc()) {
+            m_player.TriggerOrcMeteorStrike();
+        } else if (m_player.IsKitsune()) {
             m_player.TriggerKitsuneEnergyOrb();
         } else if (m_player.IsWerewolf()) {
             m_player.TriggerWerewolfCombo();
@@ -1509,7 +1511,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
 
     
     if (bIsPressed && (key == 'N' || key == 'n')) {
-        if (m_player2.IsKitsune()) {
+        if (m_player2.IsOrc()) {
+            m_player2.TriggerOrcMeteorStrike();
+        } else if (m_player2.IsKitsune()) {
             m_player2.TriggerKitsuneEnergyOrb();
         } else if (m_player2.IsWerewolf()) {
             m_player2.TriggerWerewolfCombo();

@@ -64,6 +64,7 @@ public:
      // Orc API
      void SetOrcMode(bool enabled);
      bool IsOrc() const;
+     void TriggerOrcMeteorStrike();
     
     // Core update
     void Update(float deltaTime);

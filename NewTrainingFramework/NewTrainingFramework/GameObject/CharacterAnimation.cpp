@@ -468,17 +468,36 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
             }
         }
         if (m_animManager) {
+            if (m_orcMeteorStrikeActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 2) {
+                    m_animManager->Play(2, false);
+                    m_lastAnimation = 2;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_orcMeteorStrikeActive = false;
+                    if (movement) {
+                        movement->SetInputLocked(false);
+                    }
+                } else {
+                    if (movement) {
+                        movement->SetInputLocked(true);
+                    }
+                }
+                return;
+            }
+            
             int cur = GetCurrentAnimation();
             int desired = 0;
-            if (movement) {
+            if (movement && !m_orcMeteorStrikeActive) {
                 CharState st = movement->GetState();
                 bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
                 if (isMoving) { desired = 1; } // Walk
             }
-            if (cur != desired) {
+            if (cur != desired && !m_orcMeteorStrikeActive) {
                 m_animManager->Play(desired, true);
                 m_lastAnimation = desired;
-            } else {
+            } else if (!m_orcMeteorStrikeActive) {
                 m_animManager->Resume();
             }
         }
@@ -611,6 +630,10 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         return;
     }
     if (m_isKitsune) {
+        return;
+    }
+    
+    if (m_isOrc && m_orcMeteorStrikeActive) {
         return;
     }
     
@@ -1303,6 +1326,7 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
         m_isBatDemon = false;
         m_isWerewolf = false;
         m_isKitsune = false;
+        m_orcMeteorStrikeActive = false;
         m_topAnimManager.reset();
         m_topObject.reset();
         if (m_characterObject) {
@@ -1427,5 +1451,15 @@ void CharacterAnimation::TriggerKitsuneEnergyOrb() {
         m_lastAnimation = 3;
         m_kitsuneEnergyOrbActive = true;
         m_kitsuneEnergyOrbAnimationComplete = false;
+    }
+}
+
+void CharacterAnimation::TriggerOrcMeteorStrike() {
+    if (!m_isOrc) return;
+    if (m_orcMeteorStrikeActive) return;
+    if (m_animManager) {
+        m_animManager->Play(2, false);
+        m_lastAnimation = 2;
+        m_orcMeteorStrikeActive = true;
     }
 }
