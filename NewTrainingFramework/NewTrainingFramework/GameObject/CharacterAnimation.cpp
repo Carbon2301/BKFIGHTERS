@@ -94,6 +94,15 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             }
         }
     }
+    if (m_werewolfAppearActive && m_werewolfAppearAnim) {
+        m_werewolfAppearAnim->Update(deltaTime);
+        if (!m_werewolfAppearAnim->IsPlaying()) {
+            m_werewolfAppearActive = false;
+            if (m_werewolfAppearObject) {
+                m_werewolfAppearObject->SetVisible(false);
+            }
+        }
+    }
 
     if (m_batSlashCooldownTimer > 0.0f) {
         m_batSlashCooldownTimer -= deltaTime;
@@ -293,6 +302,14 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_orcAppearObject->SetCustomUV(u0, v0, u1, v1);
         if (camera) {
             m_orcAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+    if (m_werewolfAppearActive && m_werewolfAppearObject && m_werewolfAppearObject->GetModelId() >= 0 && m_werewolfAppearObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_werewolfAppearAnim->GetUV(u0, v0, u1, v1);
+        m_werewolfAppearObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_werewolfAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
 }
@@ -1273,6 +1290,10 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
             m_animManager->Play(0, true);
             m_lastAnimation = 0;
         }
+        if (m_characterObject) {
+            const Vector3& pos = m_characterObject->GetPosition();
+            TriggerWerewolfAppearEffectAt(pos.x, pos.y);
+        }
     } else {
         // Restore original player body texture and animations
         int bodyTexId = (m_objectId == 1000) ? 10 : 11;
@@ -1291,6 +1312,36 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
             m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
             m_animManager->Play(0, true);
             m_lastAnimation = 0;
+        }
+    }
+}
+
+void CharacterAnimation::TriggerWerewolfAppearEffectAt(float x, float y) {
+    if (!m_werewolfAppearAnim) {
+        m_werewolfAppearAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_werewolfAppearObject) {
+        m_werewolfAppearObject = std::make_unique<Object>(m_objectId + 22000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_werewolfAppearObject->SetModel(originalObj->GetModelId());
+            m_werewolfAppearObject->SetShader(originalObj->GetShaderId());
+            m_werewolfAppearObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(71)) { // Werewolf_Appear.tga
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_werewolfAppearAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_werewolfAppearAnim->Play(0, false);
+        m_werewolfAppearActive = true;
+        if (m_werewolfAppearObject) {
+            m_werewolfAppearObject->SetTexture(71, 0);
+            m_werewolfAppearObject->SetVisible(true);
+            m_werewolfAppearObject->SetPosition(x, y + WEREWOLF_APPEAR_Y_OFFSET, 0.0f);
+            m_werewolfAppearObject->SetScale(0.8f, 0.8f, 0.0f);
         }
     }
 }
