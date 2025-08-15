@@ -128,11 +128,17 @@ void Character::SetKitsuneMode(bool enabled) {
             m_movement->SetInputLocked(false);
             m_movement->SetMoveSpeedMultiplier(1.2f);
             m_movement->SetRunSpeedMultiplier(1.2f);
+            m_movement->SetJumpForceMultiplier(1.2f);
+            m_movement->SetLadderDoubleTapEnabled(false);
+            m_movement->SetLadderEnabled(false);
         }
     } else {
         if (m_movement) {
             m_movement->SetMoveSpeedMultiplier(1.0f);
             m_movement->SetRunSpeedMultiplier(1.0f);
+            m_movement->SetJumpForceMultiplier(1.0f);
+            m_movement->SetLadderDoubleTapEnabled(true);
+            m_movement->SetLadderEnabled(true);
         }
     }
 }
