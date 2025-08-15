@@ -233,6 +233,29 @@ private:
     int CreateOrAcquireLightningObject();
     void CheckLightningDamage();
 
+    struct FireRain {
+        bool isActive = false;
+        bool isFading = false;
+        float lifetime = 0.0f;
+        float maxLifetime = 5.0f;
+        float fadeTimer = 0.0f;
+        float fadeDuration = 0.8f;
+        Vector3 position = Vector3(0.0f, 0.0f, 0.0f);
+        Vector3 velocity = Vector3(0.0f, -1.5f, 0.0f);
+        int objectIndex = -1;
+        std::shared_ptr<AnimationManager> anim;
+    };
+    std::vector<FireRain> m_fireRains;
+    std::vector<std::unique_ptr<Object>> m_fireRainObjects;
+    std::vector<int> m_freeFireRainSlots;
+    static constexpr int MAX_FIRERAIN = 10000;
+    static constexpr float FIRE_RAIN_COLLISION_W = 0.05f;
+    static constexpr float FIRE_RAIN_COLLISION_H = 0.05f;
+    int CreateOrAcquireFireRainObject();
+    void SpawnFireRainAt(float x, float y);
+    void UpdateFireRains(float deltaTime);
+    void DrawFireRains(class Camera* camera);
+
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
     bool  m_p1ReloadPending = false;
     float m_p1ReloadExitTime = -1.0f;
