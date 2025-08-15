@@ -976,6 +976,7 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
         }
         m_batSlashActive = false;
         m_batSlashCooldownTimer = 0.0f;
+        m_orcMeteorStrikeActive = false;
     } else {
         // Restore original player body or werewolf depending on state
         if (m_isWerewolf) {
@@ -1014,6 +1015,7 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
                 m_lastAnimation = 0;
             }
         }
+        m_orcMeteorStrikeActive = false;
     }
 }
 
@@ -1196,6 +1198,7 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
     if (enabled) { m_isKitsune = false; }
     m_werewolfComboActive = false;
     m_werewolfPounceActive = false;
+    m_orcMeteorStrikeActive = false;
     if (enabled) {
         // Disable gun/grenade overlays when werewolf
         m_gunMode = false;
@@ -1245,6 +1248,7 @@ void CharacterAnimation::SetKitsuneMode(bool enabled) {
         m_gunMode = false;
         m_grenadeMode = false;
         m_isBatDemon = false;
+        m_orcMeteorStrikeActive = false;
         if (m_characterObject) {
             m_characterObject->SetTexture(62, 0);
         }
@@ -1346,6 +1350,7 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
             m_lastAnimation = 0;
         }
     } else {
+        m_orcMeteorStrikeActive = false;
         if (m_isWerewolf) {
             if (m_characterObject) {
                 m_characterObject->SetTexture(60, 0);
@@ -1414,6 +1419,29 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
                 m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
                 m_animManager->Play(0, true);
                 m_lastAnimation = 0;
+            }
+            int headTexId = (m_objectId == 1000) ? 8 : 9;
+            const TextureData* headTex = ResourceManager::GetInstance()->GetTextureData(headTexId);
+            if (headTex && headTex->spriteWidth > 0 && headTex->spriteHeight > 0) {
+                if (!m_topAnimManager) {
+                    m_topAnimManager = std::make_shared<AnimationManager>();
+                    std::vector<AnimationData> topAnims;
+                    topAnims.reserve(headTex->animations.size());
+                    for (const auto& a : headTex->animations) {
+                        topAnims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                    }
+                    m_topAnimManager->Initialize(headTex->spriteWidth, headTex->spriteHeight, topAnims);
+                    m_topAnimManager->Play(0, true);
+                }
+                if (!m_topObject) {
+                    m_topObject = std::make_unique<Object>(m_objectId + 10000);
+                    if (m_characterObject) {
+                        m_topObject->SetModel(m_characterObject->GetModelId());
+                        m_topObject->SetShader(m_characterObject->GetShaderId());
+                        m_topObject->SetScale(m_characterObject->GetScale());
+                    }
+                }
+                m_topObject->SetTexture(headTexId, 0);
             }
         }
     }
