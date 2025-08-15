@@ -92,6 +92,9 @@ private:
     bool m_kitsuneEnergyOrbAnimationComplete = false;
     bool m_orcMeteorStrikeActive = false;
     bool m_orcFlameBurstActive = false;
+    bool m_orcFireActive = false;
+    std::shared_ptr<AnimationManager> m_orcFireAnim;
+    std::unique_ptr<class Object> m_orcFireObject;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -128,6 +131,7 @@ public:
     // Core update
     void Update(float deltaTime, CharacterMovement* movement, CharacterCombat* combat);
     void Draw(Camera* camera, CharacterMovement* movement);
+    void DrawOrcFire(Camera* camera);
     
     // Animation control
     void PlayAnimation(int animIndex, bool loop);

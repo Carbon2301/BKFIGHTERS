@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 49
+# 2DTexture 50
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/NewBackground.tga"
 TILING GL_REPEAT
@@ -500,7 +500,7 @@ TILING GL_CLAMP_TO_EDGE
 SIZE 1 25
 ANINUM 1
 * Animation 0: Fire
-0 25 3000
+0 25 3500
 
 ID 70
 FILE "../Resources/Fighter/Stages/Stage_1/windWheel.tga"
