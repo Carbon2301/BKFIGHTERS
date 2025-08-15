@@ -54,11 +54,13 @@ void Character::SetBatDemonMode(bool enabled) {
         SetGrenadeMode(false);
         if (m_movement) {
             m_movement->SetNoClipNoGravity(true);
+            m_movement->SetMoveSpeedMultiplier(1.8f);
         }
     }
     else {
         if (m_movement) {
             m_movement->SetNoClipNoGravity(false);
+            m_movement->SetMoveSpeedMultiplier(1.0f);
         }
     }
 }
@@ -173,6 +175,13 @@ void Character::SetOrcMode(bool enabled) {
         if (m_movement) {
             m_movement->SetNoClipNoGravity(false);
             m_movement->SetInputLocked(false);
+            m_movement->SetLadderDoubleTapEnabled(false);
+            m_movement->SetLadderEnabled(false);
+        }
+    } else {
+        if (m_movement) {
+            m_movement->SetLadderDoubleTapEnabled(true);
+            m_movement->SetLadderEnabled(true);
         }
     }
 }
