@@ -2756,7 +2756,7 @@ void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
         
         Vector3 spawnPos = charPos;
         spawnPos.x += facingLeft ? -0.15f : 0.15f;
-        spawnPos.y += 0.05f;
+        spawnPos.y -= 0.05f;
         
         Vector3 direction(facingLeft ? -1.0f : 1.0f, 0.0f, 0.0f);
         
