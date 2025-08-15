@@ -147,6 +147,16 @@ void Character::TriggerKitsuneEnergyOrb() {
     }
 }
 
+bool Character::IsKitsuneEnergyOrbAnimationComplete() const {
+    return m_animation ? m_animation->IsKitsuneEnergyOrbAnimationComplete() : false;
+}
+
+void Character::ResetKitsuneEnergyOrbAnimationComplete() {
+    if (m_animation) {
+        m_animation->ResetKitsuneEnergyOrbAnimationComplete();
+    }
+}
+
 void Character::SetOrcMode(bool enabled) {
     if (m_animation) {
         m_animation->SetOrcMode(enabled);

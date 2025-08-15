@@ -581,11 +581,21 @@ void GSPlay::UpdateHudBombDigits() {
     showDigits(true,  m_p1Bombs > 0);
     showDigits(false, m_p2Bombs > 0);
     if (Object* bombIcon1 = scene->GetObject(922)) {
-        Vector3 base = m_hudBombIcon1BaseScale.x != 0.0f || m_hudBombIcon1BaseScale.y != 0.0f ? m_hudBombIcon1BaseScale : bombIcon1->GetScale();
+        Vector3 base;
+        if (m_hudBombIcon1BaseScale.x != 0.0f || m_hudBombIcon1BaseScale.y != 0.0f) {
+            base = m_hudBombIcon1BaseScale;
+        } else {
+            base = bombIcon1->GetScale();
+        }
         bombIcon1->SetScale(m_p1Bombs > 0 ? base : Vector3(0.0f, 0.0f, base.z));
     }
     if (Object* bombIcon2 = scene->GetObject(923)) {
-        Vector3 base = m_hudBombIcon2BaseScale.x != 0.0f || m_hudBombIcon2BaseScale.y != 0.0f ? m_hudBombIcon2BaseScale : bombIcon2->GetScale();
+        Vector3 base;
+        if (m_hudBombIcon2BaseScale.x != 0.0f || m_hudBombIcon2BaseScale.y != 0.0f) {
+            base = m_hudBombIcon2BaseScale;
+        } else {
+            base = bombIcon2->GetScale();
+        }
         bombIcon2->SetScale(m_p2Bombs > 0 ? base : Vector3(0.0f, 0.0f, base.z));
     }
     if (m_p1Bombs > 0) setTwoDigits(m_p1Bombs, 928, 929);
@@ -641,6 +651,15 @@ void GSPlay::Update(float deltaTime) {
     m_prevRollingP1 = rollingP1;
     m_prevRollingP2 = rollingP2;
     UpdateBullets(deltaTime);
+    UpdateEnergyOrbProjectiles(deltaTime);
+    
+    if (m_player.IsKitsuneEnergyOrbAnimationComplete()) {
+        SpawnEnergyOrbProjectile(m_player);
+    }
+    if (m_player2.IsKitsuneEnergyOrbAnimationComplete()) {
+        SpawnEnergyOrbProjectile(m_player2);
+    }
+    
     UpdateBombs(deltaTime);
     UpdateExplosions(deltaTime);
     UpdateGrenadeFuse();
@@ -737,6 +756,7 @@ void GSPlay::Draw() {
     // Draw HUD portraits with independent UVs
     DrawHudPortraits();
     if (cam) { DrawBullets(cam); }
+    if (cam) { DrawEnergyOrbProjectiles(cam); }
     if (cam) { DrawBombs(cam); }
     if (cam) { DrawExplosions(cam); }
     if (cam) { DrawBloods(cam); }
@@ -2681,4 +2701,52 @@ void GSPlay::HandleItemPickup() {
          tryPickupGun(45, gun_deagle,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(46, gun_sniper,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) { return; }
+}
+
+void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
+    character.ResetKitsuneEnergyOrbAnimationComplete();
+    
+    EnergyOrbProjectile* projectile = nullptr;
+    
+    for (auto& proj : m_energyOrbProjectiles) {
+        if (!proj->IsActive()) {
+            projectile = proj.get();
+            break;
+        }
+    }
+    
+    if (!projectile && m_energyOrbProjectiles.size() < MAX_ENERGY_ORB_PROJECTILES) {
+        m_energyOrbProjectiles.push_back(std::make_unique<EnergyOrbProjectile>());
+        projectile = m_energyOrbProjectiles.back().get();
+        projectile->Initialize();
+    }
+    
+    if (projectile) {
+        Vector3 charPos = character.GetPosition();
+        bool facingLeft = character.IsFacingLeft();
+        
+        Vector3 spawnPos = charPos;
+        spawnPos.x += facingLeft ? -0.15f : 0.15f;
+        spawnPos.y += 0.05f;
+        
+        Vector3 direction(facingLeft ? -1.0f : 1.0f, 0.0f, 0.0f);
+        
+        projectile->Spawn(spawnPos, direction, 2.0f);
+    }
+}
+
+void GSPlay::UpdateEnergyOrbProjectiles(float deltaTime) {
+    for (auto& projectile : m_energyOrbProjectiles) {
+        if (projectile->IsActive()) {
+            projectile->Update(deltaTime);
+        }
+    }
+}
+
+void GSPlay::DrawEnergyOrbProjectiles(Camera* camera) {
+    for (auto& projectile : m_energyOrbProjectiles) {
+        if (projectile->IsActive()) {
+            projectile->Draw(camera);
+        }
+    }
 }

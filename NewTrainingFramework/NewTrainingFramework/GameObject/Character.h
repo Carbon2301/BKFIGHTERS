@@ -58,6 +58,8 @@ public:
      void SetKitsuneMode(bool enabled);
      bool IsKitsune() const;
      void TriggerKitsuneEnergyOrb();
+     bool IsKitsuneEnergyOrbAnimationComplete() const;
+     void ResetKitsuneEnergyOrbAnimationComplete();
 
      // Orc API
      void SetOrcMode(bool enabled);

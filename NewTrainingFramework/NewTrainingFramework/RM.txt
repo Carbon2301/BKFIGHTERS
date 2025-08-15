@@ -479,9 +479,9 @@ FILE "../Resources/Fighter/Monster/Kitsune/Fire_2.tga"
 TILING GL_CLAMP_TO_EDGE
 SIZE 11 1
 ANINUM 2
-* Animation 1: Energy Orb
+* Animation 0: Energy Ball
 0 5 500
-* Animation 0: Fade Away
+* Animation 1: Fade Away
 5 6 500
 
 ID 70

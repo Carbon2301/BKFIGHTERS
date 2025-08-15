@@ -419,10 +419,12 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
                 if (cur != 3) {
                     m_animManager->Play(3, false);
                     m_lastAnimation = 3;
+                    m_kitsuneEnergyOrbAnimationComplete = false;
                 }
                 if (!m_animManager->IsPlaying()) {
                     m_kitsuneEnergyOrbActive = false;
                     m_kitsuneEnergyOrbCooldownTimer = KITSUNE_ENERGY_ORB_COOLDOWN;
+                    m_kitsuneEnergyOrbAnimationComplete = true;
                 }
             } else {
                 int desired = 0;
@@ -1424,5 +1426,6 @@ void CharacterAnimation::TriggerKitsuneEnergyOrb() {
         m_animManager->Play(3, false);
         m_lastAnimation = 3;
         m_kitsuneEnergyOrbActive = true;
+        m_kitsuneEnergyOrbAnimationComplete = false;
     }
 }

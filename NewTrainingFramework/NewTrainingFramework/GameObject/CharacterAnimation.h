@@ -89,6 +89,7 @@ private:
     bool m_kitsuneEnergyOrbActive = false;
     float m_kitsuneEnergyOrbCooldownTimer = 0.0f;
     static constexpr float KITSUNE_ENERGY_ORB_COOLDOWN = 0.5f;
+    bool m_kitsuneEnergyOrbAnimationComplete = false;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -188,6 +189,8 @@ public:
     void TriggerKitsuneEnergyOrb();
     bool IsKitsuneEnergyOrbActive() const { return m_kitsuneEnergyOrbActive; }
     float GetKitsuneEnergyOrbCooldownTimer() const { return m_kitsuneEnergyOrbCooldownTimer; }
+    bool IsKitsuneEnergyOrbAnimationComplete() const { return m_kitsuneEnergyOrbAnimationComplete; }
+    void ResetKitsuneEnergyOrbAnimationComplete() { m_kitsuneEnergyOrbAnimationComplete = false; }
 
     // Orc mode control
     void SetOrcMode(bool enabled);

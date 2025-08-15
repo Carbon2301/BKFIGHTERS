@@ -5,6 +5,7 @@
 #include "../GameObject/Character.h"
 #include "../GameObject/InputManager.h"
 #include "../GameObject/WallCollision.h"
+#include "../GameObject/EnergyOrbProjectile.h"
 #include "../../Utilities/Math.h"
 #include <vector>
 
@@ -197,6 +198,13 @@ private:
     static constexpr float FLAMEGUN_DROP_DISTANCE= 0.20f;
     static constexpr float FLAMEGUN_GRAVITY      = 3.2f;
     static constexpr float FLAMEGUN_LIFETIME     = 1.2f;
+
+    // Energy Orb Projectiles
+    std::vector<std::unique_ptr<EnergyOrbProjectile>> m_energyOrbProjectiles;
+    static constexpr int MAX_ENERGY_ORB_PROJECTILES = 1000;
+    void SpawnEnergyOrbProjectile(Character& character);
+    void UpdateEnergyOrbProjectiles(float deltaTime);
+    void DrawEnergyOrbProjectiles(class Camera* camera);
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
     bool  m_p1ReloadPending = false;
