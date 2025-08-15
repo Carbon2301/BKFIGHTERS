@@ -64,6 +64,8 @@ public:
      // Orc API
      void SetOrcMode(bool enabled);
      bool IsOrc() const;
+     void TriggerOrcMeteorStrike();
+     void TriggerOrcFlameBurst();
     
     // Core update
     void Update(float deltaTime);
@@ -187,5 +189,11 @@ public:
 	 void SetKitsuneHurtboxWalk(float w, float h, float ox, float oy);
 	 void SetKitsuneHurtboxRun(float w, float h, float ox, float oy);
 	 void SetKitsuneHurtboxEnergyOrb(float w, float h, float ox, float oy);
+
+     // Orc hurtbox setters
+     void SetOrcHurtboxIdle  (float w, float h, float ox, float oy);
+     void SetOrcHurtboxWalk  (float w, float h, float ox, float oy);
+     void SetOrcHurtboxMeteor(float w, float h, float ox, float oy);
+     void SetOrcHurtboxFlame (float w, float h, float ox, float oy);
 
 }; 

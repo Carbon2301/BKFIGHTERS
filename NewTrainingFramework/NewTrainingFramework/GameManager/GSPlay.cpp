@@ -184,10 +184,21 @@ void GSPlay::Init() {
     m_player.SetKitsuneHurtboxEnergyOrb (0.15f, 0.18f, 0.0f, -0.05f);
     
     // Player 2 Kitsune
-    m_player2.SetKitsuneHurtboxIdle     (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player2.SetKitsuneHurtboxIdle     (0.12f, 0.216f, -0.03f, -0.095f);
     m_player2.SetKitsuneHurtboxWalk     (0.15f, 0.18f, 0.0f, -0.05f);
     m_player2.SetKitsuneHurtboxRun      (0.15f, 0.18f, 0.0f, -0.05f);
     m_player2.SetKitsuneHurtboxEnergyOrb(0.15f, 0.18f, 0.0f, -0.05f);
+
+    // P1 Orc
+    m_player.SetOrcHurtboxIdle  (0.145f, 0.245f, 0.012f, -0.085f);
+    m_player.SetOrcHurtboxWalk  (0.125f, 0.245f, 0.012f, -0.085f);
+    m_player.SetOrcHurtboxMeteor(0.22f, 0.26f, 0.016f, -0.06f);
+    m_player.SetOrcHurtboxFlame (0.18f, 0.22f, 0.012f, -0.09f);
+    // P2 Orc
+    m_player2.SetOrcHurtboxIdle(0.145f, 0.245f, 0.012f, -0.085f);
+    m_player2.SetOrcHurtboxWalk(0.125f, 0.245f, 0.012f, -0.085f);
+    m_player2.SetOrcHurtboxMeteor(0.22f, 0.26f, 0.016f, -0.06f);
+    m_player2.SetOrcHurtboxFlame(0.18f, 0.22f, 0.012f, -0.09f);
     
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
@@ -646,6 +657,39 @@ void GSPlay::Update(float deltaTime) {
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
 
+    auto checkFireDamage = [&](Character& source, Character& target){
+        CharacterAnimation* anim = source.GetAnimation();
+        if (!anim) return;
+        if (!anim->IsOrcFireActive()) return;
+        float l, r, b, t; anim->GetOrcFireAabb(l, r, b, t);
+        {
+            const float DAMAGE_Y_SCALE = 0.7f;
+            float centerY = 0.5f * (b + t);
+            float halfH = 0.5f * (t - b) * DAMAGE_Y_SCALE;
+            b = centerY - halfH;
+            t = centerY + halfH;
+        }
+        Vector3 pos = target.GetPosition();
+        float hx = pos.x + target.GetHurtboxOffsetX();
+        float hy = pos.y + target.GetHurtboxOffsetY();
+        float halfW = target.GetHurtboxWidth() * 0.5f;
+        float halfH = target.GetHurtboxHeight() * 0.5f;
+        float tl = hx - halfW, tr = hx + halfW, tb = hy - halfH, tt = hy + halfH;
+        bool overlapX = (r >= tl) && (l <= tr);
+        bool overlapY = (t >= tb) && (b <= tt);
+        if (overlapX && overlapY) {
+            float prev = target.GetHealth();
+            target.TakeDamage(100.0f);
+            target.CancelAllCombos();
+            if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
+            if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                target.TriggerDie();
+            }
+        }
+    };
+    checkFireDamage(m_player, m_player2);
+    checkFireDamage(m_player2, m_player);
+
     if (m_player.GetMovement() && m_player.GetMovement()->ConsumeJustStartedUpwardJump()) {
         SoundManager::Instance().PlaySFXByID(18, 0);
     }
@@ -665,6 +709,8 @@ void GSPlay::Update(float deltaTime) {
     UpdateBullets(deltaTime);
     UpdateEnergyOrbProjectiles(deltaTime);
     UpdateLightningEffects(deltaTime);
+    UpdateFireRains(deltaTime);
+    UpdateFireRainSpawnQueue();
     CheckLightningDamage();
     
     if (m_player.IsKitsuneEnergyOrbAnimationComplete()) {
@@ -772,6 +818,7 @@ void GSPlay::Draw() {
     if (cam) { DrawBullets(cam); }
     if (cam) { DrawEnergyOrbProjectiles(cam); }
     if (cam) { DrawLightningEffects(cam); }
+    if (cam) { DrawFireRains(cam); }
     if (cam) { DrawBombs(cam); }
     if (cam) { DrawExplosions(cam); }
     if (cam) { DrawBloods(cam); }
@@ -854,6 +901,213 @@ void GSPlay::Draw() {
         lastAnim2 = m_player2.GetCurrentAnimation();
         wasMoving2 = isMoving2;
     }
+}
+
+int GSPlay::CreateOrAcquireFireRainObject() {
+    if (!m_freeFireRainSlots.empty()) {
+        int idx = m_freeFireRainSlots.back();
+        m_freeFireRainSlots.pop_back();
+        if (idx >= 0 && idx < (int)m_fireRainObjects.size() && m_fireRainObjects[idx]) {
+            m_fireRainObjects[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    std::unique_ptr<Object> obj = std::make_unique<Object>(61000 + (int)m_fireRainObjects.size());
+    obj->SetModel(0);
+    obj->SetTexture(66, 0);
+    obj->SetShader(0);
+    obj->SetScale(0.3f, 0.3f, 1.0f);
+    obj->SetVisible(true);
+    obj->MakeModelInstanceCopy();
+    m_fireRainObjects.push_back(std::move(obj));
+    return (int)m_fireRainObjects.size() - 1;
+}
+
+void GSPlay::SpawnFireRainAt(float x, float y) {
+    GSPlay::FireRain* fr = nullptr;
+    for (auto& r : m_fireRains) {
+        if (!r.isActive) { fr = &r; break; }
+    }
+    if (!fr) {
+        if ((int)m_fireRains.size() < MAX_FIRERAIN) {
+            m_fireRains.push_back(FireRain{});
+            fr = &m_fireRains.back();
+        }
+    }
+    if (!fr) return;
+
+    int objIndex = CreateOrAcquireFireRainObject();
+    fr->objectIndex = objIndex;
+    fr->isActive = true;
+    fr->isFading = false;
+    fr->lifetime = 0.0f;
+    fr->fadeTimer = 0.0f;
+    fr->position = Vector3(x, y, 0.0f);
+    fr->velocity = Vector3(0.0f, -1.5f, 0.0f);
+
+    if (!fr->anim) fr->anim = std::make_shared<AnimationManager>();
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(66)) {
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        fr->anim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        fr->anim->Play(0, true);
+        if (texData->animations.size() > 1) {
+            fr->fadeDuration = texData->animations[1].duration;
+        }
+    }
+
+    if (objIndex >= 0 && objIndex < (int)m_fireRainObjects.size() && m_fireRainObjects[objIndex]) {
+        m_fireRainObjects[objIndex]->SetTexture(66, 0);
+        m_fireRainObjects[objIndex]->SetPosition(fr->position);
+        if (fr->anim) {
+            float u0, v0, u1, v1;
+            fr->anim->GetUV(u0, v0, u1, v1);
+            m_fireRainObjects[objIndex]->SetCustomUV(u0, v0, u1, v1);
+        }
+    }
+}
+
+void GSPlay::UpdateFireRains(float deltaTime) {
+    for (auto& fr : m_fireRains) {
+        if (!fr.isActive) continue;
+
+        fr.lifetime += deltaTime;
+        if (!fr.isFading) {
+            fr.position += fr.velocity * deltaTime;
+
+            bool hitWall = CheckFireRainWallCollision(fr.position, FIRE_RAIN_COLLISION_W * 0.5f, FIRE_RAIN_COLLISION_H * 0.5f);
+            if (hitWall) {
+                if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                    cam->AddShake(0.01f, 0.18f, 18.0f);
+                }
+                fr.isFading = true;
+                fr.fadeTimer = 0.0f;
+                if (fr.anim) fr.anim->Play(1, false);
+                fr.damagedP1 = false;
+                fr.damagedP2 = false;
+            }
+        } else {
+            fr.fadeTimer += deltaTime;
+            bool fadeAnimFinished = (fr.anim && !fr.anim->IsPlaying());
+            if (fr.fadeTimer >= fr.fadeDuration || fadeAnimFinished) {
+                fr.isActive = false;
+                fr.isFading = false;
+                fr.lifetime = 0.0f;
+                fr.fadeTimer = 0.0f;
+                if (fr.objectIndex >= 0 && fr.objectIndex < (int)m_fireRainObjects.size() && m_fireRainObjects[fr.objectIndex]) {
+                    m_fireRainObjects[fr.objectIndex]->SetVisible(false);
+                    m_freeFireRainSlots.push_back(fr.objectIndex);
+                }
+                fr.objectIndex = -1;
+                continue;
+            }
+        }
+
+        if (fr.anim) fr.anim->Update(deltaTime);
+        if (fr.objectIndex >= 0 && fr.objectIndex < (int)m_fireRainObjects.size() && m_fireRainObjects[fr.objectIndex]) {
+            m_fireRainObjects[fr.objectIndex]->SetPosition(fr.position);
+            if (fr.anim) {
+                float u0, v0, u1, v1;
+                fr.anim->GetUV(u0, v0, u1, v1);
+                m_fireRainObjects[fr.objectIndex]->SetCustomUV(u0, v0, u1, v1);
+            }
+        }
+
+        if (fr.isFading) {
+            float halfW = FIRE_RAIN_DAMAGE_W * 0.5f;
+            float halfH = FIRE_RAIN_DAMAGE_H * 0.5f;
+            float aLeft = fr.position.x - halfW;
+            float aRight = fr.position.x + halfW;
+            float aBottom = fr.position.y - halfH;
+            float aTop = fr.position.y + halfH;
+
+            auto checkDamage = [&](Character& target, bool& alreadyDamaged){
+                if (alreadyDamaged) return;
+                Vector3 pos = target.GetPosition();
+                float hx = pos.x + target.GetHurtboxOffsetX();
+                float hy = pos.y + target.GetHurtboxOffsetY();
+                float halfW2 = target.GetHurtboxWidth() * 0.5f;
+                float halfH2 = target.GetHurtboxHeight() * 0.5f;
+                float bLeft = hx - halfW2;
+                float bRight = hx + halfW2;
+                float bBottom = hy - halfH2;
+                float bTop = hy + halfH2;
+                bool overlapX = aRight >= bLeft && aLeft <= bRight;
+                bool overlapY = aTop >= bBottom && aBottom <= bTop;
+                if (overlapX && overlapY) {
+                    float prev = target.GetHealth();
+                    target.TakeDamage(100.0f);
+                    target.CancelAllCombos();
+                    if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
+                    if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                        target.TriggerDie();
+                    }
+                    alreadyDamaged = true;
+                }
+            };
+
+            checkDamage(m_player, fr.damagedP1);
+            checkDamage(m_player2, fr.damagedP2);
+        }
+    }
+}
+
+bool GSPlay::CheckFireRainWallCollision(const Vector3& pos, float halfW, float halfH) const {
+    if (!m_wallCollision) return false;
+    const auto& walls = m_wallCollision->GetWalls();
+    float aLeft = pos.x - halfW;
+    float aRight = pos.x + halfW;
+    float aBottom = pos.y - halfH;
+    float aTop = pos.y + halfH;
+    for (const auto& w : walls) {
+        float bLeft = w.GetLeft();
+        float bRight = w.GetRight();
+        float bBottom = w.GetBottom();
+        float bTop = w.GetTop();
+        bool overlapX = aRight >= bLeft && aLeft <= bRight;
+        bool overlapY = aTop >= bBottom && aBottom <= bTop;
+        if (overlapX && overlapY) return true;
+    }
+    return false;
+}
+
+void GSPlay::DrawFireRains(Camera* camera) {
+    for (auto& frObj : m_fireRainObjects) {
+        if (frObj && frObj->IsVisible()) {
+            frObj->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+}
+
+void GSPlay::QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration) {
+    if (step <= 0.0f) return;
+    std::vector<float> xs;
+    for (float x = xStart; x <= xEnd + 1e-6f; x += step) {
+        xs.push_back(x);
+    }
+    for (float x : xs) {
+        float r = (float)rand() / (float)RAND_MAX;
+        float spawnOffset = r * duration;
+        m_fireRainSpawnQueue.push_back(FireRainEvent{ m_gameTime + spawnOffset, x });
+    }
+}
+
+void GSPlay::UpdateFireRainSpawnQueue() {
+    if (m_fireRainSpawnQueue.empty()) return;
+    size_t writeIdx = 0;
+    for (size_t i = 0; i < m_fireRainSpawnQueue.size(); ++i) {
+        const FireRainEvent& ev = m_fireRainSpawnQueue[i];
+        if (m_gameTime >= ev.spawnTime) {
+            SpawnFireRainAt(ev.x, 1.2f);
+        } else {
+            if (writeIdx != i) m_fireRainSpawnQueue[writeIdx] = ev;
+            ++writeIdx;
+        }
+    }
+    m_fireRainSpawnQueue.resize(writeIdx);
 }
 
 int GSPlay::CreateOrAcquireBombObjectFromProto(int protoObjectId) {
@@ -1337,6 +1591,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
         
         if (m_player2.IsOrc()) {
+            if (bIsPressed) { m_player2.TriggerOrcFlameBurst(); }
             return;
         }
         if (m_player2.IsKitsune()) {
@@ -1380,6 +1635,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
         
         if (m_player.IsOrc()) {
+            if (bIsPressed) { m_player.TriggerOrcFlameBurst(); }
             return;
         }
         if (m_player.IsKitsune()) {
@@ -1489,7 +1745,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
 
     
     if (bIsPressed && key == '1') { 
-        if (m_player.IsKitsune()) {
+        if (m_player.IsOrc()) {
+            m_player.TriggerOrcMeteorStrike();
+            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f);
+        } else if (m_player.IsKitsune()) {
             m_player.TriggerKitsuneEnergyOrb();
         } else if (m_player.IsWerewolf()) {
             m_player.TriggerWerewolfCombo();
@@ -1509,7 +1768,10 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
 
     
     if (bIsPressed && (key == 'N' || key == 'n')) {
-        if (m_player2.IsKitsune()) {
+        if (m_player2.IsOrc()) {
+            m_player2.TriggerOrcMeteorStrike();
+            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f);
+        } else if (m_player2.IsKitsune()) {
             m_player2.TriggerKitsuneEnergyOrb();
         } else if (m_player2.IsWerewolf()) {
             m_player2.TriggerWerewolfCombo();

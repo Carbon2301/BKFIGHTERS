@@ -117,6 +117,11 @@ void CharacterHitbox::SetKitsuneHurtboxWalk(float width, float height, float off
 void CharacterHitbox::SetKitsuneHurtboxRun(float width, float height, float offsetX, float offsetY)       { m_kitsuneHurtboxes.run       = {width, height, offsetX, offsetY}; }
 void CharacterHitbox::SetKitsuneHurtboxEnergyOrb(float width, float height, float offsetX, float offsetY) { m_kitsuneHurtboxes.energyOrb = {width, height, offsetX, offsetY}; }
 
+void CharacterHitbox::SetOrcHurtboxIdle  (float width, float height, float offsetX, float offsetY) { m_orcHurtboxes.idle   = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetOrcHurtboxWalk  (float width, float height, float offsetX, float offsetY) { m_orcHurtboxes.walk   = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetOrcHurtboxMeteor(float width, float height, float offsetX, float offsetY) { m_orcHurtboxes.meteor = {width, height, offsetX, offsetY}; }
+void CharacterHitbox::SetOrcHurtboxFlame (float width, float height, float offsetX, float offsetY) { m_orcHurtboxes.flame  = {width, height, offsetX, offsetY}; }
+
 void CharacterHitbox::GetActiveHurtbox(Hurtbox& out) const {
     out = m_defaultHurtbox;
     if (!m_character) return;
@@ -147,6 +152,22 @@ void CharacterHitbox::GetActiveHurtbox(Hurtbox& out) const {
     if (m_character->IsKitsune()) {
         if (m_kitsuneHurtboxes.idle.isSet()) {
             out = m_kitsuneHurtboxes.idle;
+        }
+        if (m_character->IsFacingLeft()) {
+            out.offsetX = -out.offsetX;
+        }
+        return;
+    }
+    if (m_character->IsOrc()) {
+        int anim = m_character->GetCurrentAnimation();
+        if (anim == 2 && m_orcHurtboxes.meteor.isSet()) {
+            out = m_orcHurtboxes.meteor;
+        } else if (anim == 3 && m_orcHurtboxes.flame.isSet()) {
+            out = m_orcHurtboxes.flame;
+        } else if (anim == 1 && m_orcHurtboxes.walk.isSet()) {
+            out = m_orcHurtboxes.walk;
+        } else if (m_orcHurtboxes.idle.isSet()) {
+            out = m_orcHurtboxes.idle;
         }
         if (m_character->IsFacingLeft()) {
             out.offsetX = -out.offsetX;

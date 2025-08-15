@@ -39,6 +39,13 @@ private:
         Hurtbox run;
         Hurtbox energyOrb;
     } m_kitsuneHurtboxes;
+
+    struct OrcHurtboxes {
+        Hurtbox idle;
+        Hurtbox walk;
+        Hurtbox meteor;
+        Hurtbox flame;
+    } m_orcHurtboxes;
     
     Character* m_character;
 
@@ -74,6 +81,12 @@ public:
     void SetKitsuneHurtboxWalk     (float width, float height, float offsetX, float offsetY);
     void SetKitsuneHurtboxRun      (float width, float height, float offsetX, float offsetY);
     void SetKitsuneHurtboxEnergyOrb(float width, float height, float offsetX, float offsetY);
+
+    // Orc hurtbox setters
+    void SetOrcHurtboxIdle  (float width, float height, float offsetX, float offsetY);
+    void SetOrcHurtboxWalk  (float width, float height, float offsetX, float offsetY);
+    void SetOrcHurtboxMeteor(float width, float height, float offsetX, float offsetY);
+    void SetOrcHurtboxFlame (float width, float height, float offsetX, float offsetY);
     
     float GetHurtboxWidth() const;
     float GetHurtboxHeight() const;
