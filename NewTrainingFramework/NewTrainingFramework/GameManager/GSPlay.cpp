@@ -941,6 +941,8 @@ void GSPlay::UpdateFireRains(float deltaTime) {
                 fr.isFading = true;
                 fr.fadeTimer = 0.0f;
                 if (fr.anim) fr.anim->Play(1, false);
+                fr.damagedP1 = false;
+                fr.damagedP2 = false;
             }
         } else {
             fr.fadeTimer += deltaTime;
@@ -967,6 +969,43 @@ void GSPlay::UpdateFireRains(float deltaTime) {
                 fr.anim->GetUV(u0, v0, u1, v1);
                 m_fireRainObjects[fr.objectIndex]->SetCustomUV(u0, v0, u1, v1);
             }
+        }
+
+        if (fr.isFading) {
+            float halfW = FIRE_RAIN_DAMAGE_W * 0.5f;
+            float halfH = FIRE_RAIN_DAMAGE_H * 0.5f;
+            float aLeft = fr.position.x - halfW;
+            float aRight = fr.position.x + halfW;
+            float aBottom = fr.position.y - halfH;
+            float aTop = fr.position.y + halfH;
+
+            auto checkDamage = [&](Character& target, bool& alreadyDamaged){
+                if (alreadyDamaged) return;
+                Vector3 pos = target.GetPosition();
+                float hx = pos.x + target.GetHurtboxOffsetX();
+                float hy = pos.y + target.GetHurtboxOffsetY();
+                float halfW2 = target.GetHurtboxWidth() * 0.5f;
+                float halfH2 = target.GetHurtboxHeight() * 0.5f;
+                float bLeft = hx - halfW2;
+                float bRight = hx + halfW2;
+                float bBottom = hy - halfH2;
+                float bTop = hy + halfH2;
+                bool overlapX = aRight >= bLeft && aLeft <= bRight;
+                bool overlapY = aTop >= bBottom && aBottom <= bTop;
+                if (overlapX && overlapY) {
+                    float prev = target.GetHealth();
+                    target.TakeDamage(100.0f);
+                    target.CancelAllCombos();
+                    if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
+                    if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                        target.TriggerDie();
+                    }
+                    alreadyDamaged = true;
+                }
+            };
+
+            checkDamage(m_player, fr.damagedP1);
+            checkDamage(m_player2, fr.damagedP2);
         }
     }
 }

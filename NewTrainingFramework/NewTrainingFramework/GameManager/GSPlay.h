@@ -244,6 +244,8 @@ private:
         Vector3 velocity = Vector3(0.0f, -1.5f, 0.0f);
         int objectIndex = -1;
         std::shared_ptr<AnimationManager> anim;
+        bool damagedP1 = false;
+        bool damagedP2 = false;
     };
     std::vector<FireRain> m_fireRains;
     std::vector<std::unique_ptr<Object>> m_fireRainObjects;
@@ -251,6 +253,8 @@ private:
     static constexpr int MAX_FIRERAIN = 10000;
     static constexpr float FIRE_RAIN_COLLISION_W = 0.05f;
     static constexpr float FIRE_RAIN_COLLISION_H = 0.05f;
+    static constexpr float FIRE_RAIN_DAMAGE_W = 0.18f;
+    static constexpr float FIRE_RAIN_DAMAGE_H = 0.18f;
     int CreateOrAcquireFireRainObject();
     void SpawnFireRainAt(float x, float y);
     void UpdateFireRains(float deltaTime);
