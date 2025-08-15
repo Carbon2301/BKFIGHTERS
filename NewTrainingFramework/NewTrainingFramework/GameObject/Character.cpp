@@ -54,11 +54,13 @@ void Character::SetBatDemonMode(bool enabled) {
         SetGrenadeMode(false);
         if (m_movement) {
             m_movement->SetNoClipNoGravity(true);
+            m_movement->SetMoveSpeedMultiplier(1.8f);
         }
     }
     else {
         if (m_movement) {
             m_movement->SetNoClipNoGravity(false);
+            m_movement->SetMoveSpeedMultiplier(1.0f);
         }
     }
 }
@@ -84,12 +86,16 @@ void Character::SetWerewolfMode(bool enabled) {
             m_movement->SetMoveSpeedMultiplier(1.5f);
             m_movement->SetRunSpeedMultiplier(2.0f);
             m_movement->SetJumpForceMultiplier(1.5f);
+            m_movement->SetLadderDoubleTapEnabled(false);
+            m_movement->SetLadderEnabled(false);
         }
     } else {
         if (m_movement) {
             m_movement->SetMoveSpeedMultiplier(1.0f);
             m_movement->SetRunSpeedMultiplier(1.0f);
             m_movement->SetJumpForceMultiplier(1.0f);
+            m_movement->SetLadderDoubleTapEnabled(true);
+            m_movement->SetLadderEnabled(true);
         }
     }
 }
@@ -118,6 +124,94 @@ void Character::TriggerWerewolfPounce() {
     }
 }
 
+void Character::SetKitsuneMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetKitsuneMode(enabled);
+    }
+    if (enabled) {
+        SetGunMode(false);
+        SetGrenadeMode(false);
+        if (m_movement) {
+            m_movement->SetNoClipNoGravity(false);
+            m_movement->SetInputLocked(false);
+            m_movement->SetMoveSpeedMultiplier(1.2f);
+            m_movement->SetRunSpeedMultiplier(1.2f);
+            m_movement->SetJumpForceMultiplier(1.2f);
+            m_movement->SetLadderDoubleTapEnabled(false);
+            m_movement->SetLadderEnabled(false);
+        }
+    } else {
+        if (m_movement) {
+            m_movement->SetMoveSpeedMultiplier(1.0f);
+            m_movement->SetRunSpeedMultiplier(1.0f);
+            m_movement->SetJumpForceMultiplier(1.0f);
+            m_movement->SetLadderDoubleTapEnabled(true);
+            m_movement->SetLadderEnabled(true);
+        }
+    }
+}
+
+bool Character::IsKitsune() const {
+    return m_animation ? m_animation->IsKitsune() : false;
+}
+
+void Character::TriggerKitsuneEnergyOrb() {
+    if (m_animation) {
+        m_animation->TriggerKitsuneEnergyOrb();
+    }
+}
+
+bool Character::IsKitsuneEnergyOrbAnimationComplete() const {
+    return m_animation ? m_animation->IsKitsuneEnergyOrbAnimationComplete() : false;
+}
+
+void Character::ResetKitsuneEnergyOrbAnimationComplete() {
+    if (m_animation) {
+        m_animation->ResetKitsuneEnergyOrbAnimationComplete();
+    }
+}
+
+void Character::SetOrcMode(bool enabled) {
+    if (m_animation) {
+        m_animation->SetOrcMode(enabled);
+    }
+    if (enabled) {
+        SetGunMode(false);
+        SetGrenadeMode(false);
+        if (m_movement) {
+            m_movement->SetNoClipNoGravity(false);
+            m_movement->SetInputLocked(false);
+            m_movement->SetLadderDoubleTapEnabled(false);
+            m_movement->SetLadderEnabled(false);
+        }
+        if (m_animation) {
+            Vector3 pos = GetPosition();
+            m_animation->TriggerOrcAppearEffectAt(pos.x, pos.y);
+        }
+    } else {
+        if (m_movement) {
+            m_movement->SetLadderDoubleTapEnabled(true);
+            m_movement->SetLadderEnabled(true);
+        }
+    }
+}
+
+bool Character::IsOrc() const {
+    return m_animation ? m_animation->IsOrc() : false;
+}
+
+void Character::TriggerOrcMeteorStrike() {
+    if (m_animation) {
+        m_animation->TriggerOrcMeteorStrike();
+    }
+}
+
+void Character::TriggerOrcFlameBurst() {
+    if (m_animation) {
+        m_animation->TriggerOrcFlameBurst();
+    }
+}
+
 void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int objectId) {
     if (m_animation) {
         m_animation->Initialize(animManager, objectId);
@@ -126,7 +220,7 @@ void Character::Initialize(std::shared_ptr<AnimationManager> animManager, int ob
     Object* originalObj = SceneManager::GetInstance()->GetObject(objectId);
     if (originalObj) {
         const Vector3& originalPos = originalObj->GetPosition();
-        m_movement->Initialize(originalPos.x, originalPos.y, -3.0f);
+        m_movement->Initialize(originalPos.x, originalPos.y, -1000.0f);
     } else {
         m_movement->Initialize(0.0f, 0.0f, 0.0f);
     }
@@ -161,6 +255,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
 		}
 		if (m_animation && m_animation->IsGunMode()) lock = true;
 		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+		if (m_animation && m_animation->IsOrcMeteorStrikeActive()) lock = true;
 		if (m_animation && m_animation->IsGunMode() && m_movement->IsSitting()) {
 			m_movement->ForceSit(false);
 		}
@@ -198,7 +293,11 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     bool punchDown = inputManager->IsKeyJustPressed(inputConfig.punchKey);
     if (m_combat) m_combat->SetAttackPressed(punchDown);
-    if (!m_movement->IsInputLocked() && !IsGrenadeMode() && punchDown) {
+    if (m_animation && (m_animation->IsBatDemon() || m_animation->IsKitsune())) {
+        if (punchDown) {
+            m_animation->TriggerBatDemonSlash();
+        }
+    } else if (!m_movement->IsInputLocked() && !IsGrenadeMode() && punchDown) {
         if (m_suppressNextPunch) {
             m_suppressNextPunch = false;
         } else {
@@ -216,7 +315,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         }
     }
     
-    if (!m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
+    if (!(m_animation && (m_animation->IsBatDemon() || m_animation->IsKitsune())) && !m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         if (!m_movement->IsJumping()) {
         HandleKick();
         }
@@ -235,6 +334,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
 		bool lock = m_combat->IsKicking();
 		if (m_animation && m_animation->IsGunMode()) lock = true;
 		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
+		if (m_animation && m_animation->IsOrcMeteorStrikeActive()) lock = true;
 		if (m_animation) {
 			int cur = m_animation->GetCurrentAnimation();
 			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
@@ -262,6 +362,7 @@ void Character::Update(float deltaTime) {
 
 	if (m_movement && m_combat) {
 		bool lock = m_combat->IsKicking();
+		if (m_animation && m_animation->IsOrcMeteorStrikeActive()) lock = true;
 		if (m_animation) {
 			int cur = m_animation->GetCurrentAnimation();
 			bool isAttackAnim = (cur >= 10 && cur <= 12) || (cur >= 17 && cur <= 22);
@@ -564,6 +665,16 @@ void Character::SetWerewolfHurtboxRun(float w, float h, float ox, float oy)    {
 void Character::SetWerewolfHurtboxJump(float w, float h, float ox, float oy)   { if (m_hitbox) m_hitbox->SetWerewolfHurtboxJump(w, h, ox, oy); }
 void Character::SetWerewolfHurtboxCombo(float w, float h, float ox, float oy)  { if (m_hitbox) m_hitbox->SetWerewolfHurtboxCombo(w, h, ox, oy); }
 void Character::SetWerewolfHurtboxPounce(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetWerewolfHurtboxPounce(w, h, ox, oy); }
+
+void Character::SetKitsuneHurtboxIdle(float w, float h, float ox, float oy)      { if (m_hitbox) m_hitbox->SetKitsuneHurtboxIdle(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxWalk(float w, float h, float ox, float oy)      { if (m_hitbox) m_hitbox->SetKitsuneHurtboxWalk(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxRun(float w, float h, float ox, float oy)       { if (m_hitbox) m_hitbox->SetKitsuneHurtboxRun(w, h, ox, oy); }
+void Character::SetKitsuneHurtboxEnergyOrb(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetKitsuneHurtboxEnergyOrb(w, h, ox, oy); }
+
+void Character::SetOrcHurtboxIdle  (float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetOrcHurtboxIdle(w, h, ox, oy); }
+void Character::SetOrcHurtboxWalk  (float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetOrcHurtboxWalk(w, h, ox, oy); }
+void Character::SetOrcHurtboxMeteor(float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetOrcHurtboxMeteor(w, h, ox, oy); }
+void Character::SetOrcHurtboxFlame (float w, float h, float ox, float oy) { if (m_hitbox) m_hitbox->SetOrcHurtboxFlame(w, h, ox, oy); }
 
 float Character::GetHitboxWidth() const {
     return m_combat ? m_combat->GetHitboxWidth() : 0.0f;

@@ -121,7 +121,7 @@ private:
     // Hard landing detection
     float m_highestYInAir = 0.0f;
     bool  m_hardLandingRequested = false;
-    static constexpr float HARD_LANDING_DROP_THRESHOLD = 0.4f;
+    static constexpr float HARD_LANDING_DROP_THRESHOLD = 0.6f;
 
     bool  m_rollCadenceActive = false;
     bool  m_rollPhaseIsRoll = true;
@@ -140,6 +140,9 @@ private:
 
     bool m_noClipNoGravity = false;
     void UpdateNoClip(float deltaTime, const bool* keyStates);
+
+    bool m_allowLadderDoubleTap = true;
+    bool m_ladderEnabled = true;
 
     // Constants
     static const float JUMP_FORCE;
@@ -167,6 +170,8 @@ public:
     const PlayerInputConfig& GetInputConfig() const { return m_inputConfig; }
     void SetInputLocked(bool locked) { m_inputLocked = locked; }
     bool IsInputLocked() const { return m_inputLocked; }
+    void SetLadderDoubleTapEnabled(bool enabled) { m_allowLadderDoubleTap = enabled; }
+    void SetLadderEnabled(bool enabled) { m_ladderEnabled = enabled; if (!enabled) m_isOnLadder = false; }
     
     void Update(float deltaTime, const bool* keyStates);
     void UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);

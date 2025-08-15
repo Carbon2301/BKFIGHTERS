@@ -177,6 +177,29 @@ void GSPlay::Init() {
     m_player2.SetWerewolfHurtboxCombo   (0.19f, 0.23f, 0.015f, -0.08f);
     m_player2.SetWerewolfHurtboxPounce  (0.24f, 0.19f, 0.02f, -0.1f);
     
+    // Player 1 Kitsune
+    m_player.SetKitsuneHurtboxIdle      (0.12f, 0.216f, -0.03f, -0.095f);
+    m_player.SetKitsuneHurtboxWalk      (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player.SetKitsuneHurtboxRun       (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player.SetKitsuneHurtboxEnergyOrb (0.15f, 0.18f, 0.0f, -0.05f);
+    
+    // Player 2 Kitsune
+    m_player2.SetKitsuneHurtboxIdle     (0.12f, 0.216f, -0.03f, -0.095f);
+    m_player2.SetKitsuneHurtboxWalk     (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player2.SetKitsuneHurtboxRun      (0.15f, 0.18f, 0.0f, -0.05f);
+    m_player2.SetKitsuneHurtboxEnergyOrb(0.15f, 0.18f, 0.0f, -0.05f);
+
+    // P1 Orc
+    m_player.SetOrcHurtboxIdle  (0.145f, 0.245f, 0.012f, -0.085f);
+    m_player.SetOrcHurtboxWalk  (0.125f, 0.245f, 0.012f, -0.085f);
+    m_player.SetOrcHurtboxMeteor(0.22f, 0.26f, 0.016f, -0.06f);
+    m_player.SetOrcHurtboxFlame (0.18f, 0.22f, 0.012f, -0.09f);
+    // P2 Orc
+    m_player2.SetOrcHurtboxIdle(0.145f, 0.245f, 0.012f, -0.085f);
+    m_player2.SetOrcHurtboxWalk(0.125f, 0.245f, 0.012f, -0.085f);
+    m_player2.SetOrcHurtboxMeteor(0.22f, 0.26f, 0.016f, -0.06f);
+    m_player2.SetOrcHurtboxFlame(0.18f, 0.22f, 0.012f, -0.09f);
+    
     m_player.GetMovement()->ClearPlatforms();
     m_player2.GetMovement()->ClearPlatforms();
     m_player.GetMovement()->ClearMovingPlatforms();
@@ -215,8 +238,8 @@ void GSPlay::Init() {
     Object* liftPlatform = sceneManager->GetObject(30);
     if (liftPlatform) {
         liftPlatform->SetLiftPlatform(true, 
-            0.49f, -0.862f, 0.0f,  // Start position
-            0.49f, 0.33f, 0.0f,   // End position
+            1.375005f, -1.301985f, 0.0f,  // Start position
+            1.375005f, 0.217009f, 0.0f,   // End position
             0.2f, 1.0f);          // Speed: 0.2 units/sec, Pause time: 1.0 second
         std::cout << "Lift platform (ID 30) configured successfully" << std::endl;
 
@@ -581,11 +604,21 @@ void GSPlay::UpdateHudBombDigits() {
     showDigits(true,  m_p1Bombs > 0);
     showDigits(false, m_p2Bombs > 0);
     if (Object* bombIcon1 = scene->GetObject(922)) {
-        Vector3 base = m_hudBombIcon1BaseScale.x != 0.0f || m_hudBombIcon1BaseScale.y != 0.0f ? m_hudBombIcon1BaseScale : bombIcon1->GetScale();
+        Vector3 base;
+        if (m_hudBombIcon1BaseScale.x != 0.0f || m_hudBombIcon1BaseScale.y != 0.0f) {
+            base = m_hudBombIcon1BaseScale;
+        } else {
+            base = bombIcon1->GetScale();
+        }
         bombIcon1->SetScale(m_p1Bombs > 0 ? base : Vector3(0.0f, 0.0f, base.z));
     }
     if (Object* bombIcon2 = scene->GetObject(923)) {
-        Vector3 base = m_hudBombIcon2BaseScale.x != 0.0f || m_hudBombIcon2BaseScale.y != 0.0f ? m_hudBombIcon2BaseScale : bombIcon2->GetScale();
+        Vector3 base;
+        if (m_hudBombIcon2BaseScale.x != 0.0f || m_hudBombIcon2BaseScale.y != 0.0f) {
+            base = m_hudBombIcon2BaseScale;
+        } else {
+            base = bombIcon2->GetScale();
+        }
         bombIcon2->SetScale(m_p2Bombs > 0 ? base : Vector3(0.0f, 0.0f, base.z));
     }
     if (m_p1Bombs > 0) setTwoDigits(m_p1Bombs, 928, 929);
@@ -624,6 +657,39 @@ void GSPlay::Update(float deltaTime) {
     m_player.Update(deltaTime);
     m_player2.Update(deltaTime);
 
+    auto checkFireDamage = [&](Character& source, Character& target){
+        CharacterAnimation* anim = source.GetAnimation();
+        if (!anim) return;
+        if (!anim->IsOrcFireActive()) return;
+        float l, r, b, t; anim->GetOrcFireAabb(l, r, b, t);
+        {
+            const float DAMAGE_Y_SCALE = 0.7f;
+            float centerY = 0.5f * (b + t);
+            float halfH = 0.5f * (t - b) * DAMAGE_Y_SCALE;
+            b = centerY - halfH;
+            t = centerY + halfH;
+        }
+        Vector3 pos = target.GetPosition();
+        float hx = pos.x + target.GetHurtboxOffsetX();
+        float hy = pos.y + target.GetHurtboxOffsetY();
+        float halfW = target.GetHurtboxWidth() * 0.5f;
+        float halfH = target.GetHurtboxHeight() * 0.5f;
+        float tl = hx - halfW, tr = hx + halfW, tb = hy - halfH, tt = hy + halfH;
+        bool overlapX = (r >= tl) && (l <= tr);
+        bool overlapY = (t >= tb) && (b <= tt);
+        if (overlapX && overlapY) {
+            float prev = target.GetHealth();
+            target.TakeDamage(100.0f);
+            target.CancelAllCombos();
+            if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
+            if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                target.TriggerDie();
+            }
+        }
+    };
+    checkFireDamage(m_player, m_player2);
+    checkFireDamage(m_player2, m_player);
+
     if (m_player.GetMovement() && m_player.GetMovement()->ConsumeJustStartedUpwardJump()) {
         SoundManager::Instance().PlaySFXByID(18, 0);
     }
@@ -641,6 +707,19 @@ void GSPlay::Update(float deltaTime) {
     m_prevRollingP1 = rollingP1;
     m_prevRollingP2 = rollingP2;
     UpdateBullets(deltaTime);
+    UpdateEnergyOrbProjectiles(deltaTime);
+    UpdateLightningEffects(deltaTime);
+    UpdateFireRains(deltaTime);
+    UpdateFireRainSpawnQueue();
+    CheckLightningDamage();
+    
+    if (m_player.IsKitsuneEnergyOrbAnimationComplete()) {
+        SpawnEnergyOrbProjectile(m_player);
+    }
+    if (m_player2.IsKitsuneEnergyOrbAnimationComplete()) {
+        SpawnEnergyOrbProjectile(m_player2);
+    }
+    
     UpdateBombs(deltaTime);
     UpdateExplosions(deltaTime);
     UpdateGrenadeFuse();
@@ -737,6 +816,9 @@ void GSPlay::Draw() {
     // Draw HUD portraits with independent UVs
     DrawHudPortraits();
     if (cam) { DrawBullets(cam); }
+    if (cam) { DrawEnergyOrbProjectiles(cam); }
+    if (cam) { DrawLightningEffects(cam); }
+    if (cam) { DrawFireRains(cam); }
     if (cam) { DrawBombs(cam); }
     if (cam) { DrawExplosions(cam); }
     if (cam) { DrawBloods(cam); }
@@ -819,6 +901,213 @@ void GSPlay::Draw() {
         lastAnim2 = m_player2.GetCurrentAnimation();
         wasMoving2 = isMoving2;
     }
+}
+
+int GSPlay::CreateOrAcquireFireRainObject() {
+    if (!m_freeFireRainSlots.empty()) {
+        int idx = m_freeFireRainSlots.back();
+        m_freeFireRainSlots.pop_back();
+        if (idx >= 0 && idx < (int)m_fireRainObjects.size() && m_fireRainObjects[idx]) {
+            m_fireRainObjects[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    std::unique_ptr<Object> obj = std::make_unique<Object>(61000 + (int)m_fireRainObjects.size());
+    obj->SetModel(0);
+    obj->SetTexture(66, 0);
+    obj->SetShader(0);
+    obj->SetScale(0.3f, 0.3f, 1.0f);
+    obj->SetVisible(true);
+    obj->MakeModelInstanceCopy();
+    m_fireRainObjects.push_back(std::move(obj));
+    return (int)m_fireRainObjects.size() - 1;
+}
+
+void GSPlay::SpawnFireRainAt(float x, float y) {
+    GSPlay::FireRain* fr = nullptr;
+    for (auto& r : m_fireRains) {
+        if (!r.isActive) { fr = &r; break; }
+    }
+    if (!fr) {
+        if ((int)m_fireRains.size() < MAX_FIRERAIN) {
+            m_fireRains.push_back(FireRain{});
+            fr = &m_fireRains.back();
+        }
+    }
+    if (!fr) return;
+
+    int objIndex = CreateOrAcquireFireRainObject();
+    fr->objectIndex = objIndex;
+    fr->isActive = true;
+    fr->isFading = false;
+    fr->lifetime = 0.0f;
+    fr->fadeTimer = 0.0f;
+    fr->position = Vector3(x, y, 0.0f);
+    fr->velocity = Vector3(0.0f, -1.5f, 0.0f);
+
+    if (!fr->anim) fr->anim = std::make_shared<AnimationManager>();
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(66)) {
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        fr->anim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        fr->anim->Play(0, true);
+        if (texData->animations.size() > 1) {
+            fr->fadeDuration = texData->animations[1].duration;
+        }
+    }
+
+    if (objIndex >= 0 && objIndex < (int)m_fireRainObjects.size() && m_fireRainObjects[objIndex]) {
+        m_fireRainObjects[objIndex]->SetTexture(66, 0);
+        m_fireRainObjects[objIndex]->SetPosition(fr->position);
+        if (fr->anim) {
+            float u0, v0, u1, v1;
+            fr->anim->GetUV(u0, v0, u1, v1);
+            m_fireRainObjects[objIndex]->SetCustomUV(u0, v0, u1, v1);
+        }
+    }
+}
+
+void GSPlay::UpdateFireRains(float deltaTime) {
+    for (auto& fr : m_fireRains) {
+        if (!fr.isActive) continue;
+
+        fr.lifetime += deltaTime;
+        if (!fr.isFading) {
+            fr.position += fr.velocity * deltaTime;
+
+            bool hitWall = CheckFireRainWallCollision(fr.position, FIRE_RAIN_COLLISION_W * 0.5f, FIRE_RAIN_COLLISION_H * 0.5f);
+            if (hitWall) {
+                if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
+                    cam->AddShake(0.01f, 0.18f, 18.0f);
+                }
+                fr.isFading = true;
+                fr.fadeTimer = 0.0f;
+                if (fr.anim) fr.anim->Play(1, false);
+                fr.damagedP1 = false;
+                fr.damagedP2 = false;
+            }
+        } else {
+            fr.fadeTimer += deltaTime;
+            bool fadeAnimFinished = (fr.anim && !fr.anim->IsPlaying());
+            if (fr.fadeTimer >= fr.fadeDuration || fadeAnimFinished) {
+                fr.isActive = false;
+                fr.isFading = false;
+                fr.lifetime = 0.0f;
+                fr.fadeTimer = 0.0f;
+                if (fr.objectIndex >= 0 && fr.objectIndex < (int)m_fireRainObjects.size() && m_fireRainObjects[fr.objectIndex]) {
+                    m_fireRainObjects[fr.objectIndex]->SetVisible(false);
+                    m_freeFireRainSlots.push_back(fr.objectIndex);
+                }
+                fr.objectIndex = -1;
+                continue;
+            }
+        }
+
+        if (fr.anim) fr.anim->Update(deltaTime);
+        if (fr.objectIndex >= 0 && fr.objectIndex < (int)m_fireRainObjects.size() && m_fireRainObjects[fr.objectIndex]) {
+            m_fireRainObjects[fr.objectIndex]->SetPosition(fr.position);
+            if (fr.anim) {
+                float u0, v0, u1, v1;
+                fr.anim->GetUV(u0, v0, u1, v1);
+                m_fireRainObjects[fr.objectIndex]->SetCustomUV(u0, v0, u1, v1);
+            }
+        }
+
+        if (fr.isFading) {
+            float halfW = FIRE_RAIN_DAMAGE_W * 0.5f;
+            float halfH = FIRE_RAIN_DAMAGE_H * 0.5f;
+            float aLeft = fr.position.x - halfW;
+            float aRight = fr.position.x + halfW;
+            float aBottom = fr.position.y - halfH;
+            float aTop = fr.position.y + halfH;
+
+            auto checkDamage = [&](Character& target, bool& alreadyDamaged){
+                if (alreadyDamaged) return;
+                Vector3 pos = target.GetPosition();
+                float hx = pos.x + target.GetHurtboxOffsetX();
+                float hy = pos.y + target.GetHurtboxOffsetY();
+                float halfW2 = target.GetHurtboxWidth() * 0.5f;
+                float halfH2 = target.GetHurtboxHeight() * 0.5f;
+                float bLeft = hx - halfW2;
+                float bRight = hx + halfW2;
+                float bBottom = hy - halfH2;
+                float bTop = hy + halfH2;
+                bool overlapX = aRight >= bLeft && aLeft <= bRight;
+                bool overlapY = aTop >= bBottom && aBottom <= bTop;
+                if (overlapX && overlapY) {
+                    float prev = target.GetHealth();
+                    target.TakeDamage(100.0f);
+                    target.CancelAllCombos();
+                    if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
+                    if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                        target.TriggerDie();
+                    }
+                    alreadyDamaged = true;
+                }
+            };
+
+            checkDamage(m_player, fr.damagedP1);
+            checkDamage(m_player2, fr.damagedP2);
+        }
+    }
+}
+
+bool GSPlay::CheckFireRainWallCollision(const Vector3& pos, float halfW, float halfH) const {
+    if (!m_wallCollision) return false;
+    const auto& walls = m_wallCollision->GetWalls();
+    float aLeft = pos.x - halfW;
+    float aRight = pos.x + halfW;
+    float aBottom = pos.y - halfH;
+    float aTop = pos.y + halfH;
+    for (const auto& w : walls) {
+        float bLeft = w.GetLeft();
+        float bRight = w.GetRight();
+        float bBottom = w.GetBottom();
+        float bTop = w.GetTop();
+        bool overlapX = aRight >= bLeft && aLeft <= bRight;
+        bool overlapY = aTop >= bBottom && aBottom <= bTop;
+        if (overlapX && overlapY) return true;
+    }
+    return false;
+}
+
+void GSPlay::DrawFireRains(Camera* camera) {
+    for (auto& frObj : m_fireRainObjects) {
+        if (frObj && frObj->IsVisible()) {
+            frObj->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+}
+
+void GSPlay::QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration) {
+    if (step <= 0.0f) return;
+    std::vector<float> xs;
+    for (float x = xStart; x <= xEnd + 1e-6f; x += step) {
+        xs.push_back(x);
+    }
+    for (float x : xs) {
+        float r = (float)rand() / (float)RAND_MAX;
+        float spawnOffset = r * duration;
+        m_fireRainSpawnQueue.push_back(FireRainEvent{ m_gameTime + spawnOffset, x });
+    }
+}
+
+void GSPlay::UpdateFireRainSpawnQueue() {
+    if (m_fireRainSpawnQueue.empty()) return;
+    size_t writeIdx = 0;
+    for (size_t i = 0; i < m_fireRainSpawnQueue.size(); ++i) {
+        const FireRainEvent& ev = m_fireRainSpawnQueue[i];
+        if (m_gameTime >= ev.spawnTime) {
+            SpawnFireRainAt(ev.x, 1.2f);
+        } else {
+            if (writeIdx != i) m_fireRainSpawnQueue[writeIdx] = ev;
+            ++writeIdx;
+        }
+    }
+    m_fireRainSpawnQueue.resize(writeIdx);
 }
 
 int GSPlay::CreateOrAcquireBombObjectFromProto(int protoObjectId) {
@@ -1297,6 +1586,17 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == 'M' || key == 'm') {
+        if (bIsPressed) {
+            DetonatePlayerProjectiles(2);
+        }
+        
+        if (m_player2.IsOrc()) {
+            if (bIsPressed) { m_player2.TriggerOrcFlameBurst(); }
+            return;
+        }
+        if (m_player2.IsKitsune()) {
+            return;
+        }
         if (m_player2.IsBatDemon()) {
             if (bIsPressed) return;
         }
@@ -1330,6 +1630,17 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == '2') {
+        if (bIsPressed) {
+            DetonatePlayerProjectiles(1);
+        }
+        
+        if (m_player.IsOrc()) {
+            if (bIsPressed) { m_player.TriggerOrcFlameBurst(); }
+            return;
+        }
+        if (m_player.IsKitsune()) {
+            return;
+        }
         if (m_player.IsBatDemon()) {
             if (bIsPressed) return;
         }
@@ -1397,9 +1708,48 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
     }
 
+    if (bIsPressed && key == '6') {
+        bool toKitsune = !m_player.IsKitsune();
+        m_player.SetGunMode(false);
+        m_player.SetGrenadeMode(false);
+        if (toKitsune) { m_player.SetBatDemonMode(false); m_player.SetWerewolfMode(false); }
+        m_player.SetKitsuneMode(toKitsune);
+        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+    }
+    if (bIsPressed && (key == 'K' || key == 'k')) {
+        bool toKitsune2 = !m_player2.IsKitsune();
+        m_player2.SetGunMode(false);
+        m_player2.SetGrenadeMode(false);
+        if (toKitsune2) { m_player2.SetBatDemonMode(false); m_player2.SetWerewolfMode(false); }
+        m_player2.SetKitsuneMode(toKitsune2);
+        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+    }
+
+    if (bIsPressed && key == '7') {
+        bool toOrc = !m_player.IsOrc();
+        m_player.SetGunMode(false);
+        m_player.SetGrenadeMode(false);
+        if (toOrc) { m_player.SetBatDemonMode(false); m_player.SetWerewolfMode(false); m_player.SetKitsuneMode(false); }
+        m_player.SetOrcMode(toOrc);
+        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+    }
+    if (bIsPressed && (key == 'L' || key == 'l')) {
+        bool toOrc2 = !m_player2.IsOrc();
+        m_player2.SetGunMode(false);
+        m_player2.SetGrenadeMode(false);
+        if (toOrc2) { m_player2.SetBatDemonMode(false); m_player2.SetWerewolfMode(false); m_player2.SetKitsuneMode(false); }
+        m_player2.SetOrcMode(toOrc2);
+        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+    }
+
+
+    
     if (bIsPressed && key == '1') { 
-        if (m_player.IsBatDemon()) {
-            m_player.TriggerBatDemonSlash();
+        if (m_player.IsOrc()) {
+            m_player.TriggerOrcMeteorStrike();
+            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f);
+        } else if (m_player.IsKitsune()) {
+            m_player.TriggerKitsuneEnergyOrb();
         } else if (m_player.IsWerewolf()) {
             m_player.TriggerWerewolfCombo();
             if (m_player.CheckHitboxCollision(m_player2)) {
@@ -1415,9 +1765,14 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             m_player.SuppressNextPunch();
         }
     }
+
+    
     if (bIsPressed && (key == 'N' || key == 'n')) {
-        if (m_player2.IsBatDemon()) {
-            m_player2.TriggerBatDemonSlash();
+        if (m_player2.IsOrc()) {
+            m_player2.TriggerOrcMeteorStrike();
+            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f);
+        } else if (m_player2.IsKitsune()) {
+            m_player2.TriggerKitsuneEnergyOrb();
         } else if (m_player2.IsWerewolf()) {
             m_player2.TriggerWerewolfCombo();
             if (m_player2.CheckHitboxCollision(m_player)) {
@@ -1435,10 +1790,16 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
     
     if (key == '3') {
+        if (m_player.IsKitsune()) {
+            return;
+        }
         if (m_player.IsBatDemon()) {
             return;
         }
         if (m_player.IsWerewolf()) {
+            return;
+        }
+        if (m_player.IsOrc()) {
             return;
         }
         if (bIsPressed) {
@@ -1460,7 +1821,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 if (remain <= 0.0f || m_p1GrenadeExplodedInHand) {
                 } else {
                     if (remain < 0.2f) remain = 0.2f;
-                    if (m_p1Bombs > 0) { SpawnBombFromCharacter(m_player, remain); m_p1Bombs -= 1; UpdateHudBombDigits(); }
+                    if (m_p1Bombs > 0 && !m_player.IsOrc()) { SpawnBombFromCharacter(m_player, remain); m_p1Bombs -= 1; UpdateHudBombDigits(); }
                 }
                 m_p1GrenadePressTime = -1.0f;
                 m_p1GrenadeExplodedInHand = false;
@@ -1468,6 +1829,12 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (key == ',' || key == 0xBC) { 
+        if (m_player2.IsOrc()) {
+            return;
+        }
+        if (m_player2.IsKitsune()) {
+            return;
+        }
         if (m_player2.IsBatDemon()) {
             return;
         }
@@ -1493,7 +1860,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 if (remain <= 0.0f || m_p2GrenadeExplodedInHand) {
                 } else {
                     if (remain < 0.2f) remain = 0.2f;
-                    if (m_p2Bombs > 0) { SpawnBombFromCharacter(m_player2, remain); m_p2Bombs -= 1; UpdateHudBombDigits(); }
+                    if (m_p2Bombs > 0 && !m_player2.IsOrc()) { SpawnBombFromCharacter(m_player2, remain); m_p2Bombs -= 1; UpdateHudBombDigits(); }
                 }
                 m_p2GrenadePressTime = -1.0f;
                 m_p2GrenadeExplodedInHand = false;
@@ -2081,6 +2448,7 @@ void GSPlay::DrawBloods(Camera* cam) {
 void GSPlay::TryCompletePendingShots() {
     auto tryFinish = [&](Character& ch, bool& pendingFlag, float& startTime){
         if (!pendingFlag) return;
+        if (ch.IsOrc()) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
         // Require minimum time for anim0 + anim1 display
         float elapsed = m_gameTime - startTime;
         if (elapsed < GetGunRequiredTime()) return;
@@ -2231,7 +2599,7 @@ void GSPlay::UpdateGunBursts() {
                 SoundManager::Instance().PlaySFXByID(12, 0); // GunM4A1
             }
         } else {
-            SpawnBulletFromCharacter(ch);
+            if (!ch.IsOrc()) { SpawnBulletFromCharacter(ch); }
             if (gunTex == 45) {
                 SoundManager::Instance().PlaySFXByID(10, 0); // GunDEagle
             } else if (gunTex == 40) {
@@ -2447,19 +2815,20 @@ void GSPlay::UpdateCloudMovement(float deltaTime) {
 void GSPlay::UpdateFanRotation(float deltaTime) {
     SceneManager* sceneManager = SceneManager::GetInstance();
     
-    int fanIds[] = {800, 801, 802, 803};
+    int fanIds[] = {800, 801, 802, 803, 804, 805, 806, 807, 808, 809, 810, 811, 812, 813, 814};
     const float FAN_ROTATION_SPEED = 90.0f;
     
     for (int fanId : fanIds) {
         Object* fan = sceneManager->GetObject(fanId);
         if (fan) {
             const Vector3& currentRotation = fan->GetRotation();
-            float newZRotation = currentRotation.z + FAN_ROTATION_SPEED * deltaTime;
-            
+            float speed = (fanId == 814) ? (FAN_ROTATION_SPEED * 0.01f) : FAN_ROTATION_SPEED;
+            float newZRotation = currentRotation.z + speed * deltaTime;
+
             if (newZRotation >= 360.0f) {
                 newZRotation -= 360.0f;
             }
-            
+
             fan->SetRotation(currentRotation.x, currentRotation.y, newZRotation);
         }
     }
@@ -2621,4 +2990,212 @@ void GSPlay::HandleItemPickup() {
          tryPickupGun(45, gun_deagle,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(46, gun_sniper,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) { return; }
+}
+
+void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
+    character.ResetKitsuneEnergyOrbAnimationComplete();
+    
+    EnergyOrbProjectile* projectile = nullptr;
+    
+    for (auto& proj : m_energyOrbProjectiles) {
+        if (!proj->IsActive()) {
+            projectile = proj.get();
+            break;
+        }
+    }
+    
+    if (!projectile && m_energyOrbProjectiles.size() < MAX_ENERGY_ORB_PROJECTILES) {
+        m_energyOrbProjectiles.push_back(std::make_unique<EnergyOrbProjectile>());
+        projectile = m_energyOrbProjectiles.back().get();
+        projectile->Initialize();
+        projectile->SetWallCollision(m_wallCollision.get());
+        projectile->SetExplosionCallback([this](float x) { SpawnLightningEffect(x); });
+    }
+    
+    if (projectile) {
+        Vector3 charPos = character.GetPosition();
+        bool facingLeft = character.IsFacingLeft();
+        
+        Vector3 spawnPos = charPos;
+        spawnPos.x += facingLeft ? -0.15f : 0.15f;
+        spawnPos.y -= 0.05f;
+        
+        Vector3 direction(facingLeft ? -1.0f : 1.0f, 0.0f, 0.0f);
+        
+        int ownerId = (&character == &m_player) ? 1 : 2;
+        
+        projectile->Spawn(spawnPos, direction, 2.0f, ownerId);
+    }
+}
+
+void GSPlay::UpdateEnergyOrbProjectiles(float deltaTime) {
+    for (auto& projectile : m_energyOrbProjectiles) {
+        if (projectile->IsActive()) {
+            projectile->Update(deltaTime);
+        }
+    }
+}
+
+void GSPlay::DrawEnergyOrbProjectiles(Camera* camera) {
+    for (auto& projectile : m_energyOrbProjectiles) {
+        if (projectile->IsActive()) {
+            projectile->Draw(camera);
+        }
+    }
+}
+
+void GSPlay::DetonatePlayerProjectiles(int playerId) {
+    for (auto& projectile : m_energyOrbProjectiles) {
+        if (projectile->IsActive() && !projectile->IsExploding() && projectile->GetOwnerId() == playerId) {
+            projectile->TriggerExplosion();
+        }
+    }
+}
+
+void GSPlay::SpawnLightningEffect(float x) {
+    LightningEffect* lightning = nullptr;
+    
+    for (auto& effect : m_lightningEffects) {
+        if (!effect.isActive) {
+            lightning = &effect;
+            break;
+        }
+    }
+    
+    if (!lightning && m_lightningEffects.size() < MAX_LIGHTNING_EFFECTS) {
+        m_lightningEffects.push_back(LightningEffect{});
+        lightning = &m_lightningEffects.back();
+    }
+    
+    if (lightning) {
+        int objIndex = CreateOrAcquireLightningObject();
+        if (objIndex >= 0) {
+            lightning->x = x;
+            lightning->lifetime = 0.0f;
+            lightning->maxLifetime = 3.0f; // 3s
+            lightning->objectIndex = objIndex;
+            lightning->isActive = true;
+            lightning->currentFrame = 0;
+            lightning->frameTimer = 0.0f;
+            lightning->frameDuration = 3.0f / 30.0f;
+            
+            // Hitbox Lightning
+            lightning->hitboxLeft = x - 0.21875f;
+            lightning->hitboxRight = x + 0.21875f;
+            lightning->hitboxTop = 1.95f;
+            lightning->hitboxBottom = -1.95f;
+            lightning->hasDealtDamage = false;
+            
+            // Set lightning object position and scale
+            if (objIndex < (int)m_lightningObjects.size() && m_lightningObjects[objIndex]) {
+                m_lightningObjects[objIndex]->SetPosition(x, 0.0f, 0.0f);
+                m_lightningObjects[objIndex]->SetScale(1.0f, -3.9f, 1.0f);
+                
+                float frameWidth = 1.0f / 32.0f;
+                float uStart = 0.0f;
+                float uEnd = frameWidth;
+                m_lightningObjects[objIndex]->SetCustomUV(uStart, 1.0f, uEnd, 0.0f);
+            }
+        }
+    }
+}
+
+void GSPlay::UpdateLightningEffects(float deltaTime) {
+    for (auto& lightning : m_lightningEffects) {
+        if (lightning.isActive) {
+            lightning.lifetime += deltaTime;
+            lightning.frameTimer += deltaTime;
+            
+            if (lightning.frameTimer >= lightning.frameDuration) {
+                lightning.frameTimer = 0.0f;
+                lightning.currentFrame++;
+                
+                if (lightning.objectIndex >= 0 && lightning.objectIndex < (int)m_lightningObjects.size() && m_lightningObjects[lightning.objectIndex]) {
+                    float frameWidth = 1.0f / 32.0f;
+                    float uStart = lightning.currentFrame * frameWidth;
+                    float uEnd = uStart + frameWidth;
+                    m_lightningObjects[lightning.objectIndex]->SetCustomUV(uStart, 1.0f, uEnd, 0.0f); 
+                }
+            }
+            
+            if (lightning.lifetime >= lightning.maxLifetime) {
+                lightning.isActive = false;
+                if (lightning.objectIndex >= 0 && lightning.objectIndex < (int)m_freeLightningSlots.size()) {
+                    m_freeLightningSlots.push_back(lightning.objectIndex);
+                }
+            }
+        }
+    }
+}
+
+void GSPlay::DrawLightningEffects(Camera* camera) {
+    for (auto& lightning : m_lightningEffects) {
+        if (lightning.isActive && lightning.objectIndex >= 0 && lightning.objectIndex < (int)m_lightningObjects.size()) {
+            if (m_lightningObjects[lightning.objectIndex]) {
+                m_lightningObjects[lightning.objectIndex]->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+            }
+        }
+    }
+}
+
+int GSPlay::CreateOrAcquireLightningObject() {
+    if (!m_freeLightningSlots.empty()) {
+        int idx = m_freeLightningSlots.back();
+        m_freeLightningSlots.pop_back();
+        if (m_lightningObjects[idx]) {
+            m_lightningObjects[idx]->SetVisible(true);
+        }
+        return idx;
+    }
+    
+    std::unique_ptr<Object> obj = std::make_unique<Object>(60000 + (int)m_lightningObjects.size());
+    
+    obj->SetModel(0);
+    obj->SetTexture(64, 0);
+    obj->SetShader(0);
+    obj->SetScale(1.0f, -3.6f, 1.0f);
+    obj->SetVisible(true);
+    
+    obj->MakeModelInstanceCopy();
+    
+    m_lightningObjects.push_back(std::move(obj));
+    return (int)m_lightningObjects.size() - 1;
+}
+
+void GSPlay::CheckLightningDamage() {
+    for (auto& lightning : m_lightningEffects) {
+        if (lightning.isActive && !lightning.hasDealtDamage) {
+            Vector3 playerPos = m_player.GetPosition();
+            float playerHurtboxX = playerPos.x + m_player.GetHurtboxOffsetX();
+            float playerHurtboxY = playerPos.y + m_player.GetHurtboxOffsetY();
+            float playerHurtboxLeft = playerHurtboxX - m_player.GetHurtboxWidth() * 0.5f;
+            float playerHurtboxRight = playerHurtboxX + m_player.GetHurtboxWidth() * 0.5f;
+            float playerHurtboxTop = playerHurtboxY + m_player.GetHurtboxHeight() * 0.5f;
+            float playerHurtboxBottom = playerHurtboxY - m_player.GetHurtboxHeight() * 0.5f;
+            
+            bool collisionX1 = lightning.hitboxRight >= playerHurtboxLeft && lightning.hitboxLeft <= playerHurtboxRight;
+            bool collisionY1 = lightning.hitboxTop >= playerHurtboxBottom && lightning.hitboxBottom <= playerHurtboxTop;
+            
+            if (collisionX1 && collisionY1) {
+                m_player.TakeDamage(100);
+                lightning.hasDealtDamage = true;
+            }
+            
+            Vector3 player2Pos = m_player2.GetPosition();
+            float player2HurtboxX = player2Pos.x + m_player2.GetHurtboxOffsetX();
+            float player2HurtboxY = player2Pos.y + m_player2.GetHurtboxOffsetY();
+            float player2HurtboxLeft = player2HurtboxX - m_player2.GetHurtboxWidth() * 0.5f;
+            float player2HurtboxRight = player2HurtboxX + m_player2.GetHurtboxWidth() * 0.5f;
+            float player2HurtboxTop = player2HurtboxY + m_player2.GetHurtboxHeight() * 0.5f;
+            float player2HurtboxBottom = player2HurtboxY - m_player2.GetHurtboxHeight() * 0.5f;
+            
+            bool collisionX2 = lightning.hitboxRight >= player2HurtboxLeft && lightning.hitboxLeft <= player2HurtboxRight;
+            bool collisionY2 = lightning.hitboxTop >= player2HurtboxBottom && lightning.hitboxBottom <= player2HurtboxTop;
+            
+            if (collisionX2 && collisionY2) {
+                m_player2.TakeDamage(100);
+                lightning.hasDealtDamage = true;
+            }
+        }
+    }
 }

@@ -76,12 +76,42 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
     if (m_topAnimManager) {
         m_topAnimManager->Update(deltaTime);
     }
-
-    if (m_isBatDemon) {
-        if (m_batSlashCooldownTimer > 0.0f) {
-            m_batSlashCooldownTimer -= deltaTime;
-            if (m_batSlashCooldownTimer < 0.0f) m_batSlashCooldownTimer = 0.0f;
+    if (m_orcFireActive && m_orcFireAnim) {
+        m_orcFireAnim->Update(deltaTime);
+        if (!m_orcFireAnim->IsPlaying()) {
+            m_orcFireActive = false;
+            if (m_orcFireObject) {
+                m_orcFireObject->SetVisible(false);
+            }
         }
+    }
+    if (m_orcAppearActive && m_orcAppearAnim) {
+        m_orcAppearAnim->Update(deltaTime);
+        if (!m_orcAppearAnim->IsPlaying()) {
+            m_orcAppearActive = false;
+            if (m_orcAppearObject) {
+                m_orcAppearObject->SetVisible(false);
+            }
+        }
+    }
+    if (m_werewolfAppearActive && m_werewolfAppearAnim) {
+        m_werewolfAppearAnim->Update(deltaTime);
+        if (!m_werewolfAppearAnim->IsPlaying()) {
+            m_werewolfAppearActive = false;
+            if (m_werewolfAppearObject) {
+                m_werewolfAppearObject->SetVisible(false);
+            }
+        }
+    }
+
+    if (m_batSlashCooldownTimer > 0.0f) {
+        m_batSlashCooldownTimer -= deltaTime;
+        if (m_batSlashCooldownTimer < 0.0f) m_batSlashCooldownTimer = 0.0f;
+    }
+
+    if (m_kitsuneEnergyOrbCooldownTimer > 0.0f) {
+        m_kitsuneEnergyOrbCooldownTimer -= deltaTime;
+        if (m_kitsuneEnergyOrbCooldownTimer < 0.0f) m_kitsuneEnergyOrbCooldownTimer = 0.0f;
     }
 
     if (m_isWerewolf && movement) {
@@ -207,7 +237,7 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    if (!m_isBatDemon && (m_gunMode || m_recoilActive) && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+    if (!m_isBatDemon && !m_isKitsune && !m_isOrc && (m_gunMode || m_recoilActive) && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
         
@@ -240,7 +270,7 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         }
     }
 
-    if (!m_isBatDemon && m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
+    if (!m_isBatDemon && !m_isKitsune && !m_isOrc && m_grenadeMode && m_topObject && m_topAnimManager && m_topObject->GetModelId() >= 0 && m_topObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_topAnimManager->GetUV(u0, v0, u1, v1);
         if (movement && movement->IsFacingLeft()) {
@@ -255,6 +285,31 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_topObject->SetRotation(0.0f, 0.0f, faceSign * m_aimAngleDeg * 3.14159265f / 180.0f);
         if (camera) {
             m_topObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+
+    if (m_orcFireActive && m_orcFireObject && m_orcFireObject->GetModelId() >= 0 && m_orcFireObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_orcFireAnim->GetUV(u0, v0, u1, v1);
+        m_orcFireObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_orcFireObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+    if (m_orcAppearActive && m_orcAppearObject && m_orcAppearObject->GetModelId() >= 0 && m_orcAppearObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_orcAppearAnim->GetUV(u0, v0, u1, v1);
+        m_orcAppearObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_orcAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+    if (m_werewolfAppearActive && m_werewolfAppearObject && m_werewolfAppearObject->GetModelId() >= 0 && m_werewolfAppearObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_werewolfAppearAnim->GetUV(u0, v0, u1, v1);
+        m_werewolfAppearObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_werewolfAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
 }
@@ -298,7 +353,7 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
                 }
                 if (!m_animManager->IsPlaying()) {
                     m_batSlashActive = false;
-                    m_batSlashCooldownTimer = m_batSlashCooldown;
+                    m_batSlashCooldownTimer = BAT_SLASH_COOLDOWN;
                 }
             } else {
                 int cur = GetCurrentAnimation();
@@ -389,6 +444,136 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
         return;
     }
 
+    // Kitsune mode
+    if (m_isKitsune) {
+        if (m_characterObject) {
+            const std::vector<int>& texIds = m_characterObject->GetTextureIds();
+            int currentTex = texIds.empty() ? -1 : texIds[0];
+            if (currentTex != 62) {
+                m_characterObject->SetTexture(62, 0);
+                if (auto texData = ResourceManager::GetInstance()->GetTextureData(62)) {
+                    if (!m_animManager) {
+                        m_animManager = std::make_shared<AnimationManager>();
+                    }
+                    std::vector<AnimationData> anims;
+                    anims.reserve(texData->animations.size());
+                    for (const auto& a : texData->animations) {
+                        anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                    }
+                    m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                    m_lastAnimation = -1;
+                }
+            }
+        }
+        if (m_animManager) {
+            if (m_kitsuneEnergyOrbActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 3) {
+                    m_animManager->Play(3, false);
+                    m_lastAnimation = 3;
+                    m_kitsuneEnergyOrbAnimationComplete = false;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_kitsuneEnergyOrbActive = false;
+                    m_kitsuneEnergyOrbCooldownTimer = KITSUNE_ENERGY_ORB_COOLDOWN;
+                    m_kitsuneEnergyOrbAnimationComplete = true;
+                }
+            } else {
+                int desired = 0;
+                if (movement) {
+                    CharState st = movement->GetState();
+                    bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
+                    bool isRunning = movement->IsRunningLeft() || movement->IsRunningRight();
+                    if (isMoving) { desired = isRunning ? 2 : 1; }
+                }
+                int cur = GetCurrentAnimation();
+                if (cur != desired) {
+                    m_animManager->Play(desired, true);
+                    m_lastAnimation = desired;
+                } else {
+                    m_animManager->Resume();
+                }
+            }
+        }
+        return;
+    }
+
+    // Orc mode
+    if (m_isOrc) {
+        if (m_characterObject) {
+            const std::vector<int>& texIds = m_characterObject->GetTextureIds();
+            int currentTex = texIds.empty() ? -1 : texIds[0];
+            if (currentTex != 63) {
+                m_characterObject->SetTexture(63, 0);
+                if (auto texData = ResourceManager::GetInstance()->GetTextureData(63)) {
+                    if (!m_animManager) {
+                        m_animManager = std::make_shared<AnimationManager>();
+                    }
+                    std::vector<AnimationData> anims;
+                    anims.reserve(texData->animations.size());
+                    for (const auto& a : texData->animations) {
+                        anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                    }
+                    m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                    m_lastAnimation = -1;
+                }
+            }
+        }
+        if (m_animManager) {
+            if (m_orcMeteorStrikeActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 2) {
+                    m_animManager->Play(2, false);
+                    m_lastAnimation = 2;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_orcMeteorStrikeActive = false;
+                    if (movement) {
+                        movement->SetInputLocked(false);
+                    }
+                } else {
+                    if (movement) {
+                        movement->SetInputLocked(true);
+                    }
+                }
+                return;
+            } else if (m_orcFlameBurstActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 3) {
+                    m_animManager->Play(3, false);
+                    m_lastAnimation = 3;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_orcFlameBurstActive = false;
+                    if (movement) {
+                        movement->SetInputLocked(false);
+                    }
+                    m_animManager->Play(0, true);
+                } else {
+                    if (movement) {
+                        movement->SetInputLocked(true);
+                    }
+                }
+                return;
+            }
+            
+            int cur = GetCurrentAnimation();
+            int desired = 0;
+            if (movement && !m_orcMeteorStrikeActive && !m_orcFlameBurstActive) {
+                CharState st = movement->GetState();
+                bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
+                if (isMoving) { desired = 1; } // Walk
+            }
+            if (cur != desired && !m_orcMeteorStrikeActive && !m_orcFlameBurstActive) {
+                m_animManager->Play(desired, true);
+                m_lastAnimation = desired;
+            } else if (!m_orcMeteorStrikeActive && !m_orcFlameBurstActive) {
+                m_animManager->Resume();
+            }
+        }
+        return;
+    }
+
     if (!m_hardLandingActive && movement->ConsumeHardLandingRequested()) {
         StartHardLanding(movement);
         return;
@@ -428,12 +613,15 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
     }
 
     if (m_grenadeMode) {
+        if (m_isKitsune) { m_grenadeMode = false; return; }
+        if (m_isOrc) { m_grenadeMode = false; return; }
         PlayAnimation(31, true);
         PlayTopAnimation(7, true);
         return;
     }
 
     if (m_gunMode) {
+        if (m_isKitsune) { m_gunMode = false; return; }
         if (m_isWerewolf) {
             return;
         }
@@ -444,6 +632,7 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
             // fall back to BatDemon render path
             return;
         }
+        if (m_isOrc) { m_gunMode = false; return; }
         return;
     }
     
@@ -508,6 +697,13 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
         return;
     }
     if (m_hardLandingActive) {
+        return;
+    }
+    if (m_isKitsune) {
+        return;
+    }
+    
+    if (m_isOrc && (m_orcMeteorStrikeActive || m_orcFlameBurstActive)) {
         return;
     }
     
@@ -825,7 +1021,7 @@ void CharacterAnimation::SetGrenadeMode(bool enabled) {
 
 void CharacterAnimation::SetBatDemonMode(bool enabled) {
     m_isBatDemon = enabled;
-    m_batSlashActive = false;
+    if (enabled) { m_isKitsune = false; }
     if (enabled) {
         // Disable overlays
         m_gunMode = false;
@@ -848,6 +1044,9 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
             m_animManager->Play(0, true);
             m_lastAnimation = 0;
         }
+        m_batSlashActive = false;
+        m_batSlashCooldownTimer = 0.0f;
+        m_orcMeteorStrikeActive = false;
     } else {
         // Restore original player body or werewolf depending on state
         if (m_isWerewolf) {
@@ -886,17 +1085,18 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
                 m_lastAnimation = 0;
             }
         }
+        m_orcMeteorStrikeActive = false;
     }
 }
 
 void CharacterAnimation::TriggerBatDemonSlash() {
     if (!m_isBatDemon) return;
-    if (m_batSlashCooldownTimer > 0.0f) return;
     if (m_batSlashActive) return;
-    m_batSlashActive = true;
+    if (m_batSlashCooldownTimer > 0.0f) return;
     if (m_animManager) {
         m_animManager->Play(1, false);
         m_lastAnimation = 1;
+        m_batSlashActive = true;
     }
 }
 
@@ -1065,8 +1265,10 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
 
 void CharacterAnimation::SetWerewolfMode(bool enabled) {
     m_isWerewolf = enabled;
+    if (enabled) { m_isKitsune = false; }
     m_werewolfComboActive = false;
     m_werewolfPounceActive = false;
+    m_orcMeteorStrikeActive = false;
     if (enabled) {
         // Disable gun/grenade overlays when werewolf
         m_gunMode = false;
@@ -1088,6 +1290,10 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
             m_animManager->Play(0, true);
             m_lastAnimation = 0;
         }
+        if (m_characterObject) {
+            const Vector3& pos = m_characterObject->GetPosition();
+            TriggerWerewolfAppearEffectAt(pos.x, pos.y);
+        }
     } else {
         // Restore original player body texture and animations
         int bodyTexId = (m_objectId == 1000) ? 10 : 11;
@@ -1106,6 +1312,255 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
             m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
             m_animManager->Play(0, true);
             m_lastAnimation = 0;
+        }
+    }
+}
+
+void CharacterAnimation::TriggerWerewolfAppearEffectAt(float x, float y) {
+    if (!m_werewolfAppearAnim) {
+        m_werewolfAppearAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_werewolfAppearObject) {
+        m_werewolfAppearObject = std::make_unique<Object>(m_objectId + 22000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_werewolfAppearObject->SetModel(originalObj->GetModelId());
+            m_werewolfAppearObject->SetShader(originalObj->GetShaderId());
+            m_werewolfAppearObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(71)) { // Werewolf_Appear.tga
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_werewolfAppearAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_werewolfAppearAnim->Play(0, false);
+        m_werewolfAppearActive = true;
+        if (m_werewolfAppearObject) {
+            m_werewolfAppearObject->SetTexture(71, 0);
+            m_werewolfAppearObject->SetVisible(true);
+            m_werewolfAppearObject->SetPosition(x, y + WEREWOLF_APPEAR_Y_OFFSET, 0.0f);
+            m_werewolfAppearObject->SetScale(0.8f, 0.8f, 0.0f);
+        }
+    }
+}
+
+void CharacterAnimation::SetKitsuneMode(bool enabled) {
+    m_isKitsune = enabled;
+    if (enabled) {
+        m_gunMode = false;
+        m_grenadeMode = false;
+        m_isBatDemon = false;
+        m_orcMeteorStrikeActive = false;
+        if (m_characterObject) {
+            m_characterObject->SetTexture(62, 0);
+        }
+        if (auto texData = ResourceManager::GetInstance()->GetTextureData(62)) {
+            if (!m_animManager) {
+                m_animManager = std::make_shared<AnimationManager>();
+            }
+            std::vector<AnimationData> anims;
+            anims.reserve(texData->animations.size());
+            for (const auto& a : texData->animations) {
+                anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+            }
+            m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+            m_animManager->Play(0, true);
+            m_lastAnimation = 0;
+        }
+    } else {
+        if (m_isWerewolf) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(60, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else if (m_isBatDemon) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(61, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(61)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else {
+            int bodyTexId = (m_objectId == 1000) ? 10 : 11;
+            if (m_characterObject) {
+                m_characterObject->SetTexture(bodyTexId, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(bodyTexId)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        }
+    }
+}
+
+void CharacterAnimation::SetOrcMode(bool enabled) {
+    m_isOrc = enabled;
+    if (enabled) {
+        m_gunMode = false;
+        m_grenadeMode = false;
+        m_isBatDemon = false;
+        m_isWerewolf = false;
+        m_isKitsune = false;
+        m_orcMeteorStrikeActive = false;
+        m_orcFlameBurstActive = false;
+        m_topAnimManager.reset();
+        m_topObject.reset();
+        m_orcFireActive = false;
+        m_orcFireAnim.reset();
+        m_orcFireObject.reset();
+        m_orcAppearActive = false;
+        m_orcAppearAnim.reset();
+        m_orcAppearObject.reset();
+        if (m_characterObject) {
+            m_characterObject->SetTexture(63, 0);
+        }
+        if (auto texData = ResourceManager::GetInstance()->GetTextureData(63)) {
+            if (!m_animManager) {
+                m_animManager = std::make_shared<AnimationManager>();
+            }
+            std::vector<AnimationData> anims;
+            anims.reserve(texData->animations.size());
+            for (const auto& a : texData->animations) {
+                anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+            }
+            m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+            m_animManager->Play(0, true); // Idle
+            m_lastAnimation = 0;
+        }
+    } else {
+        m_orcMeteorStrikeActive = false;
+        m_orcFlameBurstActive = false;
+        m_orcFireActive = false;
+        m_orcFireAnim.reset();
+        m_orcFireObject.reset();
+        m_orcAppearActive = false;
+        m_orcAppearAnim.reset();
+        m_orcAppearObject.reset();
+        if (m_isWerewolf) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(60, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(60)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else if (m_isBatDemon) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(61, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(61)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else if (m_isKitsune) {
+            if (m_characterObject) {
+                m_characterObject->SetTexture(62, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(62)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+        } else {
+            int bodyTexId = (m_objectId == 1000) ? 10 : 11;
+            if (m_characterObject) {
+                m_characterObject->SetTexture(bodyTexId, 0);
+            }
+            if (auto texData = ResourceManager::GetInstance()->GetTextureData(bodyTexId)) {
+                if (!m_animManager) {
+                    m_animManager = std::make_shared<AnimationManager>();
+                }
+                std::vector<AnimationData> anims;
+                anims.reserve(texData->animations.size());
+                for (const auto& a : texData->animations) {
+                    anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                }
+                m_animManager->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+                m_animManager->Play(0, true);
+                m_lastAnimation = 0;
+            }
+            int headTexId = (m_objectId == 1000) ? 8 : 9;
+            const TextureData* headTex = ResourceManager::GetInstance()->GetTextureData(headTexId);
+            if (headTex && headTex->spriteWidth > 0 && headTex->spriteHeight > 0) {
+                if (!m_topAnimManager) {
+                    m_topAnimManager = std::make_shared<AnimationManager>();
+                    std::vector<AnimationData> topAnims;
+                    topAnims.reserve(headTex->animations.size());
+                    for (const auto& a : headTex->animations) {
+                        topAnims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+                    }
+                    m_topAnimManager->Initialize(headTex->spriteWidth, headTex->spriteHeight, topAnims);
+                    m_topAnimManager->Play(0, true);
+                }
+                if (!m_topObject) {
+                    m_topObject = std::make_unique<Object>(m_objectId + 10000);
+                    if (m_characterObject) {
+                        m_topObject->SetModel(m_characterObject->GetModelId());
+                        m_topObject->SetShader(m_characterObject->GetShaderId());
+                        m_topObject->SetScale(m_characterObject->GetScale());
+                    }
+                }
+                m_topObject->SetTexture(headTexId, 0);
+            }
         }
     }
 }
@@ -1130,5 +1585,110 @@ void CharacterAnimation::TriggerWerewolfPounce() {
     if (m_animManager) {
         m_animManager->Play(3, false);
         m_lastAnimation = 3;
+    }
+}
+
+void CharacterAnimation::TriggerKitsuneEnergyOrb() {
+    if (!m_isKitsune) return;
+    if (m_kitsuneEnergyOrbActive) return;
+    if (m_kitsuneEnergyOrbCooldownTimer > 0.0f) return;
+    if (m_animManager) {
+        m_animManager->Play(3, false);
+        m_lastAnimation = 3;
+        m_kitsuneEnergyOrbActive = true;
+        m_kitsuneEnergyOrbAnimationComplete = false;
+    }
+}
+
+void CharacterAnimation::TriggerOrcMeteorStrike() {
+    if (!m_isOrc) return;
+    if (m_orcMeteorStrikeActive) return;
+    if (m_animManager) {
+        m_animManager->Play(2, false);
+        m_lastAnimation = 2;
+        m_orcMeteorStrikeActive = true;
+    }
+}
+
+void CharacterAnimation::TriggerOrcFlameBurst() {
+    if (!m_isOrc) return;
+    if (m_orcMeteorStrikeActive || m_orcFlameBurstActive) return;
+    if (m_animManager) {
+        m_animManager->Play(3, false);
+        m_lastAnimation = 3;
+        m_orcFlameBurstActive = true;
+    }
+
+    if (!m_orcFireAnim) {
+        m_orcFireAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_orcFireObject) {
+        m_orcFireObject = std::make_unique<Object>(m_objectId + 20000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_orcFireObject->SetModel(originalObj->GetModelId());
+            m_orcFireObject->SetShader(originalObj->GetShaderId());
+            m_orcFireObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(67)) {
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_orcFireAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_orcFireAnim->Play(0, false);
+        m_orcFireActive = true;
+        if (m_orcFireObject) {
+            m_orcFireObject->SetTexture(67, 0);
+            m_orcFireObject->SetVisible(true);
+            m_orcFireObject->SetPosition(-0.15f, -1.175f, 0.0f);
+            m_orcFireObject->SetScale(7.3f, 0.8f, 0.0f);
+        }
+    }
+}
+
+void CharacterAnimation::GetOrcFireAabb(float& left, float& right, float& bottom, float& top) const {
+    if (m_orcFireObject) {
+        const Vector3& pos = m_orcFireObject->GetPosition();
+        const Vector3& sc  = m_orcFireObject->GetScale();
+        float halfW = fabsf(sc.x) * 0.5f;
+        float halfH = fabsf(sc.y) * 0.5f;
+        left = pos.x - halfW;
+        right = pos.x + halfW;
+        bottom = pos.y - halfH;
+        top = pos.y + halfH;
+    } else {
+        left = right = bottom = top = 0.0f;
+    }
+}
+
+void CharacterAnimation::TriggerOrcAppearEffectAt(float x, float y) {
+    if (!m_orcAppearAnim) {
+        m_orcAppearAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_orcAppearObject) {
+        m_orcAppearObject = std::make_unique<Object>(m_objectId + 21000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_orcAppearObject->SetModel(originalObj->GetModelId());
+            m_orcAppearObject->SetShader(originalObj->GetShaderId());
+            m_orcAppearObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(74)) {
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_orcAppearAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_orcAppearAnim->Play(0, false);
+        m_orcAppearActive = true;
+        if (m_orcAppearObject) {
+            m_orcAppearObject->SetTexture(74, 0);
+            m_orcAppearObject->SetVisible(true);
+            m_orcAppearObject->SetPosition(x, y + ORC_APPEAR_Y_OFFSET, 0.0f);
+            m_orcAppearObject->SetScale(0.8f, 0.8f, 0.0f);
+        }
     }
 }

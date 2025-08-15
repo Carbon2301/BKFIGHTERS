@@ -81,9 +81,28 @@ private:
     bool m_grenadeMode = false;
     bool m_isBatDemon = false;
     bool m_isWerewolf = false;
+    bool m_isKitsune = false;
+    bool m_isOrc = false;
     bool m_batSlashActive = false;
     float m_batSlashCooldownTimer = 0.0f;
-    float m_batSlashCooldown = 0.5f;
+    static constexpr float BAT_SLASH_COOLDOWN = 0.5f;
+    bool m_kitsuneEnergyOrbActive = false;
+    float m_kitsuneEnergyOrbCooldownTimer = 0.0f;
+    static constexpr float KITSUNE_ENERGY_ORB_COOLDOWN = 0.5f;
+    bool m_kitsuneEnergyOrbAnimationComplete = false;
+    bool m_orcMeteorStrikeActive = false;
+    bool m_orcFlameBurstActive = false;
+    bool m_orcFireActive = false;
+    std::shared_ptr<AnimationManager> m_orcFireAnim;
+    std::unique_ptr<class Object> m_orcFireObject;
+    bool m_orcAppearActive = false;
+    std::shared_ptr<AnimationManager> m_orcAppearAnim;
+    std::unique_ptr<class Object> m_orcAppearObject;
+    static constexpr float ORC_APPEAR_Y_OFFSET = 0.19f;
+    bool m_werewolfAppearActive = false;
+    std::shared_ptr<AnimationManager> m_werewolfAppearAnim;
+    std::unique_ptr<class Object> m_werewolfAppearObject;
+    static constexpr float WEREWOLF_APPEAR_Y_OFFSET = 0.05f;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -120,6 +139,9 @@ public:
     // Core update
     void Update(float deltaTime, CharacterMovement* movement, CharacterCombat* combat);
     void Draw(Camera* camera, CharacterMovement* movement);
+    void DrawOrcFire(Camera* camera);
+    void DrawOrcAppear(Camera* camera);
+    void DrawWerewolfAppear(Camera* camera);
     
     // Animation control
     void PlayAnimation(int animIndex, bool loop);
@@ -154,8 +176,8 @@ public:
     void SetBatDemonMode(bool enabled);
     bool IsBatDemon() const { return m_isBatDemon; }
     void TriggerBatDemonSlash();
-    void SetBatDemonSlashCooldown(float seconds) { m_batSlashCooldown = seconds; }
-    float GetBatDemonSlashCooldownRemaining() const { return m_batSlashCooldownTimer; }
+    bool IsBatDemonSlashActive() const { return m_batSlashActive; }
+    float GetBatSlashCooldownTimer() const { return m_batSlashCooldownTimer; }
     // Werewolf mode control
     void SetWerewolfMode(bool enabled);
     bool IsWerewolf() const { return m_isWerewolf; }
@@ -170,12 +192,33 @@ public:
 
     void GetTopFrameUV(float& u0, float& v0, float& u1, float& v1) const;
     int GetHeadTextureId() const { return (m_objectId == 1000) ? 8 : 9; }
-    int GetBodyTextureId() const { return m_isBatDemon ? 61 : (m_isWerewolf ? 60 : ((m_objectId == 1000) ? 10 : 11)); }
+    int GetBodyTextureId() const { return m_isBatDemon ? 61 : (m_isWerewolf ? 60 : (m_isKitsune ? 62 : (m_isOrc ? 63 : ((m_objectId == 1000) ? 10 : 11)))); }
     float GetTopOffsetX() const { return m_topOffsetX; }
     float GetTopOffsetY() const { return m_topOffsetY; }
 
     bool IsHardLandingActive() const { return m_hardLandingActive; }
     void StartHardLanding(class CharacterMovement* movement);
+
+    // Kitsune mode control
+    void SetKitsuneMode(bool enabled);
+    bool IsKitsune() const { return m_isKitsune; }
+    void TriggerKitsuneEnergyOrb();
+    bool IsKitsuneEnergyOrbActive() const { return m_kitsuneEnergyOrbActive; }
+    float GetKitsuneEnergyOrbCooldownTimer() const { return m_kitsuneEnergyOrbCooldownTimer; }
+    bool IsKitsuneEnergyOrbAnimationComplete() const { return m_kitsuneEnergyOrbAnimationComplete; }
+    void ResetKitsuneEnergyOrbAnimationComplete() { m_kitsuneEnergyOrbAnimationComplete = false; }
+
+    // Orc mode control
+    void SetOrcMode(bool enabled);
+    bool IsOrc() const { return m_isOrc; }
+    void TriggerOrcMeteorStrike();
+    void TriggerOrcFlameBurst();
+    bool IsOrcMeteorStrikeActive() const { return m_orcMeteorStrikeActive; }
+    bool IsOrcFlameBurstActive() const { return m_orcFlameBurstActive; }
+    bool IsOrcFireActive() const { return m_orcFireActive; }
+    void GetOrcFireAabb(float& left, float& right, float& bottom, float& top) const;
+    void TriggerOrcAppearEffectAt(float x, float y);
+    void TriggerWerewolfAppearEffectAt(float x, float y);
 
 private:
     void StartTurn(bool toLeft, bool initialLeft);
