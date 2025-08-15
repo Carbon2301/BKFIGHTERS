@@ -73,6 +73,9 @@ void EnergyOrbProjectile::Spawn(const Vector3& position, const Vector3& directio
         if (m_animManager) {
             float u0, v0, u1, v1;
             m_animManager->GetUV(u0, v0, u1, v1);
+            if (m_velocity.x < 0.0f) {
+                float tmp = u0; u0 = u1; u1 = tmp;
+            }
             m_object->SetCustomUV(u0, v0, u1, v1);
         }
     }
@@ -125,6 +128,9 @@ void EnergyOrbProjectile::Update(float deltaTime) {
     if (m_animManager && m_object) {
         float u0, v0, u1, v1;
         m_animManager->GetUV(u0, v0, u1, v1);
+        if (m_velocity.x < 0.0f) {
+            float tmp = u0; u0 = u1; u1 = tmp;
+        }
         m_object->SetCustomUV(u0, v0, u1, v1);
     }
 }
