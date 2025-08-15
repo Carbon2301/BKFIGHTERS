@@ -86,6 +86,9 @@ private:
     bool m_batSlashActive = false;
     float m_batSlashCooldownTimer = 0.0f;
     static constexpr float BAT_SLASH_COOLDOWN = 0.5f;
+    bool m_kitsuneEnergyOrbActive = false;
+    float m_kitsuneEnergyOrbCooldownTimer = 0.0f;
+    static constexpr float KITSUNE_ENERGY_ORB_COOLDOWN = 0.5f;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -182,6 +185,9 @@ public:
     // Kitsune mode control
     void SetKitsuneMode(bool enabled);
     bool IsKitsune() const { return m_isKitsune; }
+    void TriggerKitsuneEnergyOrb();
+    bool IsKitsuneEnergyOrbActive() const { return m_kitsuneEnergyOrbActive; }
+    float GetKitsuneEnergyOrbCooldownTimer() const { return m_kitsuneEnergyOrbCooldownTimer; }
 
     // Orc mode control
     void SetOrcMode(bool enabled);

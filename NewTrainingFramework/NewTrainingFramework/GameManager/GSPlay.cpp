@@ -1444,7 +1444,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
 
     if (bIsPressed && key == '1') { 
-        if (m_player.IsWerewolf()) {
+        if (m_player.IsKitsune()) {
+            m_player.TriggerKitsuneEnergyOrb();
+        } else if (m_player.IsWerewolf()) {
             m_player.TriggerWerewolfCombo();
             if (m_player.CheckHitboxCollision(m_player2)) {
                 m_player2.TakeDamage(100.0f);
@@ -1460,7 +1462,9 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     if (bIsPressed && (key == 'N' || key == 'n')) {
-        if (m_player2.IsWerewolf()) {
+        if (m_player2.IsKitsune()) {
+            m_player2.TriggerKitsuneEnergyOrb();
+        } else if (m_player2.IsWerewolf()) {
             m_player2.TriggerWerewolfCombo();
             if (m_player2.CheckHitboxCollision(m_player)) {
                 m_player.TakeDamage(100.0f);
@@ -2509,7 +2513,7 @@ void GSPlay::UpdateFanRotation(float deltaTime) {
         Object* fan = sceneManager->GetObject(fanId);
         if (fan) {
             const Vector3& currentRotation = fan->GetRotation();
-            float speed = (fanId == 814) ? (FAN_ROTATION_SPEED * 0.5f) : FAN_ROTATION_SPEED;
+            float speed = (fanId == 814) ? (FAN_ROTATION_SPEED * 0.01f) : FAN_ROTATION_SPEED;
             float newZRotation = currentRotation.z + speed * deltaTime;
 
             if (newZRotation >= 360.0f) {

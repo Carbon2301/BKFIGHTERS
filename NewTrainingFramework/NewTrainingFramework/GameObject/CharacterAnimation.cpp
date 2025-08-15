@@ -82,6 +82,11 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         if (m_batSlashCooldownTimer < 0.0f) m_batSlashCooldownTimer = 0.0f;
     }
 
+    if (m_kitsuneEnergyOrbCooldownTimer > 0.0f) {
+        m_kitsuneEnergyOrbCooldownTimer -= deltaTime;
+        if (m_kitsuneEnergyOrbCooldownTimer < 0.0f) m_kitsuneEnergyOrbCooldownTimer = 0.0f;
+    }
+
     if (m_isWerewolf && movement) {
         if (movement->IsJumping()) {
             m_werewolfAirTimer += deltaTime;
@@ -409,19 +414,31 @@ void CharacterAnimation::UpdateAnimationState(CharacterMovement* movement, Chara
             }
         }
         if (m_animManager) {
-            int desired = 0;
-            if (movement) {
-                CharState st = movement->GetState();
-                bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
-                bool isRunning = movement->IsRunningLeft() || movement->IsRunningRight();
-                if (isMoving) { desired = isRunning ? 2 : 1; }
-            }
-            int cur = GetCurrentAnimation();
-            if (cur != desired) {
-                m_animManager->Play(desired, true);
-                m_lastAnimation = desired;
+            if (m_kitsuneEnergyOrbActive) {
+                int cur = GetCurrentAnimation();
+                if (cur != 3) {
+                    m_animManager->Play(3, false);
+                    m_lastAnimation = 3;
+                }
+                if (!m_animManager->IsPlaying()) {
+                    m_kitsuneEnergyOrbActive = false;
+                    m_kitsuneEnergyOrbCooldownTimer = KITSUNE_ENERGY_ORB_COOLDOWN;
+                }
             } else {
-                m_animManager->Resume();
+                int desired = 0;
+                if (movement) {
+                    CharState st = movement->GetState();
+                    bool isMoving = (st == CharState::MoveLeft || st == CharState::MoveRight);
+                    bool isRunning = movement->IsRunningLeft() || movement->IsRunningRight();
+                    if (isMoving) { desired = isRunning ? 2 : 1; }
+                }
+                int cur = GetCurrentAnimation();
+                if (cur != desired) {
+                    m_animManager->Play(desired, true);
+                    m_lastAnimation = desired;
+                } else {
+                    m_animManager->Resume();
+                }
             }
         }
         return;
@@ -1396,5 +1413,16 @@ void CharacterAnimation::TriggerWerewolfPounce() {
     if (m_animManager) {
         m_animManager->Play(3, false);
         m_lastAnimation = 3;
+    }
+}
+
+void CharacterAnimation::TriggerKitsuneEnergyOrb() {
+    if (!m_isKitsune) return;
+    if (m_kitsuneEnergyOrbActive) return;
+    if (m_kitsuneEnergyOrbCooldownTimer > 0.0f) return;
+    if (m_animManager) {
+        m_animManager->Play(3, false);
+        m_lastAnimation = 3;
+        m_kitsuneEnergyOrbActive = true;
     }
 }

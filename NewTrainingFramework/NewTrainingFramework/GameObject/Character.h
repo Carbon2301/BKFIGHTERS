@@ -57,6 +57,7 @@ public:
      // Kitsune API
      void SetKitsuneMode(bool enabled);
      bool IsKitsune() const;
+     void TriggerKitsuneEnergyOrb();
 
      // Orc API
      void SetOrcMode(bool enabled);

@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 46
+# 2DTexture 48
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/NewBackground.tga"
 TILING GL_REPEAT
@@ -465,6 +465,24 @@ ANINUM 4
 16 6 600
 * Animation 3: Tsunami
 24 6 600
+
+ID 64
+FILE "../Resources/Fighter/UI/Lightning.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 32 1
+ANINUM 1
+* Animation 0: Lightning
+0 30 3500
+
+ID 65
+FILE "../Resources/Fighter/Monster/Kitsune/Fire_2.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 11 1
+ANINUM 2
+* Animation 1: Energy Orb
+0 5 500
+* Animation 0: Fade Away
+5 6 500
 
 ID 70
 FILE "../Resources/Fighter/Stages/Stage_1/windWheel.tga"

@@ -141,6 +141,12 @@ bool Character::IsKitsune() const {
     return m_animation ? m_animation->IsKitsune() : false;
 }
 
+void Character::TriggerKitsuneEnergyOrb() {
+    if (m_animation) {
+        m_animation->TriggerKitsuneEnergyOrb();
+    }
+}
+
 void Character::SetOrcMode(bool enabled) {
     if (m_animation) {
         m_animation->SetOrcMode(enabled);
