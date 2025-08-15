@@ -2719,6 +2719,7 @@ void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
         m_energyOrbProjectiles.push_back(std::make_unique<EnergyOrbProjectile>());
         projectile = m_energyOrbProjectiles.back().get();
         projectile->Initialize();
+        projectile->SetWallCollision(m_wallCollision.get());
     }
     
     if (projectile) {

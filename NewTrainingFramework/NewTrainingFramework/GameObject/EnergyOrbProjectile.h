@@ -3,6 +3,7 @@
 #include "../../Utilities/Math.h"
 #include "Object.h"
 #include "AnimationManager.h"
+#include "WallCollision.h"
 
 class Camera;
 
@@ -26,11 +27,15 @@ private:
     int m_currentAnimation;
     bool m_animationLoop;
     
+    // Wall collision system
+    WallCollision* m_wallCollision;
+    
 public:
     EnergyOrbProjectile();
     ~EnergyOrbProjectile();
     
     void Initialize();
+    void SetWallCollision(WallCollision* wallCollision) { m_wallCollision = wallCollision; }
     void Spawn(const Vector3& position, const Vector3& direction, float speed);
     void Update(float deltaTime);
     void Draw(class Camera* camera);
@@ -46,4 +51,5 @@ public:
     
 private:
     void HandleCollision();
+    bool CheckWallCollision() const;
 };

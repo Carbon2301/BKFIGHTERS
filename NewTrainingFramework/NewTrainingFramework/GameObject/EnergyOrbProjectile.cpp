@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "../GameManager/ResourceManager.h"
 #include "../GameManager/SceneManager.h"
+#include "WallCollision.h"
 
 EnergyOrbProjectile::EnergyOrbProjectile()
     : m_isActive(false)
@@ -15,7 +16,8 @@ EnergyOrbProjectile::EnergyOrbProjectile()
     , m_explosionTimer(0.0f)
     , m_explosionDuration(0.5f)
     , m_currentAnimation(0)
-    , m_animationLoop(true) {
+    , m_animationLoop(true)
+    , m_wallCollision(nullptr) {
 }
 
 EnergyOrbProjectile::~EnergyOrbProjectile() {
@@ -155,5 +157,25 @@ void EnergyOrbProjectile::HandleCollision() {
     if (m_position.x < -10.0f || m_position.x > 10.0f || 
         m_position.y < -10.0f || m_position.y > 10.0f) {
         TriggerExplosion();
+        return;
     }
+    
+    if (CheckWallCollision()) {
+        TriggerExplosion();
+        return;
+    }
+}
+
+bool EnergyOrbProjectile::CheckWallCollision() const {
+    if (!m_wallCollision) {
+        return false;
+    }
+    
+    const float PROJECTILE_SIZE = 0.02f;
+    
+    return m_wallCollision->CheckWallCollision(
+        m_position,
+        PROJECTILE_SIZE, PROJECTILE_SIZE,
+        0.0f, 0.0f                
+    );
 }
