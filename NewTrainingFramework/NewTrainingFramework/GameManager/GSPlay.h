@@ -255,6 +255,7 @@ private:
     void SpawnFireRainAt(float x, float y);
     void UpdateFireRains(float deltaTime);
     void DrawFireRains(class Camera* camera);
+    bool CheckFireRainWallCollision(const Vector3& pos, float halfW, float halfH) const;
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
     bool  m_p1ReloadPending = false;

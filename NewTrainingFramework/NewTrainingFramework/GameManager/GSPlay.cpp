@@ -933,15 +933,17 @@ void GSPlay::UpdateFireRains(float deltaTime) {
         if (!fr.isFading) {
             fr.position += fr.velocity * deltaTime;
 
+            bool hitWall = CheckFireRainWallCollision(fr.position, FIRE_RAIN_COLLISION_W * 0.5f, FIRE_RAIN_COLLISION_H * 0.5f);
             bool outOfBound = (fr.position.x < -10.0f || fr.position.x > 10.0f || fr.position.y < -10.0f);
-            if (outOfBound || fr.lifetime >= fr.maxLifetime) {
+            if (hitWall || outOfBound || fr.lifetime >= fr.maxLifetime) {
                 fr.isFading = true;
                 fr.fadeTimer = 0.0f;
                 if (fr.anim) fr.anim->Play(1, false);
             }
         } else {
             fr.fadeTimer += deltaTime;
-            if (fr.fadeTimer >= fr.fadeDuration) {
+            bool fadeAnimFinished = (fr.anim && !fr.anim->IsPlaying());
+            if (fr.fadeTimer >= fr.fadeDuration || fadeAnimFinished) {
                 fr.isActive = false;
                 fr.isFading = false;
                 fr.lifetime = 0.0f;
@@ -965,6 +967,25 @@ void GSPlay::UpdateFireRains(float deltaTime) {
             }
         }
     }
+}
+
+bool GSPlay::CheckFireRainWallCollision(const Vector3& pos, float halfW, float halfH) const {
+    if (!m_wallCollision) return false;
+    const auto& walls = m_wallCollision->GetWalls();
+    float aLeft = pos.x - halfW;
+    float aRight = pos.x + halfW;
+    float aBottom = pos.y - halfH;
+    float aTop = pos.y + halfH;
+    for (const auto& w : walls) {
+        float bLeft = w.GetLeft();
+        float bRight = w.GetRight();
+        float bBottom = w.GetBottom();
+        float bTop = w.GetTop();
+        bool overlapX = aRight >= bLeft && aLeft <= bRight;
+        bool overlapY = aTop >= bBottom && aBottom <= bTop;
+        if (overlapX && overlapY) return true;
+    }
+    return false;
 }
 
 void GSPlay::DrawFireRains(Camera* camera) {
