@@ -506,6 +506,14 @@ ID 70
 FILE "../Resources/Fighter/Stages/Stage_1/windWheel.tga"
 TILING GL_REPEAT
 
+ID 71
+FILE "../Resources/Fighter/Monster/Werewolf/Werewolf_Appear.tga"
+TILING GL_CLAMP_TO_EDGE
+SIZE 16 1
+ANINUM 1
+* Animation 0: Werewolf Appear
+0 10 1000
+
 ID 74
 FILE "../Resources/Fighter/Monster/Orc/Fire_Appear.tga"
 TILING GL_CLAMP_TO_EDGE
