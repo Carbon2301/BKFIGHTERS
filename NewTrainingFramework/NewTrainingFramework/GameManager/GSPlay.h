@@ -216,6 +216,12 @@ private:
         int currentFrame;
         float frameTimer;
         float frameDuration;
+        
+        float hitboxLeft;
+        float hitboxRight;
+        float hitboxTop;
+        float hitboxBottom;
+        bool hasDealtDamage;
     };
     std::vector<LightningEffect> m_lightningEffects;
     std::vector<std::unique_ptr<Object>> m_lightningObjects;
@@ -225,6 +231,7 @@ private:
     void UpdateLightningEffects(float deltaTime);
     void DrawLightningEffects(class Camera* camera);
     int CreateOrAcquireLightningObject();
+    void CheckLightningDamage();
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
     bool  m_p1ReloadPending = false;

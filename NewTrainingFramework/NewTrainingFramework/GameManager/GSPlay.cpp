@@ -653,6 +653,7 @@ void GSPlay::Update(float deltaTime) {
     UpdateBullets(deltaTime);
     UpdateEnergyOrbProjectiles(deltaTime);
     UpdateLightningEffects(deltaTime);
+    CheckLightningDamage();
     
     if (m_player.IsKitsuneEnergyOrbAnimationComplete()) {
         SpawnEnergyOrbProjectile(m_player);
@@ -2804,6 +2805,13 @@ void GSPlay::SpawnLightningEffect(float x) {
             lightning->frameTimer = 0.0f;
             lightning->frameDuration = 3.0f / 30.0f;
             
+            // Hitbox Lightning
+            lightning->hitboxLeft = x - 0.21875f;
+            lightning->hitboxRight = x + 0.21875f;
+            lightning->hitboxTop = 1.95f;
+            lightning->hitboxBottom = -1.95f;
+            lightning->hasDealtDamage = false;
+            
             // Set lightning object position and scale
             if (objIndex < (int)m_lightningObjects.size() && m_lightningObjects[objIndex]) {
                 m_lightningObjects[objIndex]->SetPosition(x, 0.0f, 0.0f);
@@ -2878,4 +2886,24 @@ int GSPlay::CreateOrAcquireLightningObject() {
     
     m_lightningObjects.push_back(std::move(obj));
     return (int)m_lightningObjects.size() - 1;
+}
+
+void GSPlay::CheckLightningDamage() {
+    for (auto& lightning : m_lightningEffects) {
+        if (lightning.isActive && !lightning.hasDealtDamage) {
+            Vector3 playerPos = m_player.GetPosition();
+            if (playerPos.x >= lightning.hitboxLeft && playerPos.x <= lightning.hitboxRight &&
+                playerPos.y >= lightning.hitboxBottom && playerPos.y <= lightning.hitboxTop) {
+                m_player.TakeDamage(100);
+                lightning.hasDealtDamage = true;
+            }
+            
+            Vector3 player2Pos = m_player2.GetPosition();
+            if (player2Pos.x >= lightning.hitboxLeft && player2Pos.x <= lightning.hitboxRight &&
+                player2Pos.y >= lightning.hitboxBottom && player2Pos.y <= lightning.hitboxTop) {
+                m_player2.TakeDamage(100);
+                lightning.hasDealtDamage = true;
+            }
+        }
+    }
 }
