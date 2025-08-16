@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <random>
 #include "GSPlay.h"
 #include "GameStateMachine.h"
 #include "../Core/Globals.h"
@@ -322,7 +323,7 @@ bool GSPlay_IsShowPlatformBoxes() {
 }
 
 GSPlay::GSPlay() 
-    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f), m_cloudSpeed(0.5f) {
+    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f), m_cloudSpeed(0.5f), m_p1Respawned(false), m_p2Respawned(false) {
 }
 
 GSPlay::~GSPlay() {
@@ -524,6 +525,7 @@ void GSPlay::Init() {
     m_isPipeAvailable  = (sceneManager->GetObject(PIPE_OBJECT_ID)  != nullptr);
 
     InitializeRandomItemSpawns();
+    InitializeRespawnSlots();
 
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
@@ -913,6 +915,7 @@ void GSPlay::Update(float deltaTime) {
     SceneManager::GetInstance()->Update(deltaTime);
     UpdateSpecialFormTimers();
     UpdateRandomItemSpawns(deltaTime);
+    UpdateCharacterRespawn(deltaTime);
     
     if (m_inputManager) {
         HandleItemPickup();
@@ -2238,14 +2241,8 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
                         vLocalForward.x * sinA + vLocalForward.y * cosA,
                         0.0f);
     Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
-    {
-        float len = dir.Length();
-        if (len > 1e-6f) {
-            dir = dir / len;
-        } else {
-            dir = Vector3(faceSign, 0.0f, 0.0f);
-        }
-    }
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
 
     int slot = CreateOrAcquireBulletObject();
     bool isP1 = (&ch == &m_player);
@@ -3670,4 +3667,145 @@ void GSPlay::CheckLightningDamage() {
             }
         }
     }
+}
+
+void GSPlay::InitializeRespawnSlots() {
+    const Vector3 kRespawnPositions[11] = {
+        Vector3(-3.5f,  1.55f, 0.0f),
+        Vector3(-3.25f, -1.1f, 0.0f),
+        Vector3(-2.6f, -0.25f, 0.0f),
+        Vector3(-2.3f, -1.2f, 0.0f),
+        Vector3(-1.5f, -1.31f, 0.0f),
+        Vector3(-0.35f, -0.22f, 0.0f),
+        Vector3( 0.2f, -0.84f, 0.0f),
+        Vector3( 1.25f, -1.2f, 0.0f),
+        Vector3( 1.73f, -0.36f, 0.0f),
+        Vector3( 2.4f, -1.2f, 0.0f),
+        Vector3( 3.2f, -0.36f, 0.0f)
+    };
+    
+    m_respawnSlots.clear();
+    m_respawnSlots.resize(11);
+    for (int i = 0; i < 11; ++i) {
+        m_respawnSlots[i].pos = kRespawnPositions[i];
+        m_respawnSlots[i].occupied = false;
+    }
+}
+
+void GSPlay::UpdateCharacterRespawn(float deltaTime) {
+    if (m_player.IsDead() && !m_player.GetMovement()->IsDying() && !m_p1Respawned) {
+        RespawnCharacter(m_player);
+        m_p1Respawned = true;
+    }
+    
+    if (m_player2.IsDead() && !m_player2.GetMovement()->IsDying() && !m_p2Respawned) {
+        RespawnCharacter(m_player2);
+        m_p2Respawned = true;
+    }
+    
+    if (!m_player.IsDead()) {
+        m_p1Respawned = false;
+    }
+    if (!m_player2.IsDead()) {
+        m_p2Respawned = false;
+    }
+}
+
+void GSPlay::RespawnCharacter(Character& character) {
+    bool isPlayer1 = (&character == &m_player);
+    
+    int respawnIndex = ChooseRandomRespawnPosition();
+    if (respawnIndex >= 0 && respawnIndex < (int)m_respawnSlots.size()) {
+        const Vector3& respawnPos = m_respawnSlots[respawnIndex].pos;
+        
+        character.SetPosition(respawnPos.x, respawnPos.y);
+        ResetCharacterToInitialState(character, isPlayer1);
+        
+        std::cout << "Character respawned at position " << respawnIndex 
+                  << " (" << respawnPos.x << ", " << respawnPos.y << ")" << std::endl;
+    }
+}
+
+void GSPlay::ResetCharacterToInitialState(Character& character, bool isPlayer1) {
+    character.ResetHealth();
+    character.ResetStamina();
+    
+    character.SetWeapon(Character::WeaponType::None);
+    
+    character.SetGunMode(false);
+    character.SetGrenadeMode(false);
+    character.SetBatDemonMode(false);
+    character.SetWerewolfMode(false);
+    character.SetKitsuneMode(false);
+    character.SetOrcMode(false);
+    
+    if (CharacterMovement* movement = character.GetMovement()) {
+        movement->SetInputLocked(false);
+        movement->SetNoClipNoGravity(false);
+        movement->SetMoveSpeedMultiplier(1.0f);
+        movement->SetLadderDoubleTapEnabled(true);
+        movement->SetLadderEnabled(true);
+    }
+    
+    character.CancelAllCombos();
+    
+    if (isPlayer1) {
+        m_player1GunTexId = 40;
+        m_p1Ammo40 = 15; m_p1Ammo41 = 30; m_p1Ammo42 = 60; m_p1Ammo43 = 3;
+        m_p1Ammo45 = 12; m_p1Ammo46 = 6; m_p1Ammo47 = 30;
+        m_p1Bombs = 3;
+        m_p1SpecialItemTexId = -1;
+        m_p1SpecialExpireTime = -1.0f;
+        m_p1SpecialType = 0;
+        
+        if (CharacterAnimation* anim = character.GetAnimation()) {
+            anim->SetGunByTextureId(40);
+        }
+    } else {
+        m_player2GunTexId = 40;
+        m_p2Ammo40 = 15; m_p2Ammo41 = 30; m_p2Ammo42 = 60; m_p2Ammo43 = 3;
+        m_p2Ammo45 = 12; m_p2Ammo46 = 6; m_p2Ammo47 = 30;
+        m_p2Bombs = 3;
+        m_p2SpecialItemTexId = -1;
+        m_p2SpecialExpireTime = -1.0f;
+        m_p2SpecialType = 0;
+        
+        if (CharacterAnimation* anim = character.GetAnimation()) {
+            anim->SetGunByTextureId(40);
+        }
+    }
+    
+    UpdateHudWeapons();
+    UpdateHudAmmoDigits();
+    RefreshHudAmmoInstant(true);
+    RefreshHudAmmoInstant(false);
+    UpdateHudBombDigits();
+    UpdateHudSpecialIcon(true);
+    UpdateHudSpecialIcon(false);
+}
+
+int GSPlay::ChooseRandomRespawnPosition() {
+    if (m_respawnSlots.empty()) return -1;
+    
+    std::vector<int> availablePositions;
+    for (int i = 0; i < (int)m_respawnSlots.size(); ++i) {
+        if (!m_respawnSlots[i].occupied) {
+            availablePositions.push_back(i);
+        }
+    }
+    
+    if (availablePositions.empty()) {
+        for (int i = 0; i < (int)m_respawnSlots.size(); ++i) {
+            availablePositions.push_back(i);
+        }
+    }
+    
+    if (!availablePositions.empty()) {
+        static std::mt19937 rng{ std::random_device{}() };
+        std::uniform_int_distribution<int> dist(0, (int)availablePositions.size() - 1);
+        int randomIndex = dist(rng);
+        return availablePositions[randomIndex];
+    }
+    
+    return -1;
 }

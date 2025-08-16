@@ -399,5 +399,16 @@ private:
     bool SpawnItemIntoSlot(int slotIndex, int typeId);
     int  ChooseRandomAvailableItemId();
     void MarkSlotPickedByObjectId(int objectId);
+
+    // Character respawn system
+    struct RespawnSlot { Vector3 pos; bool occupied = false; };
+    std::vector<RespawnSlot> m_respawnSlots;
+    bool m_p1Respawned = false;
+    bool m_p2Respawned = false;
+    void InitializeRespawnSlots();
+    void UpdateCharacterRespawn(float deltaTime);
+    void RespawnCharacter(Character& character);
+    void ResetCharacterToInitialState(Character& character, bool isPlayer1);
+    int ChooseRandomRespawnPosition();
 }; 
 
