@@ -375,6 +375,14 @@ void Character::Update(float deltaTime) {
 	}
 
     UpdateStamina(deltaTime);
+
+    if (m_movement) {
+        bool allowRun = true;
+        if (!IsSpecialForm()) {
+            allowRun = (m_stamina > 0.0f);
+        }
+        m_movement->SetAllowRun(allowRun);
+    }
 }
 
 void Character::Draw(Camera* camera) {

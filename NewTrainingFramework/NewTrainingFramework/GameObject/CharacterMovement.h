@@ -160,6 +160,8 @@ private:
     float m_runSpeedMultiplier  = 1.0f; 
     float m_jumpForceMultiplier = 1.0f;
 
+    bool m_allowRun = true;
+
 public:
     CharacterMovement();
     CharacterMovement(const PlayerInputConfig& inputConfig);
@@ -259,6 +261,9 @@ public:
     float GetMoveSpeedMultiplier() const { return m_moveSpeedMultiplier; }
     float GetRunSpeedMultiplier()  const { return m_runSpeedMultiplier; }
     float GetJumpForceMultiplier() const { return m_jumpForceMultiplier; }
+
+    void SetAllowRun(bool allow) { m_allowRun = allow; }
+    bool IsRunAllowed() const { return m_allowRun; }
 
     void SetNoClipNoGravity(bool enabled) { m_noClipNoGravity = enabled; m_isJumping = false; m_isOnPlatform = false; }
     bool IsNoClipNoGravity() const { return m_noClipNoGravity; }
