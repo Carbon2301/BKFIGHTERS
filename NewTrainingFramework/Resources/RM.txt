@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 52
+# 2DTexture 56
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/NewBackground.tga"
 TILING GL_REPEAT
@@ -549,6 +549,22 @@ SIZE 16 1
 ANINUM 1
 * Animation 0: Fire Orc Appear
 0 11 1000
+
+ID 75
+FILE "../Resources/Fighter/Monster/Werewolf/Werewolf_Item.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 76
+FILE "../Resources/Fighter/Monster/BatDemon/BatDemon_Item.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 77
+FILE "../Resources/Fighter/Monster/Kitsune/Kitsune_Item.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 78
+FILE "../Resources/Fighter/Monster/Orc/Orc_Item.tga"
+TILING GL_CLAMP_TO_EDGE
 
 # Shader 1
 ID 0
