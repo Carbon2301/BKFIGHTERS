@@ -47,6 +47,7 @@ private:
     static constexpr float TURN_DURATION = 0.12f;
     bool m_turnInitialLeft = false;
     bool m_prevFacingLeft = false;
+    bool m_lastFacingLeft = false;
 
     float m_aimAngleDeg = 0.0f;
     bool m_prevAimUp = false;
@@ -111,6 +112,15 @@ private:
     std::shared_ptr<AnimationManager> m_kitsuneAppearAnim;
     std::unique_ptr<class Object> m_kitsuneAppearObject;
     static constexpr float KITSUNE_APPEAR_Y_OFFSET = 0.05f;
+
+    bool m_batWindActive = false;
+    std::shared_ptr<AnimationManager> m_batWindAnim;
+    std::unique_ptr<class Object> m_batWindObject;
+    float m_batWindSpeed = 0.8f;
+    float m_batWindFaceSign = 1.0f;
+    bool m_batWindHasDealtDamage = false;
+    static constexpr float BAT_WIND_HITBOX_SCALE_X = 0.75f;
+    static constexpr float BAT_WIND_HITBOX_SCALE_Y = 0.5f;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
@@ -227,6 +237,11 @@ public:
     bool IsOrcFlameBurstActive() const { return m_orcFlameBurstActive; }
     bool IsOrcFireActive() const { return m_orcFireActive; }
     void GetOrcFireAabb(float& left, float& right, float& bottom, float& top) const;
+    // Bat wind queries
+    bool IsBatWindActive() const { return m_batWindActive; }
+    bool HasBatWindDealtDamage() const { return m_batWindHasDealtDamage; }
+    void MarkBatWindDealtDamage() { m_batWindHasDealtDamage = true; }
+    void GetBatWindAabb(float& left, float& right, float& bottom, float& top) const;
     void TriggerOrcAppearEffectAt(float x, float y);
     void TriggerWerewolfAppearEffectAt(float x, float y);
     void TriggerBatAppearEffectAt(float x, float y);

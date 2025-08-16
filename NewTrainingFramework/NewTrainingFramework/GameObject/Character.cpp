@@ -55,7 +55,7 @@ void Character::SetBatDemonMode(bool enabled) {
         SetGrenadeMode(false);
         if (m_movement) {
             m_movement->SetNoClipNoGravity(true);
-            m_movement->SetMoveSpeedMultiplier(1.8f);
+            m_movement->SetMoveSpeedMultiplier(1.5f);
         }
     }
     else {

@@ -73,6 +73,9 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         m_animManager->Update(deltaTime);
         UpdateAnimationState(movement, combat);
     }
+    if (movement) {
+        m_lastFacingLeft = movement->IsFacingLeft();
+    }
     if (m_topAnimManager) {
         m_topAnimManager->Update(deltaTime);
     }
@@ -118,6 +121,21 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
             m_kitsuneAppearActive = false;
             if (m_kitsuneAppearObject) {
                 m_kitsuneAppearObject->SetVisible(false);
+            }
+        }
+    }
+
+    if (m_batWindActive && m_batWindAnim) {
+        m_batWindAnim->Update(deltaTime);
+        if (m_batWindObject) {
+            const Vector3& p = m_batWindObject->GetPosition();
+            float dx = m_batWindSpeed * m_batWindFaceSign * deltaTime;
+            m_batWindObject->SetPosition(p.x + dx, p.y, p.z);
+        }
+        if (!m_batWindAnim->IsPlaying()) {
+            m_batWindActive = false;
+            if (m_batWindObject) {
+                m_batWindObject->SetVisible(false);
             }
         }
     }
@@ -344,6 +362,18 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_kitsuneAppearObject->SetCustomUV(u0, v0, u1, v1);
         if (camera) {
             m_kitsuneAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+
+    if (m_batWindActive && m_batWindObject && m_batWindObject->GetModelId() >= 0 && m_batWindObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_batWindAnim->GetUV(u0, v0, u1, v1);
+        if (m_batWindFaceSign < 0.0f) {
+            std::swap(u0, u1);
+        }
+        m_batWindObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_batWindObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
 }
@@ -1165,6 +1195,53 @@ void CharacterAnimation::TriggerBatDemonSlash() {
         m_animManager->Play(1, false);
         m_lastAnimation = 1;
         m_batSlashActive = true;
+    }
+
+    if (!m_batWindAnim) {
+        m_batWindAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_batWindObject) {
+        m_batWindObject = std::make_unique<Object>(m_objectId + 25000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_batWindObject->SetModel(originalObj->GetModelId());
+            m_batWindObject->SetShader(originalObj->GetShaderId());
+            m_batWindObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(68)) {
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_batWindAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_batWindAnim->Play(0, false);
+        m_batWindActive = true;
+        m_batWindHasDealtDamage = false;
+        if (m_batWindObject && m_characterObject) {
+            m_batWindObject->SetTexture(68, 0);
+            m_batWindObject->SetVisible(true);
+            const Vector3& pos = m_characterObject->GetPosition();
+            float face = m_lastFacingLeft ? -1.0f : 1.0f;
+            m_batWindFaceSign = face;
+            m_batWindObject->SetPosition(pos.x + 0.24f * face, pos.y, pos.z);
+            m_batWindObject->SetScale(0.7f, 0.7f, 0.0f);
+        }
+    }
+}
+
+void CharacterAnimation::GetBatWindAabb(float& left, float& right, float& bottom, float& top) const {
+    if (m_batWindObject && m_batWindActive) {
+        const Vector3& pos = m_batWindObject->GetPosition();
+        const Vector3& sc  = m_batWindObject->GetScale();
+        float halfW = fabsf(sc.x) * 0.5f * BAT_WIND_HITBOX_SCALE_X;
+        float halfH = fabsf(sc.y) * 0.5f * BAT_WIND_HITBOX_SCALE_Y;
+        left = pos.x - halfW;
+        right = pos.x + halfW;
+        bottom = pos.y - halfH;
+        top = pos.y + halfH;
+    } else {
+        left = right = bottom = top = 0.0f;
     }
 }
 

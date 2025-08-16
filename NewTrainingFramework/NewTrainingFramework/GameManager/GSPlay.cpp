@@ -690,6 +690,34 @@ void GSPlay::Update(float deltaTime) {
     checkFireDamage(m_player, m_player2);
     checkFireDamage(m_player2, m_player);
 
+    auto checkBatWindDamage = [&](Character& source, Character& target){
+        CharacterAnimation* anim = source.GetAnimation();
+        if (!anim) return;
+        if (!anim->IsBatWindActive()) return;
+        if (anim->HasBatWindDealtDamage()) return;
+        float l, r, b, t; anim->GetBatWindAabb(l, r, b, t);
+        Vector3 pos = target.GetPosition();
+        float hx = pos.x + target.GetHurtboxOffsetX();
+        float hy = pos.y + target.GetHurtboxOffsetY();
+        float halfW = target.GetHurtboxWidth() * 0.5f;
+        float halfH = target.GetHurtboxHeight() * 0.5f;
+        float tl = hx - halfW, tr = hx + halfW, tb = hy - halfH, tt = hy + halfH;
+        bool overlapX = (r >= tl) && (l <= tr);
+        bool overlapY = (t >= tb) && (b <= tt);
+        if (overlapX && overlapY) {
+            float prev = target.GetHealth();
+            target.TakeDamage(100.0f);
+            target.CancelAllCombos();
+            if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
+            if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                target.TriggerDie();
+            }
+            anim->MarkBatWindDealtDamage();
+        }
+    };
+    checkBatWindDamage(m_player, m_player2);
+    checkBatWindDamage(m_player2, m_player);
+
     auto onJump = [&](Character& ch){
         if (ch.GetMovement() && ch.GetMovement()->ConsumeJustStartedUpwardJump()) {
             SoundManager::Instance().PlaySFXByID(18, 0);
