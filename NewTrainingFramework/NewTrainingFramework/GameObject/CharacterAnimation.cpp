@@ -1217,6 +1217,7 @@ void CharacterAnimation::TriggerBatDemonSlash() {
         m_batWindAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
         m_batWindAnim->Play(0, false);
         m_batWindActive = true;
+        m_batWindHasDealtDamage = false;
         if (m_batWindObject && m_characterObject) {
             m_batWindObject->SetTexture(68, 0);
             m_batWindObject->SetVisible(true);
@@ -1226,6 +1227,21 @@ void CharacterAnimation::TriggerBatDemonSlash() {
             m_batWindObject->SetPosition(pos.x + 0.24f * face, pos.y, pos.z);
             m_batWindObject->SetScale(0.7f, 0.7f, 0.0f);
         }
+    }
+}
+
+void CharacterAnimation::GetBatWindAabb(float& left, float& right, float& bottom, float& top) const {
+    if (m_batWindObject && m_batWindActive) {
+        const Vector3& pos = m_batWindObject->GetPosition();
+        const Vector3& sc  = m_batWindObject->GetScale();
+        float halfW = fabsf(sc.x) * 0.5f * BAT_WIND_HITBOX_SCALE_X;
+        float halfH = fabsf(sc.y) * 0.5f * BAT_WIND_HITBOX_SCALE_Y;
+        left = pos.x - halfW;
+        right = pos.x + halfW;
+        bottom = pos.y - halfH;
+        top = pos.y + halfH;
+    } else {
+        left = right = bottom = top = 0.0f;
     }
 }
 
