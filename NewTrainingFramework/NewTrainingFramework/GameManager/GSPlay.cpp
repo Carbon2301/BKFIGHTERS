@@ -120,7 +120,7 @@ void GSPlay::InitializeRandomItemSpawns() {
         m_spawnSlots[i].respawnDelay = 1.0f;
         m_spawnSlots[i].active = false;
     }
-    m_itemIdToSlot.clear();
+    m_objectIdToSlot.clear();
 
     for (int id : m_candidateItemIds) {
         if (scene->GetObject(id)) {
@@ -140,22 +140,33 @@ void GSPlay::InitializeRandomItemSpawns() {
 
 int GSPlay::ChooseRandomAvailableItemId() {
     if (m_candidateItemIds.empty()) return -1;
-    std::vector<int> pool;
+    struct Candidate { int id; int weight; };
+    std::vector<Candidate> pool;
     pool.reserve(m_candidateItemIds.size());
+    auto isActiveId = [&](int id){
+        for (const auto& s : m_spawnSlots) {
+            if (s.active && s.currentId == id) return true;
+        }
+        return false;
+    };
     for (int id : m_candidateItemIds) {
         if (m_itemTemplates.find(id) == m_itemTemplates.end()) continue;
-        bool used = false;
-        for (const auto& s : m_spawnSlots) {
-            if (s.active && s.currentId == id) { used = true; break; }
-        }
-        if (!used) pool.push_back(id);
+        if (isActiveId(id)) continue;
+        bool isSpecial = (id == 1506 || id == 1507 || id == 1508 || id == 1509);
+        int weight = isSpecial ? 1 : 8;
+        pool.push_back({id, weight});
     }
-    if (pool.empty()) {
-        pool = m_candidateItemIds;
-    }
+    if (pool.empty()) return -1;
+    int total = 0;
+    for (const auto& c : pool) total += c.weight;
     static std::mt19937 rng{ std::random_device{}() };
-    std::uniform_int_distribution<int> dist(0, (int)pool.size() - 1);
-    return pool[dist(rng)];
+    std::uniform_int_distribution<int> dist(0, total - 1);
+    int r = dist(rng);
+    for (const auto& c : pool) {
+        if (r < c.weight) return c.id;
+        r -= c.weight;
+    }
+    return pool.back().id;
 }
 
 bool GSPlay::SpawnItemIntoSlot(int slotIndex, int itemId) {
@@ -163,11 +174,9 @@ bool GSPlay::SpawnItemIntoSlot(int slotIndex, int itemId) {
     SceneManager* scene = SceneManager::GetInstance();
     auto it = m_itemTemplates.find(itemId);
     if (it == m_itemTemplates.end()) return false;
-
-    if (Object* existing = scene->GetObject(itemId)) {
-        scene->RemoveObject(itemId);
-    }
-    Object* obj = scene->CreateObject(itemId);
+    int objectId = itemId * 100 + slotIndex;
+    if (Object* existing = scene->GetObject(objectId)) { scene->RemoveObject(objectId); }
+    Object* obj = scene->CreateObject(objectId);
     if (!obj) return false;
 
     const ItemTemplate& t = it->second;
@@ -178,22 +187,24 @@ bool GSPlay::SpawnItemIntoSlot(int slotIndex, int itemId) {
     obj->SetPosition(m_spawnSlots[slotIndex].pos);
     obj->SetVisible(true);
 
-    m_spawnSlots[slotIndex].currentId = itemId;
+    m_spawnSlots[slotIndex].currentId = objectId;
+    m_spawnSlots[slotIndex].typeId = itemId;
     m_spawnSlots[slotIndex].lifeTimer = 0.0f;
     m_spawnSlots[slotIndex].respawnTimer = 0.0f;
     m_spawnSlots[slotIndex].respawnDelay = 1.0f;
     m_spawnSlots[slotIndex].active = true;
-    m_itemIdToSlot[itemId] = slotIndex;
+    m_objectIdToSlot[objectId] = slotIndex;
     return true;
 }
 
-void GSPlay::MarkSlotPickedByItemId(int itemId) {
-    auto it = m_itemIdToSlot.find(itemId);
-    if (it == m_itemIdToSlot.end()) return;
+void GSPlay::MarkSlotPickedByObjectId(int itemId) {
+    auto it = m_objectIdToSlot.find(itemId);
+    if (it == m_objectIdToSlot.end()) return;
     int slotIndex = it->second;
     if (slotIndex >= 0 && slotIndex < (int)m_spawnSlots.size()) {
         m_spawnSlots[slotIndex].active = false;
         m_spawnSlots[slotIndex].currentId = -1;
+        m_spawnSlots[slotIndex].typeId = -1;
         m_spawnSlots[slotIndex].lifeTimer = 0.0f;
         m_spawnSlots[slotIndex].respawnTimer = 0.0f;
         m_spawnSlots[slotIndex].respawnDelay = 10.0f;
@@ -1500,7 +1511,7 @@ void GSPlay::UpdateBombs(float dt) {
         }
 
         if (it->life <= 0.0f) {
-            SpawnExplosionAt(it->x, it->y);
+            SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
             if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                 cam->AddShake(0.04f, 0.4f, 18.0f);
             }
@@ -1542,9 +1553,9 @@ int GSPlay::CreateOrAcquireExplosionObjectFromProto(int protoObjectId) {
     return (int)m_explosionObjs.size() - 1;
 }
 
-void GSPlay::SpawnExplosionAt(float x, float y) {
+void GSPlay::SpawnExplosionAt(float x, float y, float radiusMul) {
     int idx = CreateOrAcquireExplosionObjectFromProto(m_explosionObjectId);
-    Explosion e{}; e.x = x; e.y = y; e.objIdx = idx; e.cols = 11; e.rows = 1; e.frameIndex = 0; e.frameCount = 11; e.frameTimer = 0.0f; e.frameDuration = EXPLOSION_FRAME_DURATION;
+    Explosion e{}; e.x = x; e.y = y; e.objIdx = idx; e.cols = 11; e.rows = 1; e.frameIndex = 0; e.frameCount = 11; e.frameTimer = 0.0f; e.frameDuration = EXPLOSION_FRAME_DURATION; e.damageRadiusMul = radiusMul;
     if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
         m_explosionObjs[idx]->SetPosition(x, y, 0.0f);
         SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, 0);
@@ -1560,8 +1571,9 @@ void GSPlay::UpdateExplosions(float dt) {
             float halfW = 0.15f, halfH = 0.15f;
             if (e.objIdx >= 0 && e.objIdx < (int)m_explosionObjs.size() && m_explosionObjs[e.objIdx]) {
                 const Vector3& sc = m_explosionObjs[e.objIdx]->GetScale();
-                halfW = fabsf(sc.x) * 0.5f;
-                halfH = fabsf(sc.y) * 0.5f;
+                float mul = (e.damageRadiusMul > 0.0f) ? e.damageRadiusMul : EXPLOSION_DAMAGE_RADIUS_MUL;
+                halfW = fabsf(sc.x) * 0.5f * mul;
+                halfH = fabsf(sc.y) * 0.5f * mul;
             }
             auto applyDamage = [&](Character& target){
                 Vector3 pos = target.GetPosition();
@@ -2392,7 +2404,7 @@ void GSPlay::UpdateBullets(float dt) {
             Vector3 pos(it->x, it->y, 0.0f);
             if (m_wallCollision->CheckWallCollision(pos, BULLET_COLLISION_WIDTH, BULLET_COLLISION_HEIGHT, 0.0f, 0.0f)) {
                 if (it->isBazoka) {
-                    SpawnExplosionAt(it->x, it->y);
+                    SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
                     }
@@ -2435,7 +2447,7 @@ void GSPlay::UpdateBullets(float dt) {
                 }
                 SpawnBloodAt(it->x, it->y, it->angleRad);
                 if (it->isBazoka) {
-                    SpawnExplosionAt(it->x, it->y);
+                    SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
                     }
@@ -3194,7 +3206,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = objRef->GetId();
             scene->RemoveObject(removedId);
-            MarkSlotPickedByItemId(removedId);
+            MarkSlotPickedByObjectId(removedId);
             objRef = nullptr;
             availFlag = false;
             player.CancelAllCombos();
@@ -3219,7 +3231,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = gunObj->GetId();
             scene->RemoveObject(removedId);
-            MarkSlotPickedByItemId(removedId);
+            MarkSlotPickedByObjectId(removedId);
             gunObj = nullptr;
             if (isPlayer1) m_player1GunTexId = texId; else m_player2GunTexId = texId;
             if (CharacterAnimation* a1 = player.GetAnimation()) {
@@ -3243,6 +3255,97 @@ void GSPlay::HandleItemPickup() {
         return false;
     };
 
+    auto tryPickupFromSlots = [&](Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
+        if (!sitHeld || !pickupJust) return false;
+        auto texIdForGun = [](int typeId)->int{
+            switch (typeId) {
+                case 1200: return 40; // Pistol
+                case 1201: return 41; // M4A1
+                case 1202: return 42; // Shotgun
+                case 1203: return 43; // Bazoka
+                case 1205: return 45; // Deagle
+                case 1206: return 46; // Sniper
+                case 1207: return 47; // Uzi
+                default: return -1;
+            }
+        };
+        for (auto& slot : m_spawnSlots) {
+            if (!slot.active) continue;
+            Object* obj = SceneManager::GetInstance()->GetObject(slot.currentId);
+            if (!obj) continue;
+            const Vector3& objPos = obj->GetPosition();
+            const Vector3& objScale = obj->GetScale();
+            Vector3 pPos = player.GetPosition();
+            float w = player.GetHurtboxWidth();
+            float h = player.GetHurtboxHeight();
+            pPos.x += player.GetHurtboxOffsetX();
+            pPos.y += player.GetHurtboxOffsetY();
+            if (!isOverlapping(pPos, w, h, objPos, objScale)) continue;
+
+            int typeId = slot.typeId;
+            if (typeId == AXE_OBJECT_ID || typeId == SWORD_OBJECT_ID || typeId == PIPE_OBJECT_ID) {
+                Character::WeaponType wt = Character::WeaponType::None;
+                if (typeId == AXE_OBJECT_ID) wt = Character::WeaponType::Axe;
+                else if (typeId == SWORD_OBJECT_ID) wt = Character::WeaponType::Sword;
+                else if (typeId == PIPE_OBJECT_ID) wt = Character::WeaponType::Pipe;
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                player.CancelAllCombos();
+                player.SetWeapon(wt);
+                player.SuppressNextPunch();
+                SoundManager::Instance().PlaySFXByID(1, 0);
+                return true;
+            }
+            int gunTex = texIdForGun(typeId);
+            if (gunTex != -1) {
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                if (CharacterAnimation* a1 = player.GetAnimation()) {
+                    a1->SetGunByTextureId(gunTex);
+                }
+                if (isPlayer1) m_player1GunTexId = gunTex; else m_player2GunTexId = gunTex;
+                int cap = AmmoCapacityFor(gunTex);
+                int& ammoRef = AmmoRefFor(gunTex, isPlayer1);
+                ammoRef = cap;
+                UpdateHudWeapons();
+                UpdateHudAmmoDigits();
+                RefreshHudAmmoInstant(isPlayer1);
+                player.SuppressNextPunch();
+                if (gunTex == 43 || gunTex == 44) { SoundManager::Instance().PlaySFXByID(23, 0); }
+                else { SoundManager::Instance().PlaySFXByID(11, 0); }
+                return true;
+            }
+            if (typeId == 1502) { // Bomb pickup
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
+                UpdateHudBombDigits();
+                SoundManager::Instance().PlaySFXByID(7, 0);
+                return true;
+            }
+            if (typeId == 1510) { // Heal
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                player.ResetHealth();
+                SoundManager::Instance().PlaySFXByID(17, 0);
+                return true;
+            }
+            if (typeId == 1506 || typeId == 1507 || typeId == 1508 || typeId == 1509) {
+                int texId = (typeId == 1506 ? 75 : typeId == 1507 ? 76 : typeId == 1508 ? 77 : 78);
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                if (isPlayer1) m_p1SpecialItemTexId = texId; else m_p2SpecialItemTexId = texId;
+                UpdateHudSpecialIcon(isPlayer1);
+                SoundManager::Instance().PlaySFXByID(17, 0);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    if ( p1CanPickup && tryPickupFromSlots(m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p2CanPickup && tryPickupFromSlots(m_player2, p2Sit, p2PickupJust, false) ) { return; }
+
     // Try pick up bomb (Player 1)
     auto tryPickupBomb = [&](Object*& bombObj, Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
         if (!sitHeld || !pickupJust || !bombObj) return false;
@@ -3256,7 +3359,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = bombObj->GetId();
             scene->RemoveObject(removedId);
-            MarkSlotPickedByItemId(removedId);
+            MarkSlotPickedByObjectId(removedId);
             bombObj = nullptr;
             if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
             UpdateHudBombDigits();
@@ -3279,7 +3382,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = healObj->GetId();
             scene->RemoveObject(removedId);
-            MarkSlotPickedByItemId(removedId);
+            MarkSlotPickedByObjectId(removedId);
             healObj = nullptr;
             player.ResetHealth();
             std::cout << "Picked up heal box ID " << removedId << " -> health restored to max\n";
