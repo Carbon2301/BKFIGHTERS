@@ -169,7 +169,9 @@ public:
     // Health system
     float GetHealth() const { return m_health; }
     float GetMaxHealth() const { return MAX_HEALTH; }
-    bool IsDead() const { return m_isDead; }
+    bool IsDead() const { 
+        return m_isDead && m_movement && m_movement->IsDead(); 
+    }
     void TakeDamage(float damage, bool playSfx = true);
     void Heal(float amount);
     void ResetHealth();

@@ -526,6 +526,9 @@ void GSPlay::Init() {
 
     InitializeRandomItemSpawns();
     InitializeRespawnSlots();
+    
+    m_gameStartBlinkActive = true;
+    m_gameStartBlinkTimer = 0.0f;
 
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
@@ -917,6 +920,7 @@ void GSPlay::Update(float deltaTime) {
     UpdateRandomItemSpawns(deltaTime);
     UpdateCharacterRespawn(deltaTime);
     UpdateRespawnInvincibility(deltaTime);
+    UpdateGameStartBlink(deltaTime);
     
     if (m_inputManager) {
         HandleItemPickup();
@@ -3719,12 +3723,12 @@ void GSPlay::InitializeRespawnSlots() {
 }
 
 void GSPlay::UpdateCharacterRespawn(float deltaTime) {
-    if (m_player.IsDead() && !m_player.GetMovement()->IsDying() && !m_p1Respawned) {
+    if (m_player.IsDead() && !m_p1Respawned) {
         RespawnCharacter(m_player);
         m_p1Respawned = true;
     }
     
-    if (m_player2.IsDead() && !m_player2.GetMovement()->IsDying() && !m_p2Respawned) {
+    if (m_player2.IsDead() && !m_p2Respawned) {
         RespawnCharacter(m_player2);
         m_p2Respawned = true;
     }
@@ -3779,6 +3783,8 @@ void GSPlay::ResetCharacterToInitialState(Character& character, bool isPlayer1) 
         movement->SetMoveSpeedMultiplier(1.0f);
         movement->SetLadderDoubleTapEnabled(true);
         movement->SetLadderEnabled(true);
+        
+        movement->ResetDieState();
     }
     
     character.CancelAllCombos();
@@ -3879,6 +3885,42 @@ void GSPlay::UpdateRespawnInvincibility(float deltaTime) {
         if (m_p2InvincibilityTimer >= RESPAWN_INVINCIBILITY_DURATION) {
             m_p2Invincible = false;
             m_p2InvincibilityTimer = 0.0f;
+            if (CharacterAnimation* anim = m_player2.GetAnimation()) {
+                if (Object* obj = anim->GetCharacterObject()) {
+                    obj->SetVisible(true);
+                }
+            }
+        }
+    }
+}
+
+void GSPlay::UpdateGameStartBlink(float deltaTime) {
+    if (m_gameStartBlinkActive) {
+        m_gameStartBlinkTimer += deltaTime;
+        
+        bool shouldBeVisible = fmodf(m_gameStartBlinkTimer, GAME_START_BLINK_INTERVAL * 2.0f) < GAME_START_BLINK_INTERVAL;
+        
+        if (CharacterAnimation* anim = m_player.GetAnimation()) {
+            if (Object* obj = anim->GetCharacterObject()) {
+                obj->SetVisible(shouldBeVisible);
+            }
+        }
+        
+        if (CharacterAnimation* anim = m_player2.GetAnimation()) {
+            if (Object* obj = anim->GetCharacterObject()) {
+                obj->SetVisible(shouldBeVisible);
+            }
+        }
+        
+        if (m_gameStartBlinkTimer >= GAME_START_BLINK_DURATION) {
+            m_gameStartBlinkActive = false;
+            m_gameStartBlinkTimer = 0.0f;
+            
+            if (CharacterAnimation* anim = m_player.GetAnimation()) {
+                if (Object* obj = anim->GetCharacterObject()) {
+                    obj->SetVisible(true);
+                }
+            }
             if (CharacterAnimation* anim = m_player2.GetAnimation()) {
                 if (Object* obj = anim->GetCharacterObject()) {
                     obj->SetVisible(true);

@@ -414,12 +414,18 @@ private:
     const float RESPAWN_INVINCIBILITY_DURATION = 3.0f;
     const float RESPAWN_BLINK_INTERVAL = 0.15f;
     
+    bool m_gameStartBlinkActive = false;
+    float m_gameStartBlinkTimer = 0.0f;
+    const float GAME_START_BLINK_DURATION = 3.0f;
+    const float GAME_START_BLINK_INTERVAL = 0.15f;
+    
     void InitializeRespawnSlots();
     void UpdateCharacterRespawn(float deltaTime);
     void RespawnCharacter(Character& character);
     void ResetCharacterToInitialState(Character& character, bool isPlayer1);
     int ChooseRandomRespawnPosition();
     void UpdateRespawnInvincibility(float deltaTime);
+    void UpdateGameStartBlink(float deltaTime);
     bool IsCharacterInvincible(const Character& character) const;
 }; 
 
