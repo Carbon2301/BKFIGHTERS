@@ -2814,6 +2814,17 @@ void GSPlay::UpdateStaminaBars() {
         Vector3 currentScale2(scaleRef2.x, scaleRef2.y, scaleRef2.z);
         staminaBar2->SetScale(staminaRatio2 * 0.18f, currentScale2.y, currentScale2.z);
     }
+
+    if (Object* hudStamina1 = sceneManager->GetObject(932)) {
+        float staminaRatio1 = m_player.GetStamina() / m_player.GetMaxStamina();
+        const Vector3& hudScale1 = hudStamina1->GetScale();
+        hudStamina1->SetScale(staminaRatio1 * 0.94f, hudScale1.y, hudScale1.z);
+    }
+    if (Object* hudStamina2 = sceneManager->GetObject(933)) {
+        float staminaRatio2 = m_player2.GetStamina() / m_player2.GetMaxStamina();
+        const Vector3& hudScale2 = hudStamina2->GetScale();
+        hudStamina2->SetScale(staminaRatio2 * 0.94f, hudScale2.y, hudScale2.z);
+    }
 }
 
 void GSPlay::UpdateCloudMovement(float deltaTime) {
