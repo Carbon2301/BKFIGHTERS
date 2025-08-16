@@ -85,6 +85,12 @@
     <ClCompile Include="GameObject\InputManager.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
+    <ClCompile Include="GameObject\CharacterAnimation.cpp" />
+    <ClCompile Include="GameObject\WallCollision.cpp" />
+    <ClCompile Include="GameObject\EnergyOrbProjectile.cpp" />
+    <ClCompile Include="GameObject\TeleportCollision.cpp" />
+    <ClCompile Include="GameObject\PlatformCollision.cpp" />
+    <ClCompile Include="GameObject\LadderCollision.cpp" />
   </ItemGroup>
   <ItemGroup>
     <!-- Core Headers -->
@@ -162,6 +168,11 @@
     <ClInclude Include="GameObject\InputManager.h">
       <Filter>GameObject</Filter>
     </ClInclude>
+    <ClInclude Include="GameObject\CharacterAnimation.h" />
+    <ClInclude Include="GameObject\WallCollision.h" />
+    <ClInclude Include="GameObject\LadderCollision.h" />
+    <ClInclude Include="GameObject\TeleportCollision.h" />
+    <ClInclude Include="GameObject\EnergyOrbProjectile.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Resources\Shaders\TriangleShaderFS.fs">

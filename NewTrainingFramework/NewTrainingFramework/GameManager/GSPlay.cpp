@@ -690,12 +690,13 @@ void GSPlay::Update(float deltaTime) {
     checkFireDamage(m_player, m_player2);
     checkFireDamage(m_player2, m_player);
 
-    if (m_player.GetMovement() && m_player.GetMovement()->ConsumeJustStartedUpwardJump()) {
-        SoundManager::Instance().PlaySFXByID(18, 0);
-    }
-    if (m_player2.GetMovement() && m_player2.GetMovement()->ConsumeJustStartedUpwardJump()) {
-        SoundManager::Instance().PlaySFXByID(18, 0);
-    }
+    auto onJump = [&](Character& ch){
+        if (ch.GetMovement() && ch.GetMovement()->ConsumeJustStartedUpwardJump()) {
+            SoundManager::Instance().PlaySFXByID(18, 0);
+        }
+    };
+    onJump(m_player);
+    onJump(m_player2);
     bool rollingP1 = m_player.GetMovement() ? m_player.GetMovement()->IsRolling() : false;
     bool rollingP2 = m_player2.GetMovement() ? m_player2.GetMovement()->IsRolling() : false;
     if (!m_prevRollingP1 && rollingP1) {

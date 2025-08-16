@@ -32,6 +32,7 @@ private:
     float m_stamina;
     const float MAX_STAMINA = 100.0f;
     bool m_prevRolling = false;
+    bool m_prevJumpingForStamina = false;
     void UpdateStamina(float deltaTime);
     bool IsSpecialForm() const;
 
@@ -177,6 +178,7 @@ public:
      float GetStamina() const { return m_stamina; }
      float GetMaxStamina() const { return MAX_STAMINA; }
      void ResetStamina() { m_stamina = MAX_STAMINA; }
+     void AddStamina(float delta);
 
      Vector3 GetGunTopWorldPosition() const;
      float GetAimAngleDeg() const;

@@ -769,13 +769,15 @@ void Character::UpdateStamina(float deltaTime) {
         m_stamina -= runDrainPerSecond * deltaTime;
     }
 
-    if (m_movement->ConsumeJustStartedUpwardJump()) {
+    bool isJumpingNow = m_movement->IsJumping();
+    if (isJumpingNow && !m_prevJumpingForStamina) {
         m_stamina -= jumpCost;
     }
     if (isRolling && !m_prevRolling) {
         m_stamina -= rollCost;
     }
     m_prevRolling = isRolling;
+    m_prevJumpingForStamina = isJumpingNow;
 
     if (!isRunning && !isJumping && !isRolling) {
         m_stamina += regenPerSecond * deltaTime;
