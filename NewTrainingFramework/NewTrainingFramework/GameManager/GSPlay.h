@@ -39,11 +39,6 @@ private:
         int ownerId; float damage;
         bool isBazoka = false;
         float trailTimer = 0.0f;
-        // FlameGun behavior
-        bool  isFlamegun = false;
-        float distanceTraveled = 0.0f;
-        float dropAfterDistance = 0.0f;
-        float gravityAccel = 0.0f;
     };
     std::vector<Bullet> m_bullets;
     static constexpr int MAX_BULLETS = 1024;
@@ -63,10 +58,8 @@ private:
     
     void SpawnBulletFromCharacter(const Character& ch);
     void SpawnBulletFromCharacterWithJitter(const Character& ch, float jitterDeg);
-    // Spawn a Bazoka-like projectile (uses bazoka bullet object and trail)
     void SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg, float speedMul, float damage);
-    // Spawn FlameGun projectile: slower, bazoka trail, falls after a short distance
-    void SpawnFlamegunBulletFromCharacter(const Character& ch, float jitterDeg);
+    
     void UpdateBullets(float dt);
     void UpdateGunBursts();
     void UpdateGunReloads();
@@ -190,15 +183,6 @@ private:
     int   m_p2BurstRemaining = 0;
     float m_p2NextBurstTime = 0.0f;
 
-    // FlameGun
-    static constexpr int   FLAMEGUN_BULLET_COUNT = 10;
-    static constexpr float FLAMEGUN_SPREAD_DEG   = 15.0f;
-    static constexpr float FLAMEGUN_SPEED_MUL    = 0.4f;
-    static constexpr float FLAMEGUN_DAMAGE       = 20.0f;
-    static constexpr float FLAMEGUN_DROP_DISTANCE= 0.20f;
-    static constexpr float FLAMEGUN_GRAVITY      = 3.2f;
-    static constexpr float FLAMEGUN_LIFETIME     = 1.2f;
-
     // Energy Orb Projectiles
     std::vector<std::unique_ptr<EnergyOrbProjectile>> m_energyOrbProjectiles;
     static constexpr int MAX_ENERGY_ORB_PROJECTILES = 1000;
@@ -278,7 +262,7 @@ private:
     int m_p1Ammo41 = 30;  int m_p2Ammo41 = 30;   // M4A1 (5 per shot)
     int m_p1Ammo42 = 60;  int m_p2Ammo42 = 60;   // Shotgun (5 per shot)
     int m_p1Ammo43 = 3;   int m_p2Ammo43 = 3;    // Bazoka
-    int m_p1Ammo44 = 30;  int m_p2Ammo44 = 30;   // Flamegun (5 per shot)
+    
     int m_p1Ammo45 = 12;  int m_p2Ammo45 = 12;   // Deagle
     int m_p1Ammo46 = 6;   int m_p2Ammo46 = 6;    // Sniper
     int m_p1Ammo47 = 30;  int m_p2Ammo47 = 30;   // Uzi (5 per shot)

@@ -285,7 +285,7 @@ void GSPlay::Init() {
     applyGlint(AXE_OBJECT_ID);
     applyGlint(SWORD_OBJECT_ID);
     applyGlint(PIPE_OBJECT_ID);
-    int glintPickupIds[] = {1200,1201,1202,1203,1204,1205,1206,1207,1502};
+    int glintPickupIds[] = {1200,1201,1202,1203,1205,1206,1207,1502};
     for (int gid : glintPickupIds) {
         applyGlint(gid);
     }
@@ -296,7 +296,7 @@ void GSPlay::Init() {
     tryAdd(AXE_OBJECT_ID);
     tryAdd(SWORD_OBJECT_ID);
     tryAdd(PIPE_OBJECT_ID);
-    int pickupIds[] = {1200,1201,1202,1203,1204,1205,1206,1207,1502};
+    int pickupIds[] = {1200,1201,1202,1203,1205,1206,1207,1502};
     for (int pid : pickupIds) { tryAdd(pid); }
 
     // Initialize HUD weapons: cache base scales and hide by default
@@ -501,7 +501,7 @@ void GSPlay::UpdateHudAmmoDigits() {
             case 41: return isP1 ? m_p1Ammo41 : m_p2Ammo41;
             case 42: return isP1 ? m_p1Ammo42 : m_p2Ammo42;
             case 43: return isP1 ? m_p1Ammo43 : m_p2Ammo43;
-            case 44: return isP1 ? m_p1Ammo44 : m_p2Ammo44;
+            
             case 45: return isP1 ? m_p1Ammo45 : m_p2Ammo45;
             case 46: return isP1 ? m_p1Ammo46 : m_p2Ammo46;
             case 47: return isP1 ? m_p1Ammo47 : m_p2Ammo47;
@@ -535,7 +535,6 @@ int& GSPlay::AmmoRefFor(int texId, bool isPlayer1) {
         case 41: return isPlayer1 ? m_p1Ammo41 : m_p2Ammo41;
         case 42: return isPlayer1 ? m_p1Ammo42 : m_p2Ammo42;
         case 43: return isPlayer1 ? m_p1Ammo43 : m_p2Ammo43;
-        case 44: return isPlayer1 ? m_p1Ammo44 : m_p2Ammo44;
         case 45: return isPlayer1 ? m_p1Ammo45 : m_p2Ammo45;
         case 46: return isPlayer1 ? m_p1Ammo46 : m_p2Ammo46;
         case 47: return isPlayer1 ? m_p1Ammo47 : m_p2Ammo47;
@@ -548,7 +547,6 @@ int GSPlay::AmmoCostFor(int texId) const {
     switch (texId) {
         case 41: // M4A1
         case 42: // Shotgun
-        case 44: // Flamegun
         case 47: // Uzi
             return 5;
         case 43: // Bazoka
@@ -667,7 +665,6 @@ int GSPlay::AmmoCapacityFor(int texId) const {
         case 41: return 30; // M4A1
         case 42: return 60; // Shotgun
         case 43: return 3;  // Bazoka
-        case 44: return 30; // Flamegun
         case 45: return 12; // Deagle
         case 46: return 6;  // Sniper
         case 47: return 30; // Uzi
@@ -1502,7 +1499,6 @@ void GSPlay::UpdateHudWeapons() {
             case 41: return {0.132f,  0.042f}; // M4A1 (22x7)
             case 42: return {0.114f, 0.03f}; // Shotgun (19x5)
             case 43: return {0.138f, 0.054f}; // Bazoka (23x9)
-            case 44: return {0.1275f, 0.0675f}; // Flamegun (17x9)
             case 45: return {0.09f,   0.05f};   // Deagle (9x5)
             case 46: return {0.13125f, 0.042f};   // Sniper (25x8)
             case 47: return {0.0675f, 0.06f};   // Uzi (9x8)
@@ -2028,8 +2024,20 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
     int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
     float speedMul = 1.0f;
     float damage = 10.0f;
-    if (gunTex == 45) { speedMul = 1.5f; damage = 20.0f; }
-    else if (gunTex == 46) { speedMul = 2.0f; damage = 50.0f; }
+    // Per-weapon tuning
+    if (gunTex == 40) { // Pistol
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 41) { // M4A1
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 42) { // Shotgun pellet
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 45) { // Deagle
+        speedMul = 1.8f; damage = 20.0f;
+    } else if (gunTex == 46) { // Sniper
+        speedMul = 2.2f; damage = 50.0f;
+    } else if (gunTex == 47) { // Uzi
+        speedMul = 1.5f; damage = 10.0f;
+    }
     Bullet b;
     b.x = spawn.x; b.y = spawn.y;
     b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul;
@@ -2073,8 +2081,20 @@ void GSPlay::SpawnBulletFromCharacterWithJitter(const Character& ch, float jitte
     int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
     float speedMul = 1.0f;
     float damage = 10.0f;
-    if (gunTex == 45) { speedMul = 1.5f; damage = 20.0f; }
-    else if (gunTex == 46) { speedMul = 2.0f; damage = 50.0f; }
+    // Per-weapon tuning
+    if (gunTex == 40) { // Pistol
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 41) { // M4A1 burst
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 42) { // Shotgun pellet
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 45) { // Deagle
+        speedMul = 1.8f; damage = 20.0f;
+    } else if (gunTex == 46) { // Sniper
+        speedMul = 2.2f; damage = 50.0f;
+    } else if (gunTex == 47) { // Uzi burst
+        speedMul = 1.5f; damage = 10.0f;
+    }
     Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign; b.ownerId = isP1 ? 1 : 2; b.damage = damage;
     m_bullets.push_back(b);
 }
@@ -2114,43 +2134,6 @@ void GSPlay::SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg
     }
 }
 
-void GSPlay::SpawnFlamegunBulletFromCharacter(const Character& ch, float jitterDeg) {
-    // Reuse bazoka visual (bullet + trail), but slower and with gravity after a distance
-    Vector3 pivot = ch.GetGunTopWorldPosition();
-    Vector3 base  = ch.GetPosition();
-    const float aimDeg = ch.GetAimAngleDeg() + jitterDeg;
-    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
-    const float aimRad = aimDeg * 3.14159265f / 180.0f;
-    const float angleWorld = faceSign * aimRad;
-
-    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
-                       base.y + BULLET_SPAWN_OFFSET_Y,
-                       0.0f);
-    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
-    float c = cosf(angleWorld), s = sinf(angleWorld);
-    Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
-    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
-
-    const float forwardStep = 0.02f;
-    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
-    Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
-                        vLocalForward.x * s + vLocalForward.y * c, 0.0f);
-    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
-    float len = dir.Length();
-    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
-
-    int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
-    const bool isP1 = (&ch == &m_player);
-    Bullet b; b.x = spawn.x; b.y = spawn.y;
-    b.vx = dir.x * BULLET_SPEED * FLAMEGUN_SPEED_MUL; b.vy = dir.y * BULLET_SPEED * FLAMEGUN_SPEED_MUL;
-    b.life = FLAMEGUN_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
-    b.ownerId = isP1 ? 1 : 2; b.damage = FLAMEGUN_DAMAGE; b.isBazoka = true; b.trailTimer = 0.0f;
-    b.isFlamegun = true; b.distanceTraveled = 0.0f; b.dropAfterDistance = FLAMEGUN_DROP_DISTANCE; b.gravityAccel = FLAMEGUN_GRAVITY;
-    if ((int)m_bullets.size() < MAX_BULLETS) {
-        m_bullets.push_back(b);
-    }
-}
-
 void GSPlay::UpdateBullets(float dt) {
     auto removeBullet = [&](decltype(m_bullets.begin())& it){
         if (it->objIndex >= 0 && it->objIndex < (int)m_bulletObjs.size() && m_bulletObjs[it->objIndex]) {
@@ -2173,14 +2156,6 @@ void GSPlay::UpdateBullets(float dt) {
         it->y += dy;
         it->life -= dt;
 
-        if (it->isFlamegun) {
-            it->distanceTraveled += std::sqrt(dx*dx + dy*dy);
-            if (it->distanceTraveled >= it->dropAfterDistance) {
-                it->vy -= it->gravityAccel * dt;
-                it->angleRad = atan2f(it->vy, it->vx);
-            }
-        }
-
         if (it->isBazoka) {
             it->trailTimer += dt;
             if (it->trailTimer >= BAZOKA_TRAIL_SPAWN_INTERVAL) {
@@ -2200,7 +2175,7 @@ void GSPlay::UpdateBullets(float dt) {
         if (m_wallCollision) {
             Vector3 pos(it->x, it->y, 0.0f);
             if (m_wallCollision->CheckWallCollision(pos, BULLET_COLLISION_WIDTH, BULLET_COLLISION_HEIGHT, 0.0f, 0.0f)) {
-                if (it->isBazoka && !it->isFlamegun) {
+                if (it->isBazoka) {
                     SpawnExplosionAt(it->x, it->y);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
@@ -2243,7 +2218,7 @@ void GSPlay::UpdateBullets(float dt) {
                     target->TriggerDieFromAttack(*attacker);
                 }
                 SpawnBloodAt(it->x, it->y, it->angleRad);
-                if (it->isBazoka && !it->isFlamegun) {
+                if (it->isBazoka) {
                     SpawnExplosionAt(it->x, it->y);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
@@ -2589,7 +2564,7 @@ void GSPlay::TryCompletePendingShots() {
 
             int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
             Bullet b; b.x = spawn.x; b.y = spawn.y;
-            b.vx = dir.x * BULLET_SPEED * 0.8f; b.vy = dir.y * BULLET_SPEED * 0.8f;
+            b.vx = dir.x * BULLET_SPEED * 1.4f; b.vy = dir.y * BULLET_SPEED * 1.4f;
             b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
             b.ownerId = isP1 ? 1 : 2; b.damage = 100.0f; b.isBazoka = true; b.trailTimer = 0.0f;
             if ((int)m_bullets.size() < MAX_BULLETS) {
@@ -2598,22 +2573,6 @@ void GSPlay::TryCompletePendingShots() {
             ammoBaz -= 1; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(43, isP1);
             ch.MarkGunShotFired();
             SoundManager::Instance().PlaySFXByID(24, 0);
-            pendingFlag = false;
-            ch.SetGunMode(false);
-            ch.GetMovement()->SetInputLocked(false);
-        } else if (currentGunTex == 44) { // FlameGun
-            int& ammoFlame = isP1 ? m_p1Ammo44 : m_p2Ammo44;
-            if (ammoFlame < 5) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
-            const int count = FLAMEGUN_BULLET_COUNT;
-            for (int i = 0; i < count; ++i) {
-                float r1 = (float)rand() / (float)RAND_MAX;
-                float r2 = (float)rand() / (float)RAND_MAX;
-                float r = r1 - r2;
-                float jitter = r * (FLAMEGUN_SPREAD_DEG * 0.6f);
-                SpawnFlamegunBulletFromCharacter(ch, jitter);
-            }
-            ammoFlame -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(44, isP1);
-            ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
@@ -2969,7 +2928,7 @@ void GSPlay::HandleItemPickup() {
     Object* gun_m4a1    = scene->GetObject(1201);
     Object* gun_shotgun = scene->GetObject(1202);
     Object* gun_bazoka  = scene->GetObject(1203);
-    Object* gun_flame   = scene->GetObject(1204);
+    
     Object* gun_deagle  = scene->GetObject(1205);
     Object* gun_sniper  = scene->GetObject(1206);
     Object* gun_uzi     = scene->GetObject(1207);
@@ -3125,7 +3084,7 @@ void GSPlay::HandleItemPickup() {
          tryPickupGun(41, gun_m4a1,    m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(42, gun_shotgun, m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(43, gun_bazoka,  m_player, p1Sit, p1PickupJust, true)  ||
-         tryPickupGun(44, gun_flame,   m_player, p1Sit, p1PickupJust, true)  ||
+         
          tryPickupGun(45, gun_deagle,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(46, gun_sniper,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(47, gun_uzi,     m_player, p1Sit, p1PickupJust, true) ) ) { return; }
@@ -3146,7 +3105,7 @@ void GSPlay::HandleItemPickup() {
          tryPickupGun(41, gun_m4a1,    m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(42, gun_shotgun, m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(43, gun_bazoka,  m_player2, p2Sit, p2PickupJust, false) ||
-         tryPickupGun(44, gun_flame,   m_player2, p2Sit, p2PickupJust, false) ||
+         
          tryPickupGun(45, gun_deagle,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(46, gun_sniper,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) ) { return; }
