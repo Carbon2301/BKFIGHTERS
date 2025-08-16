@@ -1887,7 +1887,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             }
         }
     }
-    if (bIsPressed && (key == '.' || key == 0xBE)) {
+    if (bIsPressed && (key == '.' || key == 0xBE)) { 
         if (!(m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc())) {
             if (m_p2SpecialItemTexId >= 0) {
                 ToggleSpecialForm_Internal(m_player2, m_p2SpecialItemTexId);
@@ -1919,7 +1919,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             m_player.SuppressNextPunch();
         }
     }
-
+    
     if (bIsPressed && (key == 'N' || key == 'n')) {
         if (m_player2.IsOrc()) {
             m_player2.TriggerOrcMeteorStrike();
@@ -3018,6 +3018,7 @@ void GSPlay::HandleItemPickup() {
     Object* gun_sniper  = scene->GetObject(1206);
     Object* gun_uzi     = scene->GetObject(1207);
     Object* bomb_pickup = scene->GetObject(1502);
+    Object* heal_box    = scene->GetObject(1510);
     // Special form items
     Object* item_werewolf = scene->GetObject(1506);
     Object* item_batdemon = scene->GetObject(1507);
@@ -3133,6 +3134,27 @@ void GSPlay::HandleItemPickup() {
         return false;
     };
 
+    auto tryPickupHeal = [&](Object*& healObj, Character& player, bool sitHeld, bool pickupJust){
+        if (!sitHeld || !pickupJust || !healObj) return false;
+        const Vector3& objPos = healObj->GetPosition();
+        const Vector3& objScale = healObj->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = healObj->GetId();
+            scene->RemoveObject(removedId);
+            healObj = nullptr;
+            player.ResetHealth();
+            std::cout << "Picked up heal box ID " << removedId << " -> health restored to max\n";
+            SoundManager::Instance().PlaySFXByID(17, 0);
+            return true;
+        }
+        return false;
+    };
+
     auto tryPickupSpecial = [&](Object*& itemObj, int texId, Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
         if (!sitHeld || !pickupJust || !itemObj) return false;
         const Vector3& objPos = itemObj->GetPosition();
@@ -3155,6 +3177,7 @@ void GSPlay::HandleItemPickup() {
     };
 
     if ( p1CanPickup && tryPickupBomb(bomb_pickup, m_player,  p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupHeal(heal_box, m_player, p1Sit, p1PickupJust) ) { return; }
     if ( p1CanPickup && tryPickupSpecial(item_werewolf, 75, m_player, p1Sit, p1PickupJust, true) ) { return; }
     if ( p1CanPickup && tryPickupSpecial(item_batdemon, 76, m_player, p1Sit, p1PickupJust, true) ) { return; }
     if ( p1CanPickup && tryPickupSpecial(item_kitsune,  77, m_player, p1Sit, p1PickupJust, true) ) { return; }
@@ -3176,6 +3199,7 @@ void GSPlay::HandleItemPickup() {
 
     // Try pick up bomb (Player 2)
     if ( p2CanPickup && tryPickupBomb(bomb_pickup, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupHeal(heal_box, m_player2, p2Sit, p2PickupJust) ) { return; }
     if ( p2CanPickup && tryPickupSpecial(item_werewolf, 75, m_player2, p2Sit, p2PickupJust, false) ) { return; }
     if ( p2CanPickup && tryPickupSpecial(item_batdemon, 76, m_player2, p2Sit, p2PickupJust, false) ) { return; }
     if ( p2CanPickup && tryPickupSpecial(item_kitsune,  77, m_player2, p2Sit, p2PickupJust, false) ) { return; }

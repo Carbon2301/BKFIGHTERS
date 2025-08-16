@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 57
+# 2DTexture 58
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/NewBackground.tga"
 TILING GL_REPEAT
@@ -568,6 +568,10 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 79
 FILE "../Resources/Fighter/UI/Time.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 80
+FILE "../Resources/Fighter/UI/HealBox.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1
