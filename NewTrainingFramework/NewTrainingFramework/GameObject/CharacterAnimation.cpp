@@ -1381,10 +1381,7 @@ void CharacterAnimation::SetGunByTextureId(int texId) {
             m_gunTopAnimReverse = 8;
             m_gunTopAnimHold    = 9;
             break;
-        case 44: // FlameGun
-            m_gunTopAnimReverse = 10;
-            m_gunTopAnimHold    = 11;
-            break;
+        
         case 45: // Deagle
             m_gunTopAnimReverse = 12;
             m_gunTopAnimHold    = 13;

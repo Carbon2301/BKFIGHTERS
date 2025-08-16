@@ -39,11 +39,6 @@ private:
         int ownerId; float damage;
         bool isBazoka = false;
         float trailTimer = 0.0f;
-        // FlameGun behavior
-        bool  isFlamegun = false;
-        float distanceTraveled = 0.0f;
-        float dropAfterDistance = 0.0f;
-        float gravityAccel = 0.0f;
     };
     std::vector<Bullet> m_bullets;
     static constexpr int MAX_BULLETS = 1024;
@@ -63,10 +58,8 @@ private:
     
     void SpawnBulletFromCharacter(const Character& ch);
     void SpawnBulletFromCharacterWithJitter(const Character& ch, float jitterDeg);
-    // Spawn a Bazoka-like projectile (uses bazoka bullet object and trail)
     void SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg, float speedMul, float damage);
-    // Spawn FlameGun projectile: slower, bazoka trail, falls after a short distance
-    void SpawnFlamegunBulletFromCharacter(const Character& ch, float jitterDeg);
+    
     void UpdateBullets(float dt);
     void UpdateGunBursts();
     void UpdateGunReloads();
@@ -190,15 +183,6 @@ private:
     int   m_p2BurstRemaining = 0;
     float m_p2NextBurstTime = 0.0f;
 
-    // FlameGun
-    static constexpr int   FLAMEGUN_BULLET_COUNT = 10;
-    static constexpr float FLAMEGUN_SPREAD_DEG   = 15.0f;
-    static constexpr float FLAMEGUN_SPEED_MUL    = 0.4f;
-    static constexpr float FLAMEGUN_DAMAGE       = 20.0f;
-    static constexpr float FLAMEGUN_DROP_DISTANCE= 0.20f;
-    static constexpr float FLAMEGUN_GRAVITY      = 3.2f;
-    static constexpr float FLAMEGUN_LIFETIME     = 1.2f;
-
     // Energy Orb Projectiles
     std::vector<std::unique_ptr<EnergyOrbProjectile>> m_energyOrbProjectiles;
     static constexpr int MAX_ENERGY_ORB_PROJECTILES = 1000;
@@ -278,7 +262,7 @@ private:
     int m_p1Ammo41 = 30;  int m_p2Ammo41 = 30;   // M4A1 (5 per shot)
     int m_p1Ammo42 = 60;  int m_p2Ammo42 = 60;   // Shotgun (5 per shot)
     int m_p1Ammo43 = 3;   int m_p2Ammo43 = 3;    // Bazoka
-    int m_p1Ammo44 = 30;  int m_p2Ammo44 = 30;   // Flamegun (5 per shot)
+    
     int m_p1Ammo45 = 12;  int m_p2Ammo45 = 12;   // Deagle
     int m_p1Ammo46 = 6;   int m_p2Ammo46 = 6;    // Sniper
     int m_p1Ammo47 = 30;  int m_p2Ammo47 = 30;   // Uzi (5 per shot)
@@ -338,6 +322,24 @@ private:
     bool m_prevRollingP2 = false;
     void DrawHudPortraits();
     void UpdateStaminaBars();
+    
+    void UpdateSpecialFormTimers();
+    int  GetSpecialType(const class Character& ch) const; // 0=normal, 1=Werewolf, 2=BatDemon, 3=Kitsune, 4=Orc
+    float m_p1SpecialExpireTime = -1.0f;
+    float m_p2SpecialExpireTime = -1.0f;
+    int   m_p1SpecialType = 0;
+    int   m_p2SpecialType = 0;
+    // HUD portrait
+    Vector3 ComputeHudPortraitScale(const class Character& ch, const Vector3& baseScale) const;
+    Vector3 ComputeHudPortraitOffset(const class Character& ch) const;
+    float  m_portraitScaleMulWerewolf = 0.6f;
+    float  m_portraitScaleMulBatDemon = 0.4f;
+    float  m_portraitScaleMulKitsune  = 0.5f;
+    float  m_portraitScaleMulOrc      = 0.5f;
+    Vector3 m_portraitOffsetWerewolf = Vector3(0.0f, 0.01f, 0.0f);
+    Vector3 m_portraitOffsetBatDemon = Vector3(0.0f, -0.03f, 0.0f);
+    Vector3 m_portraitOffsetKitsune  = Vector3(0.0f, 0.01f, 0.0f);
+    Vector3 m_portraitOffsetOrc      = Vector3(0.0f, 0.0f, 0.0f);
     // Item pickup system
     void HandleItemPickup();
     static const int AXE_OBJECT_ID = 1100;
@@ -356,6 +358,16 @@ private:
     Vector3 m_hudWeapon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     Vector3 m_hudAmmo1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
     Vector3 m_hudAmmo2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
+
+    Vector3 m_hudSpecialTime1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudSpecialTime2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+
+    // HUD Special Character icons
+    int m_p1SpecialItemTexId = -1;
+    int m_p2SpecialItemTexId = -1;
+    Vector3 m_hudSpecial1BaseScale = Vector3(0.07f, 0.07f, 1.0f);
+    Vector3 m_hudSpecial2BaseScale = Vector3(0.07f, 0.07f, 1.0f);
+    void UpdateHudSpecialIcon(bool isPlayer1);
 
     // Bomb HUD
     int m_p1Bombs = 3;

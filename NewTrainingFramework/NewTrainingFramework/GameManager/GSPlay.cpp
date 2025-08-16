@@ -48,6 +48,93 @@ bool GSPlay::s_showWallBoxes = false;
 bool GSPlay::s_showLadderBoxes = false;
 bool GSPlay::s_showTeleportBoxes = false;
 
+static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
+    if (specialTexId < 0) return;
+    character.SetGunMode(false);
+    character.SetGrenadeMode(false);
+
+    if (specialTexId == 75) { // Werewolf
+        bool toWerewolf = !character.IsWerewolf();
+        if (toWerewolf) { character.SetBatDemonMode(false); character.SetKitsuneMode(false); character.SetOrcMode(false); }
+        character.SetWerewolfMode(toWerewolf);
+    } else if (specialTexId == 76) { // BatDemon
+        bool toBat = !character.IsBatDemon();
+        if (toBat) { character.SetWerewolfMode(false); character.SetKitsuneMode(false); character.SetOrcMode(false); }
+        character.SetBatDemonMode(toBat);
+    } else if (specialTexId == 77) { // Kitsune
+        bool toKitsune = !character.IsKitsune();
+        if (toKitsune) { character.SetBatDemonMode(false); character.SetWerewolfMode(false); character.SetOrcMode(false); }
+        character.SetKitsuneMode(toKitsune);
+    } else if (specialTexId == 78) { // Orc
+        bool toOrc = !character.IsOrc();
+        if (toOrc) { character.SetBatDemonMode(false); character.SetWerewolfMode(false); character.SetKitsuneMode(false); }
+        character.SetOrcMode(toOrc);
+    }
+
+    if (auto mv = character.GetMovement()) mv->SetInputLocked(false);
+}
+
+int GSPlay::GetSpecialType(const Character& ch) const {
+    if (ch.IsWerewolf()) return 1;
+    if (ch.IsBatDemon()) return 2;
+    if (ch.IsKitsune())  return 3;
+    if (ch.IsOrc())      return 4;
+    return 0;
+}
+
+void GSPlay::UpdateSpecialFormTimers() {
+    auto ensureExpire = [&](Character& ch, float& expire, int& type){
+        int cur = GetSpecialType(ch);
+        if (cur != 0) {
+            if (type != cur) {
+                type = cur;
+                expire = m_gameTime + 10.0f;
+            }
+        } else {
+            type = 0; expire = -1.0f;
+        }
+    };
+    ensureExpire(m_player,  m_p1SpecialExpireTime, m_p1SpecialType);
+    ensureExpire(m_player2, m_p2SpecialExpireTime, m_p2SpecialType);
+
+    auto updateHudTime = [&](bool isP1){
+        int id = isP1 ? 936 : 937;
+        float expire = isP1 ? m_p1SpecialExpireTime : m_p2SpecialExpireTime;
+        int   type   = isP1 ? m_p1SpecialType      : m_p2SpecialType;
+        Vector3 base = isP1 ? m_hudSpecialTime1BaseScale : m_hudSpecialTime2BaseScale;
+        Object* bar = SceneManager::GetInstance()->GetObject(id);
+        if (!bar) return;
+        if (type == 0 || expire < 0.0f) {
+            bar->SetScale(0.0f, 0.0f, base.z);
+            return;
+        }
+        float remain = expire - m_gameTime;
+        if (remain < 0.0f) remain = 0.0f;
+        float t = remain / 10.0f; 
+        float smooth = 1.0f - (1.0f - t) * (1.0f - t);
+        float width = base.x * smooth;
+        bar->SetScale(width, base.y, base.z);
+    };
+    updateHudTime(true);
+    updateHudTime(false);
+
+    auto revertIfExpired = [&](Character& ch, float& expire, int& type){
+        if (type != 0 && m_gameTime >= expire) {
+            switch (type) {
+                case 1: ch.SetWerewolfMode(false); break;
+                case 2: ch.SetBatDemonMode(false); break;
+                case 3: ch.SetKitsuneMode(false);  break;
+                case 4: ch.SetOrcMode(false);      break;
+            }
+            type = 0; expire = -1.0f;
+            if (&ch == &m_player) { m_p1SpecialItemTexId = -1; UpdateHudSpecialIcon(true); }
+            else { m_p2SpecialItemTexId = -1; UpdateHudSpecialIcon(false); }
+        }
+    };
+    revertIfExpired(m_player,  m_p1SpecialExpireTime, m_p1SpecialType);
+    revertIfExpired(m_player2, m_p2SpecialExpireTime, m_p2SpecialType);
+}
+
 bool GSPlay_IsShowPlatformBoxes() {
     return GSPlay::IsShowPlatformBoxes();
 }
@@ -259,7 +346,7 @@ void GSPlay::Init() {
     applyGlint(AXE_OBJECT_ID);
     applyGlint(SWORD_OBJECT_ID);
     applyGlint(PIPE_OBJECT_ID);
-    int glintPickupIds[] = {1200,1201,1202,1203,1204,1205,1206,1207,1502};
+    int glintPickupIds[] = {1200,1201,1202,1203,1205,1206,1207,1502};
     for (int gid : glintPickupIds) {
         applyGlint(gid);
     }
@@ -270,7 +357,7 @@ void GSPlay::Init() {
     tryAdd(AXE_OBJECT_ID);
     tryAdd(SWORD_OBJECT_ID);
     tryAdd(PIPE_OBJECT_ID);
-    int pickupIds[] = {1200,1201,1202,1203,1204,1205,1206,1207,1502};
+    int pickupIds[] = {1200,1201,1202,1203,1205,1206,1207,1502};
     for (int pid : pickupIds) { tryAdd(pid); }
 
     // Initialize HUD weapons: cache base scales and hide by default
@@ -281,6 +368,24 @@ void GSPlay::Init() {
     if (Object* hudWeapon2 = sceneManager->GetObject(919)) {
         m_hudWeapon2BaseScale = hudWeapon2->GetScale();
         hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
+    }
+
+    if (Object* hudSpec1 = sceneManager->GetObject(934)) {
+        m_hudSpecial1BaseScale = hudSpec1->GetScale();
+        hudSpec1->SetScale(0.0f, 0.0f, m_hudSpecial1BaseScale.z);
+    }
+    if (Object* hudSpec2 = sceneManager->GetObject(935)) {
+        m_hudSpecial2BaseScale = hudSpec2->GetScale();
+        hudSpec2->SetScale(0.0f, 0.0f, m_hudSpecial2BaseScale.z);
+    }
+
+    if (Object* hudTime1 = sceneManager->GetObject(936)) {
+        m_hudSpecialTime1BaseScale = hudTime1->GetScale();
+        hudTime1->SetScale(0.0f, 0.0f, m_hudSpecialTime1BaseScale.z);
+    }
+    if (Object* hudTime2 = sceneManager->GetObject(937)) {
+        m_hudSpecialTime2BaseScale = hudTime2->GetScale();
+        hudTime2->SetScale(0.0f, 0.0f, m_hudSpecialTime2BaseScale.z);
     }
 
     if (Object* hudGun1 = sceneManager->GetObject(920)) {
@@ -466,7 +571,7 @@ void GSPlay::UpdateHudAmmoDigits() {
             case 41: return isP1 ? m_p1Ammo41 : m_p2Ammo41;
             case 42: return isP1 ? m_p1Ammo42 : m_p2Ammo42;
             case 43: return isP1 ? m_p1Ammo43 : m_p2Ammo43;
-            case 44: return isP1 ? m_p1Ammo44 : m_p2Ammo44;
+            
             case 45: return isP1 ? m_p1Ammo45 : m_p2Ammo45;
             case 46: return isP1 ? m_p1Ammo46 : m_p2Ammo46;
             case 47: return isP1 ? m_p1Ammo47 : m_p2Ammo47;
@@ -500,7 +605,6 @@ int& GSPlay::AmmoRefFor(int texId, bool isPlayer1) {
         case 41: return isPlayer1 ? m_p1Ammo41 : m_p2Ammo41;
         case 42: return isPlayer1 ? m_p1Ammo42 : m_p2Ammo42;
         case 43: return isPlayer1 ? m_p1Ammo43 : m_p2Ammo43;
-        case 44: return isPlayer1 ? m_p1Ammo44 : m_p2Ammo44;
         case 45: return isPlayer1 ? m_p1Ammo45 : m_p2Ammo45;
         case 46: return isPlayer1 ? m_p1Ammo46 : m_p2Ammo46;
         case 47: return isPlayer1 ? m_p1Ammo47 : m_p2Ammo47;
@@ -513,7 +617,6 @@ int GSPlay::AmmoCostFor(int texId) const {
     switch (texId) {
         case 41: // M4A1
         case 42: // Shotgun
-        case 44: // Flamegun
         case 47: // Uzi
             return 5;
         case 43: // Bazoka
@@ -632,7 +735,6 @@ int GSPlay::AmmoCapacityFor(int texId) const {
         case 41: return 30; // M4A1
         case 42: return 60; // Shotgun
         case 43: return 3;  // Bazoka
-        case 44: return 30; // Flamegun
         case 45: return 12; // Deagle
         case 46: return 6;  // Sniper
         case 47: return 30; // Uzi
@@ -644,6 +746,7 @@ void GSPlay::Update(float deltaTime) {
     m_gameTime += deltaTime;
     
     SceneManager::GetInstance()->Update(deltaTime);
+    UpdateSpecialFormTimers();
     
     if (m_inputManager) {
         HandleItemPickup();
@@ -1467,7 +1570,6 @@ void GSPlay::UpdateHudWeapons() {
             case 41: return {0.132f,  0.042f}; // M4A1 (22x7)
             case 42: return {0.114f, 0.03f}; // Shotgun (19x5)
             case 43: return {0.138f, 0.054f}; // Bazoka (23x9)
-            case 44: return {0.1275f, 0.0675f}; // Flamegun (17x9)
             case 45: return {0.09f,   0.05f};   // Deagle (9x5)
             case 46: return {0.13125f, 0.042f};   // Sniper (25x8)
             case 47: return {0.0675f, 0.06f};   // Uzi (9x8)
@@ -1514,9 +1616,12 @@ void GSPlay::DrawHudPortraits() {
     Matrix uiProj;
     uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
     uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+    UpdateHudSpecialIcon(true);
+    UpdateHudSpecialIcon(false);
 
     // HUD Player 1 (ID 916)
     if (Object* hud1 = scene->GetObject(916)) {
+        hud1->SetTexture(m_player.GetBodyTextureId(), 0);
         float u0, v0, u1, v1;
         m_player.GetCurrentFrameUV(u0, v0, u1, v1);
         // Flip horizontally if player is facing left so HUD mirrors in the same direction
@@ -1524,8 +1629,20 @@ void GSPlay::DrawHudPortraits() {
         if (flip) {
             std::swap(u0, u1);
         }
+        float baseScaleX1 = hud1->GetScale().x;
+        float baseScaleY1 = hud1->GetScale().y;
+        float baseScaleZ1 = hud1->GetScale().z;
+        Vector3 scaled1 = ComputeHudPortraitScale(m_player, Vector3(baseScaleX1, baseScaleY1, baseScaleZ1));
+        hud1->SetScale(scaled1.x, scaled1.y, scaled1.z);
+        float oldPosX1b = hud1->GetPosition().x;
+        float oldPosY1b = hud1->GetPosition().y;
+        float oldPosZ1b = hud1->GetPosition().z;
+        Vector3 offset1 = ComputeHudPortraitOffset(m_player);
+        hud1->SetPosition(oldPosX1b + offset1.x, oldPosY1b + offset1.y, oldPosZ1b + offset1.z);
         hud1->SetCustomUV(u0, v0, u1, v1);
         hud1->Draw(uiView, uiProj);
+        hud1->SetScale(baseScaleX1, baseScaleY1, baseScaleZ1);
+        hud1->SetPosition(oldPosX1b, oldPosY1b, oldPosZ1b);
 
         if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
             float hu0, hv0, hu1, hv1;
@@ -1565,14 +1682,27 @@ void GSPlay::DrawHudPortraits() {
 
     // HUD Player 2 (ID 917)
     if (Object* hud2 = scene->GetObject(917)) {
+        hud2->SetTexture(m_player2.GetBodyTextureId(), 0);
         float u0, v0, u1, v1;
         m_player2.GetCurrentFrameUV(u0, v0, u1, v1);
         bool flip2 = m_player2.IsFacingLeft();
         if (flip2) {
             std::swap(u0, u1);
         }
+        float baseScaleX2 = hud2->GetScale().x;
+        float baseScaleY2 = hud2->GetScale().y;
+        float baseScaleZ2 = hud2->GetScale().z;
+        Vector3 scaled2 = ComputeHudPortraitScale(m_player2, Vector3(baseScaleX2, baseScaleY2, baseScaleZ2));
+        hud2->SetScale(scaled2.x, scaled2.y, scaled2.z);
+        float oldPosX2b = hud2->GetPosition().x;
+        float oldPosY2b = hud2->GetPosition().y;
+        float oldPosZ2b = hud2->GetPosition().z;
+        Vector3 offset2 = ComputeHudPortraitOffset(m_player2);
+        hud2->SetPosition(oldPosX2b + offset2.x, oldPosY2b + offset2.y, oldPosZ2b + offset2.z);
         hud2->SetCustomUV(u0, v0, u1, v1);
         hud2->Draw(uiView, uiProj);
+        hud2->SetScale(baseScaleX2, baseScaleY2, baseScaleZ2);
+        hud2->SetPosition(oldPosX2b, oldPosY2b, oldPosZ2b);
 
         if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
             float hu0, hv0, hu1, hv1;
@@ -1608,6 +1738,49 @@ void GSPlay::DrawHudPortraits() {
             hud2->SetRotation(oldRotX2, oldRotY2, oldRotZ2);
         }
     }
+}
+
+void GSPlay::UpdateHudSpecialIcon(bool isPlayer1) {
+    SceneManager* scene = SceneManager::GetInstance();
+    int objId = isPlayer1 ? 934 : 935;
+    int texId = isPlayer1 ? m_p1SpecialItemTexId : m_p2SpecialItemTexId;
+    if (Object* hudSp = scene->GetObject(objId)) {
+        if (texId < 0) {
+            Vector3 base = isPlayer1 ? m_hudSpecial1BaseScale : m_hudSpecial2BaseScale;
+            hudSp->SetScale(0.0f, 0.0f, base.z);
+            return;
+        }
+        hudSp->SetTexture(texId, 0);
+        Vector3 base = isPlayer1 ? m_hudSpecial1BaseScale : m_hudSpecial2BaseScale;
+        hudSp->SetScale(base.x, base.y, base.z);
+    }
+}
+
+Vector3 GSPlay::ComputeHudPortraitScale(const Character& ch, const Vector3& baseScale) const {
+    float mul = 1.0f;
+    if (ch.IsWerewolf()) {
+        mul = m_portraitScaleMulWerewolf;
+    } else if (ch.IsBatDemon()) {
+        mul = m_portraitScaleMulBatDemon;
+    } else if (ch.IsKitsune()) {
+        mul = m_portraitScaleMulKitsune;
+    } else if (ch.IsOrc()) {
+        mul = m_portraitScaleMulOrc;
+    }
+    return Vector3(baseScale.x * mul, baseScale.y * mul, baseScale.z);
+}
+
+Vector3 GSPlay::ComputeHudPortraitOffset(const Character& ch) const {
+    if (ch.IsWerewolf()) {
+        return Vector3(m_portraitOffsetWerewolf.x, m_portraitOffsetWerewolf.y, m_portraitOffsetWerewolf.z);
+    } else if (ch.IsBatDemon()) {
+        return Vector3(m_portraitOffsetBatDemon.x, m_portraitOffsetBatDemon.y, m_portraitOffsetBatDemon.z);
+    } else if (ch.IsKitsune()) {
+        return Vector3(m_portraitOffsetKitsune.x, m_portraitOffsetKitsune.y, m_portraitOffsetKitsune.z);
+    } else if (ch.IsOrc()) {
+        return Vector3(m_portraitOffsetOrc.x, m_portraitOffsetOrc.y, m_portraitOffsetOrc.z);
+    }
+    return Vector3(0.0f, 0.0f, 0.0f);
 }
 
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
@@ -1704,75 +1877,26 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
 
-    if (bIsPressed && key == '5') {
-        bool toBat = !m_player.IsBatDemon();
-        m_player.SetGunMode(false);
-        m_player.SetGrenadeMode(false);
-        if (toBat) { m_player.SetWerewolfMode(false); }
-        m_player.SetBatDemonMode(toBat);
-        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
-    }
-    if (bIsPressed && (key == '?' || key == '/' || key == 0xBF)) {
-        bool toBat2 = !m_player2.IsBatDemon();
-        m_player2.SetGunMode(false);
-        m_player2.SetGrenadeMode(false);
-        if (toBat2) { m_player2.SetWerewolfMode(false); }
-        m_player2.SetBatDemonMode(toBat2);
-        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
-    }
-
     if (bIsPressed && key == '4') {
-        bool toWerewolf = !m_player.IsWerewolf();
-        m_player.SetGunMode(false);
-        m_player.SetGrenadeMode(false);
-        if (toWerewolf) { m_player.SetBatDemonMode(false); }
-        m_player.SetWerewolfMode(toWerewolf);
-        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+        if (!(m_player.IsWerewolf() || m_player.IsBatDemon() || m_player.IsKitsune() || m_player.IsOrc())) {
+            if (m_p1SpecialItemTexId >= 0) {
+                ToggleSpecialForm_Internal(m_player, m_p1SpecialItemTexId);
+                if (m_player.IsWerewolf() || m_player.IsBatDemon() || m_player.IsKitsune() || m_player.IsOrc()) {
+                    m_p1SpecialItemTexId = -1; UpdateHudSpecialIcon(true);
+                }
+            }
+        }
     }
     if (bIsPressed && (key == '.' || key == 0xBE)) { 
-        bool toWerewolf2 = !m_player2.IsWerewolf();
-        m_player2.SetGunMode(false);
-        m_player2.SetGrenadeMode(false);
-        if (toWerewolf2) { m_player2.SetBatDemonMode(false); }
-        m_player2.SetWerewolfMode(toWerewolf2);
-        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+        if (!(m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc())) {
+            if (m_p2SpecialItemTexId >= 0) {
+                ToggleSpecialForm_Internal(m_player2, m_p2SpecialItemTexId);
+                if (m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc()) {
+                    m_p2SpecialItemTexId = -1; UpdateHudSpecialIcon(false);
+                }
+            }
+        }
     }
-
-    if (bIsPressed && key == '6') {
-        bool toKitsune = !m_player.IsKitsune();
-        m_player.SetGunMode(false);
-        m_player.SetGrenadeMode(false);
-        if (toKitsune) { m_player.SetBatDemonMode(false); m_player.SetWerewolfMode(false); }
-        m_player.SetKitsuneMode(toKitsune);
-        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
-    }
-    if (bIsPressed && (key == 'K' || key == 'k')) {
-        bool toKitsune2 = !m_player2.IsKitsune();
-        m_player2.SetGunMode(false);
-        m_player2.SetGrenadeMode(false);
-        if (toKitsune2) { m_player2.SetBatDemonMode(false); m_player2.SetWerewolfMode(false); }
-        m_player2.SetKitsuneMode(toKitsune2);
-        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
-    }
-
-    if (bIsPressed && key == '7') {
-        bool toOrc = !m_player.IsOrc();
-        m_player.SetGunMode(false);
-        m_player.SetGrenadeMode(false);
-        if (toOrc) { m_player.SetBatDemonMode(false); m_player.SetWerewolfMode(false); m_player.SetKitsuneMode(false); }
-        m_player.SetOrcMode(toOrc);
-        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
-    }
-    if (bIsPressed && (key == 'L' || key == 'l')) {
-        bool toOrc2 = !m_player2.IsOrc();
-        m_player2.SetGunMode(false);
-        m_player2.SetGrenadeMode(false);
-        if (toOrc2) { m_player2.SetBatDemonMode(false); m_player2.SetWerewolfMode(false); m_player2.SetKitsuneMode(false); }
-        m_player2.SetOrcMode(toOrc2);
-        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
-    }
-
-
     
     if (bIsPressed && key == '1') { 
         if (m_player.IsOrc()) {
@@ -1795,7 +1919,6 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             m_player.SuppressNextPunch();
         }
     }
-
     
     if (bIsPressed && (key == 'N' || key == 'n')) {
         if (m_player2.IsOrc()) {
@@ -1986,8 +2109,20 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
     int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
     float speedMul = 1.0f;
     float damage = 10.0f;
-    if (gunTex == 45) { speedMul = 1.5f; damage = 20.0f; }
-    else if (gunTex == 46) { speedMul = 2.0f; damage = 50.0f; }
+    // Per-weapon tuning
+    if (gunTex == 40) { // Pistol
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 41) { // M4A1
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 42) { // Shotgun pellet
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 45) { // Deagle
+        speedMul = 1.8f; damage = 20.0f;
+    } else if (gunTex == 46) { // Sniper
+        speedMul = 2.2f; damage = 50.0f;
+    } else if (gunTex == 47) { // Uzi
+        speedMul = 1.5f; damage = 10.0f;
+    }
     Bullet b;
     b.x = spawn.x; b.y = spawn.y;
     b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul;
@@ -2031,8 +2166,20 @@ void GSPlay::SpawnBulletFromCharacterWithJitter(const Character& ch, float jitte
     int gunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
     float speedMul = 1.0f;
     float damage = 10.0f;
-    if (gunTex == 45) { speedMul = 1.5f; damage = 20.0f; }
-    else if (gunTex == 46) { speedMul = 2.0f; damage = 50.0f; }
+    // Per-weapon tuning
+    if (gunTex == 40) { // Pistol
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 41) { // M4A1 burst
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 42) { // Shotgun pellet
+        speedMul = 1.5f; damage = 10.0f;
+    } else if (gunTex == 45) { // Deagle
+        speedMul = 1.8f; damage = 20.0f;
+    } else if (gunTex == 46) { // Sniper
+        speedMul = 2.2f; damage = 50.0f;
+    } else if (gunTex == 47) { // Uzi burst
+        speedMul = 1.5f; damage = 10.0f;
+    }
     Bullet b; b.x = spawn.x; b.y = spawn.y; b.vx = dir.x * BULLET_SPEED * speedMul; b.vy = dir.y * BULLET_SPEED * speedMul; b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign; b.ownerId = isP1 ? 1 : 2; b.damage = damage;
     m_bullets.push_back(b);
 }
@@ -2072,43 +2219,6 @@ void GSPlay::SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg
     }
 }
 
-void GSPlay::SpawnFlamegunBulletFromCharacter(const Character& ch, float jitterDeg) {
-    // Reuse bazoka visual (bullet + trail), but slower and with gravity after a distance
-    Vector3 pivot = ch.GetGunTopWorldPosition();
-    Vector3 base  = ch.GetPosition();
-    const float aimDeg = ch.GetAimAngleDeg() + jitterDeg;
-    const float faceSign = ch.IsFacingLeft() ? -1.0f : 1.0f;
-    const float aimRad = aimDeg * 3.14159265f / 180.0f;
-    const float angleWorld = faceSign * aimRad;
-
-    Vector3 baseSpawn0(base.x + faceSign * BULLET_SPAWN_OFFSET_X,
-                       base.y + BULLET_SPAWN_OFFSET_Y,
-                       0.0f);
-    Vector3 vLocal0(baseSpawn0.x - pivot.x, baseSpawn0.y - pivot.y, 0.0f);
-    float c = cosf(angleWorld), s = sinf(angleWorld);
-    Vector3 vRot(vLocal0.x * c - vLocal0.y * s, vLocal0.x * s + vLocal0.y * c, 0.0f);
-    Vector3 spawn(pivot.x + vRot.x, pivot.y + vRot.y, 0.0f);
-
-    const float forwardStep = 0.02f;
-    Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
-    Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
-                        vLocalForward.x * s + vLocalForward.y * c, 0.0f);
-    Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
-    float len = dir.Length();
-    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
-
-    int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
-    const bool isP1 = (&ch == &m_player);
-    Bullet b; b.x = spawn.x; b.y = spawn.y;
-    b.vx = dir.x * BULLET_SPEED * FLAMEGUN_SPEED_MUL; b.vy = dir.y * BULLET_SPEED * FLAMEGUN_SPEED_MUL;
-    b.life = FLAMEGUN_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
-    b.ownerId = isP1 ? 1 : 2; b.damage = FLAMEGUN_DAMAGE; b.isBazoka = true; b.trailTimer = 0.0f;
-    b.isFlamegun = true; b.distanceTraveled = 0.0f; b.dropAfterDistance = FLAMEGUN_DROP_DISTANCE; b.gravityAccel = FLAMEGUN_GRAVITY;
-    if ((int)m_bullets.size() < MAX_BULLETS) {
-        m_bullets.push_back(b);
-    }
-}
-
 void GSPlay::UpdateBullets(float dt) {
     auto removeBullet = [&](decltype(m_bullets.begin())& it){
         if (it->objIndex >= 0 && it->objIndex < (int)m_bulletObjs.size() && m_bulletObjs[it->objIndex]) {
@@ -2131,14 +2241,6 @@ void GSPlay::UpdateBullets(float dt) {
         it->y += dy;
         it->life -= dt;
 
-        if (it->isFlamegun) {
-            it->distanceTraveled += std::sqrt(dx*dx + dy*dy);
-            if (it->distanceTraveled >= it->dropAfterDistance) {
-                it->vy -= it->gravityAccel * dt;
-                it->angleRad = atan2f(it->vy, it->vx);
-            }
-        }
-
         if (it->isBazoka) {
             it->trailTimer += dt;
             if (it->trailTimer >= BAZOKA_TRAIL_SPAWN_INTERVAL) {
@@ -2158,7 +2260,7 @@ void GSPlay::UpdateBullets(float dt) {
         if (m_wallCollision) {
             Vector3 pos(it->x, it->y, 0.0f);
             if (m_wallCollision->CheckWallCollision(pos, BULLET_COLLISION_WIDTH, BULLET_COLLISION_HEIGHT, 0.0f, 0.0f)) {
-                if (it->isBazoka && !it->isFlamegun) {
+                if (it->isBazoka) {
                     SpawnExplosionAt(it->x, it->y);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
@@ -2201,7 +2303,7 @@ void GSPlay::UpdateBullets(float dt) {
                     target->TriggerDieFromAttack(*attacker);
                 }
                 SpawnBloodAt(it->x, it->y, it->angleRad);
-                if (it->isBazoka && !it->isFlamegun) {
+                if (it->isBazoka) {
                     SpawnExplosionAt(it->x, it->y);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
@@ -2547,7 +2649,7 @@ void GSPlay::TryCompletePendingShots() {
 
             int slot = CreateOrAcquireBulletObjectFromProto(m_bazokaBulletObjectId);
             Bullet b; b.x = spawn.x; b.y = spawn.y;
-            b.vx = dir.x * BULLET_SPEED * 0.8f; b.vy = dir.y * BULLET_SPEED * 0.8f;
+            b.vx = dir.x * BULLET_SPEED * 1.4f; b.vy = dir.y * BULLET_SPEED * 1.4f;
             b.life = BULLET_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
             b.ownerId = isP1 ? 1 : 2; b.damage = 100.0f; b.isBazoka = true; b.trailTimer = 0.0f;
             if ((int)m_bullets.size() < MAX_BULLETS) {
@@ -2556,22 +2658,6 @@ void GSPlay::TryCompletePendingShots() {
             ammoBaz -= 1; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(43, isP1);
             ch.MarkGunShotFired();
             SoundManager::Instance().PlaySFXByID(24, 0);
-            pendingFlag = false;
-            ch.SetGunMode(false);
-            ch.GetMovement()->SetInputLocked(false);
-        } else if (currentGunTex == 44) { // FlameGun
-            int& ammoFlame = isP1 ? m_p1Ammo44 : m_p2Ammo44;
-            if (ammoFlame < 5) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
-            const int count = FLAMEGUN_BULLET_COUNT;
-            for (int i = 0; i < count; ++i) {
-                float r1 = (float)rand() / (float)RAND_MAX;
-                float r2 = (float)rand() / (float)RAND_MAX;
-                float r = r1 - r2;
-                float jitter = r * (FLAMEGUN_SPREAD_DEG * 0.6f);
-                SpawnFlamegunBulletFromCharacter(ch, jitter);
-            }
-            ammoFlame -= 5; UpdateHudAmmoDigits(); StartHudAmmoAnimation(isP1); TryUnequipIfEmpty(44, isP1);
-            ch.MarkGunShotFired();
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
@@ -2927,11 +3013,17 @@ void GSPlay::HandleItemPickup() {
     Object* gun_m4a1    = scene->GetObject(1201);
     Object* gun_shotgun = scene->GetObject(1202);
     Object* gun_bazoka  = scene->GetObject(1203);
-    Object* gun_flame   = scene->GetObject(1204);
+    
     Object* gun_deagle  = scene->GetObject(1205);
     Object* gun_sniper  = scene->GetObject(1206);
     Object* gun_uzi     = scene->GetObject(1207);
     Object* bomb_pickup = scene->GetObject(1502);
+    Object* heal_box    = scene->GetObject(1510);
+    // Special form items
+    Object* item_werewolf = scene->GetObject(1506);
+    Object* item_batdemon = scene->GetObject(1507);
+    Object* item_kitsune  = scene->GetObject(1508); 
+    Object* item_orc      = scene->GetObject(1509);
 
     const bool* keys = m_inputManager->GetKeyStates();
     if (!keys) return;
@@ -2943,6 +3035,8 @@ void GSPlay::HandleItemPickup() {
     const PlayerInputConfig& cfg2 = m_player2.GetMovement()->GetInputConfig();
     bool p2Sit = keys[cfg2.sitKey];
     bool p2PickupJust = m_inputManager->IsKeyJustPressed('N') || m_inputManager->IsKeyJustPressed('n');
+    bool p1CanPickup = !(m_player.IsWerewolf() || m_player.IsBatDemon() || m_player.IsKitsune() || m_player.IsOrc());
+    bool p2CanPickup = !(m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc());
 
     auto isOverlapping = [](const Vector3& pos, float w, float h, const Vector3& objPos, const Vector3& objScale) {
         float halfW = w * 0.5f;
@@ -3040,38 +3134,90 @@ void GSPlay::HandleItemPickup() {
         return false;
     };
 
-    if ( tryPickupBomb(bomb_pickup, m_player,  p1Sit, p1PickupJust, true) ) { return; }
+    auto tryPickupHeal = [&](Object*& healObj, Character& player, bool sitHeld, bool pickupJust){
+        if (!sitHeld || !pickupJust || !healObj) return false;
+        const Vector3& objPos = healObj->GetPosition();
+        const Vector3& objScale = healObj->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = healObj->GetId();
+            scene->RemoveObject(removedId);
+            healObj = nullptr;
+            player.ResetHealth();
+            std::cout << "Picked up heal box ID " << removedId << " -> health restored to max\n";
+            SoundManager::Instance().PlaySFXByID(17, 0);
+            return true;
+        }
+        return false;
+    };
+
+    auto tryPickupSpecial = [&](Object*& itemObj, int texId, Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
+        if (!sitHeld || !pickupJust || !itemObj) return false;
+        const Vector3& objPos = itemObj->GetPosition();
+        const Vector3& objScale = itemObj->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = itemObj->GetId();
+            scene->RemoveObject(removedId);
+            itemObj = nullptr;
+            if (isPlayer1) m_p1SpecialItemTexId = texId; else m_p2SpecialItemTexId = texId;
+            UpdateHudSpecialIcon(isPlayer1);
+            SoundManager::Instance().PlaySFXByID(17, 0);
+            return true;
+        }
+        return false;
+    };
+
+    if ( p1CanPickup && tryPickupBomb(bomb_pickup, m_player,  p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupHeal(heal_box, m_player, p1Sit, p1PickupJust) ) { return; }
+    if ( p1CanPickup && tryPickupSpecial(item_werewolf, 75, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupSpecial(item_batdemon, 76, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupSpecial(item_kitsune,  77, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupSpecial(item_orc,      78, m_player, p1Sit, p1PickupJust, true) ) { return; }
 
     // Check Player 1 melee
-    if ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+    if ( p1CanPickup && ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
          tryPickup(m_player,  p1Sit, p1PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
-         tryPickup(m_player,  p1Sit, p1PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+         tryPickup(m_player,  p1Sit, p1PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) ) { return; }
     // Check Player 1 guns
-    if ( tryPickupGun(40, gun_pistol,  m_player, p1Sit, p1PickupJust, true)  ||
+    if ( p1CanPickup && ( tryPickupGun(40, gun_pistol,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(41, gun_m4a1,    m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(42, gun_shotgun, m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(43, gun_bazoka,  m_player, p1Sit, p1PickupJust, true)  ||
-         tryPickupGun(44, gun_flame,   m_player, p1Sit, p1PickupJust, true)  ||
+         
          tryPickupGun(45, gun_deagle,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(46, gun_sniper,  m_player, p1Sit, p1PickupJust, true)  ||
-         tryPickupGun(47, gun_uzi,     m_player, p1Sit, p1PickupJust, true) ) { return; }
+         tryPickupGun(47, gun_uzi,     m_player, p1Sit, p1PickupJust, true) ) ) { return; }
 
     // Try pick up bomb (Player 2)
-    if ( tryPickupBomb(bomb_pickup, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupBomb(bomb_pickup, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupHeal(heal_box, m_player2, p2Sit, p2PickupJust) ) { return; }
+    if ( p2CanPickup && tryPickupSpecial(item_werewolf, 75, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupSpecial(item_batdemon, 76, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupSpecial(item_kitsune,  77, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupSpecial(item_orc,      78, m_player2, p2Sit, p2PickupJust, false) ) { return; }
 
     // Check Player 2
-    if ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+    if ( p2CanPickup && ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
          tryPickup(m_player2, p2Sit, p2PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
-         tryPickup(m_player2, p2Sit, p2PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+         tryPickup(m_player2, p2Sit, p2PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) ) { return; }
     // Check Player 2 guns
-    if ( tryPickupGun(40, gun_pistol,  m_player2, p2Sit, p2PickupJust, false) ||
+    if ( p2CanPickup && ( tryPickupGun(40, gun_pistol,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(41, gun_m4a1,    m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(42, gun_shotgun, m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(43, gun_bazoka,  m_player2, p2Sit, p2PickupJust, false) ||
-         tryPickupGun(44, gun_flame,   m_player2, p2Sit, p2PickupJust, false) ||
+         
          tryPickupGun(45, gun_deagle,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(46, gun_sniper,  m_player2, p2Sit, p2PickupJust, false) ||
-         tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) { return; }
+         tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) ) { return; }
 }
 
 void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
