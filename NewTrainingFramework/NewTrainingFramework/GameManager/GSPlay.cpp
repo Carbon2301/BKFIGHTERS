@@ -283,6 +283,15 @@ void GSPlay::Init() {
         hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
     }
 
+    if (Object* hudSpec1 = sceneManager->GetObject(934)) {
+        m_hudSpecial1BaseScale = hudSpec1->GetScale();
+        hudSpec1->SetScale(0.0f, 0.0f, m_hudSpecial1BaseScale.z);
+    }
+    if (Object* hudSpec2 = sceneManager->GetObject(935)) {
+        m_hudSpecial2BaseScale = hudSpec2->GetScale();
+        hudSpec2->SetScale(0.0f, 0.0f, m_hudSpecial2BaseScale.z);
+    }
+
     if (Object* hudGun1 = sceneManager->GetObject(920)) {
         m_hudGun1BaseScale = hudGun1->GetScale();
         if (m_player1GunTexId >= 0) {
@@ -1514,6 +1523,8 @@ void GSPlay::DrawHudPortraits() {
     Matrix uiProj;
     uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
     uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+    UpdateHudSpecialIcon(true);
+    UpdateHudSpecialIcon(false);
 
     // HUD Player 1 (ID 916)
     if (Object* hud1 = scene->GetObject(916)) {
@@ -1633,6 +1644,22 @@ void GSPlay::DrawHudPortraits() {
             hud2->SetPosition(oldPosX2, oldPosY2, oldPosZ2);
             hud2->SetRotation(oldRotX2, oldRotY2, oldRotZ2);
         }
+    }
+}
+
+void GSPlay::UpdateHudSpecialIcon(bool isPlayer1) {
+    SceneManager* scene = SceneManager::GetInstance();
+    int objId = isPlayer1 ? 934 : 935;
+    int texId = isPlayer1 ? m_p1SpecialItemTexId : m_p2SpecialItemTexId;
+    if (Object* hudSp = scene->GetObject(objId)) {
+        if (texId < 0) {
+            Vector3 base = isPlayer1 ? m_hudSpecial1BaseScale : m_hudSpecial2BaseScale;
+            hudSp->SetScale(0.0f, 0.0f, base.z);
+            return;
+        }
+        hudSp->SetTexture(texId, 0);
+        Vector3 base = isPlayer1 ? m_hudSpecial1BaseScale : m_hudSpecial2BaseScale;
+        hudSp->SetScale(base.x, base.y, base.z);
     }
 }
 
@@ -2985,6 +3012,11 @@ void GSPlay::HandleItemPickup() {
     Object* gun_sniper  = scene->GetObject(1206);
     Object* gun_uzi     = scene->GetObject(1207);
     Object* bomb_pickup = scene->GetObject(1502);
+    // Special form items
+    Object* item_werewolf = scene->GetObject(1506);
+    Object* item_batdemon = scene->GetObject(1507);
+    Object* item_kitsune  = scene->GetObject(1508); 
+    Object* item_orc      = scene->GetObject(1509);
 
     const bool* keys = m_inputManager->GetKeyStates();
     if (!keys) return;
@@ -3093,7 +3125,32 @@ void GSPlay::HandleItemPickup() {
         return false;
     };
 
+    auto tryPickupSpecial = [&](Object*& itemObj, int texId, Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
+        if (!sitHeld || !pickupJust || !itemObj) return false;
+        const Vector3& objPos = itemObj->GetPosition();
+        const Vector3& objScale = itemObj->GetScale();
+        Vector3 pPos = player.GetPosition();
+        float w = player.GetHurtboxWidth();
+        float h = player.GetHurtboxHeight();
+        pPos.x += player.GetHurtboxOffsetX();
+        pPos.y += player.GetHurtboxOffsetY();
+        if (isOverlapping(pPos, w, h, objPos, objScale)) {
+            int removedId = itemObj->GetId();
+            scene->RemoveObject(removedId);
+            itemObj = nullptr;
+            if (isPlayer1) m_p1SpecialItemTexId = texId; else m_p2SpecialItemTexId = texId;
+            UpdateHudSpecialIcon(isPlayer1);
+            SoundManager::Instance().PlaySFXByID(17, 0);
+            return true;
+        }
+        return false;
+    };
+
     if ( tryPickupBomb(bomb_pickup, m_player,  p1Sit, p1PickupJust, true) ) { return; }
+    if ( tryPickupSpecial(item_werewolf, 75, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( tryPickupSpecial(item_batdemon, 76, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( tryPickupSpecial(item_kitsune,  77, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( tryPickupSpecial(item_orc,      78, m_player, p1Sit, p1PickupJust, true) ) { return; }
 
     // Check Player 1 melee
     if ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
@@ -3111,6 +3168,10 @@ void GSPlay::HandleItemPickup() {
 
     // Try pick up bomb (Player 2)
     if ( tryPickupBomb(bomb_pickup, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( tryPickupSpecial(item_werewolf, 75, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( tryPickupSpecial(item_batdemon, 76, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( tryPickupSpecial(item_kitsune,  77, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( tryPickupSpecial(item_orc,      78, m_player2, p2Sit, p2PickupJust, false) ) { return; }
 
     // Check Player 2
     if ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
