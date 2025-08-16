@@ -916,6 +916,7 @@ void GSPlay::Update(float deltaTime) {
     UpdateSpecialFormTimers();
     UpdateRandomItemSpawns(deltaTime);
     UpdateCharacterRespawn(deltaTime);
+    UpdateRespawnInvincibility(deltaTime);
     
     if (m_inputManager) {
         HandleItemPickup();
@@ -950,6 +951,10 @@ void GSPlay::Update(float deltaTime) {
         bool overlapX = (r >= tl) && (l <= tr);
         bool overlapY = (t >= tb) && (b <= tt);
         if (overlapX && overlapY) {
+            if (IsCharacterInvincible(target)) {
+                return;
+            }
+            
             float prev = target.GetHealth();
             target.TakeDamage(100.0f);
             target.CancelAllCombos();
@@ -1031,27 +1036,31 @@ void GSPlay::Update(float deltaTime) {
     UpdateHudAmmoAnim(deltaTime);
     UpdateHudBombDigits();
     
-    if (m_player.CheckHitboxCollision(m_player2)) {
-        if (m_player.IsWerewolf() && m_player.GetAnimation() && (((m_player.GetAnimation()->GetCurrentAnimation() == 1) && m_player.IsAnimationPlaying()) || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
-            m_player2.TakeDamage(100.0f);
-            m_player2.TriggerGetHit(m_player);
-        } else if (m_player.IsWerewolf() && m_player.GetAnimation() && ((m_player.GetAnimation()->GetCurrentAnimation() == 3 && m_player.IsAnimationPlaying()))) {
-            m_player2.TakeDamage(100.0f);
-            m_player2.TriggerGetHit(m_player);
-        } else {
-            m_player2.TriggerGetHit(m_player);
+            if (m_player.CheckHitboxCollision(m_player2)) {
+            if (!IsCharacterInvincible(m_player2)) {
+                if (m_player.IsWerewolf() && m_player.GetAnimation() && (((m_player.GetAnimation()->GetCurrentAnimation() == 1) && m_player.IsAnimationPlaying()) || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+                    m_player2.TakeDamage(100.0f);
+                    m_player2.TriggerGetHit(m_player);
+                } else if (m_player.IsWerewolf() && m_player.GetAnimation() && ((m_player.GetAnimation()->GetCurrentAnimation() == 3 && m_player.IsAnimationPlaying()))) {
+                    m_player2.TakeDamage(100.0f);
+                    m_player2.TriggerGetHit(m_player);
+                } else {
+                    m_player2.TriggerGetHit(m_player);
+                }
+            }
         }
-    }
     
     if (m_player2.CheckHitboxCollision(m_player)) {
-        if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (((m_player2.GetAnimation()->GetCurrentAnimation() == 1) && m_player2.IsAnimationPlaying()) || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
-            m_player.TakeDamage(100.0f);
-            m_player.TriggerGetHit(m_player2);
-        } else if (m_player2.IsWerewolf() && m_player2.GetAnimation() && ((m_player2.GetAnimation()->GetCurrentAnimation() == 3 && m_player2.IsAnimationPlaying()))) {
-            m_player.TakeDamage(100.0f);
-            m_player.TriggerGetHit(m_player2);
-        } else {
-            m_player.TriggerGetHit(m_player2);
+        if (!IsCharacterInvincible(m_player)) {
+            if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (((m_player2.GetAnimation()->GetCurrentAnimation() == 1) && m_player2.IsAnimationPlaying()) || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+                m_player.TakeDamage(100.0f);
+                m_player.TriggerGetHit(m_player2);
+            } else if (m_player2.IsWerewolf() && m_player2.GetAnimation() && ((m_player2.GetAnimation()->GetCurrentAnimation() == 3 && m_player2.IsAnimationPlaying()))) {
+                m_player.TakeDamage(100.0f);
+                m_player.TriggerGetHit(m_player2);
+            } else {
+                m_player.TriggerGetHit(m_player2);
+            }
         }
     }
     
@@ -1316,6 +1325,10 @@ void GSPlay::UpdateFireRains(float deltaTime) {
                 bool overlapX = aRight >= bLeft && aLeft <= bRight;
                 bool overlapY = aTop >= bBottom && aBottom <= bTop;
                 if (overlapX && overlapY) {
+                    if (IsCharacterInvincible(target)) {
+                        return;
+                    }
+                    
                     float prev = target.GetHealth();
                     target.TakeDamage(100.0f);
                     target.CancelAllCombos();
@@ -1596,6 +1609,11 @@ void GSPlay::UpdateExplosions(float dt) {
                 if (ratio < 0.0f) ratio = 0.0f; if (ratio > 1.0f) ratio = 1.0f;
                 float damage = 100.0f * ratio;
                 if (damage <= 0.0f) return;
+                
+                if (IsCharacterInvincible(target)) {
+                    return;
+                }
+                
                 float prev = target.GetHealth();
                 target.TakeDamage(damage);
                 target.CancelAllCombos();
@@ -2432,6 +2450,10 @@ void GSPlay::UpdateBullets(float dt) {
             float bTop = it->y + bHalfH;
 
             if (aabbOverlap(bLeft, bRight, bBottom, bTop, tLeft, tRight, tBottom, tTop)) {
+                if (IsCharacterInvincible(*target)) {
+                    removeBullet(it); continue;
+                }
+                
                 float prev = target->GetHealth();
                 float dmg = it->damage > 0.0f ? it->damage : 10.0f;
                 target->TakeDamage(dmg);
@@ -3646,8 +3668,10 @@ void GSPlay::CheckLightningDamage() {
             bool collisionY1 = lightning.hitboxTop >= playerHurtboxBottom && lightning.hitboxBottom <= playerHurtboxTop;
             
             if (collisionX1 && collisionY1) {
-                m_player.TakeDamage(100);
-                lightning.hasDealtDamage = true;
+                if (!IsCharacterInvincible(m_player)) {
+                    m_player.TakeDamage(100);
+                    lightning.hasDealtDamage = true;
+                }
             }
             
             Vector3 player2Pos = m_player2.GetPosition();
@@ -3662,8 +3686,10 @@ void GSPlay::CheckLightningDamage() {
             bool collisionY2 = lightning.hitboxTop >= player2HurtboxBottom && lightning.hitboxBottom <= player2HurtboxTop;
             
             if (collisionX2 && collisionY2) {
-                m_player2.TakeDamage(100);
-                lightning.hasDealtDamage = true;
+                if (!IsCharacterInvincible(m_player2)) {
+                    m_player2.TakeDamage(100);
+                    lightning.hasDealtDamage = true;
+                }
             }
         }
     }
@@ -3720,6 +3746,14 @@ void GSPlay::RespawnCharacter(Character& character) {
         
         character.SetPosition(respawnPos.x, respawnPos.y);
         ResetCharacterToInitialState(character, isPlayer1);
+        
+        if (isPlayer1) {
+            m_p1Invincible = true;
+            m_p1InvincibilityTimer = 0.0f;
+        } else {
+            m_p2Invincible = true;
+            m_p2InvincibilityTimer = 0.0f;
+        }
         
         std::cout << "Character respawned at position " << respawnIndex 
                   << " (" << respawnPos.x << ", " << respawnPos.y << ")" << std::endl;
@@ -3808,4 +3842,53 @@ int GSPlay::ChooseRandomRespawnPosition() {
     }
     
     return -1;
+}
+
+void GSPlay::UpdateRespawnInvincibility(float deltaTime) {
+    if (m_p1Invincible) {
+        m_p1InvincibilityTimer += deltaTime;
+        
+        bool shouldBeVisible = fmodf(m_p1InvincibilityTimer, RESPAWN_BLINK_INTERVAL * 2.0f) < RESPAWN_BLINK_INTERVAL;
+        if (CharacterAnimation* anim = m_player.GetAnimation()) {
+            if (Object* obj = anim->GetCharacterObject()) {
+                obj->SetVisible(shouldBeVisible);
+            }
+        }
+        
+        if (m_p1InvincibilityTimer >= RESPAWN_INVINCIBILITY_DURATION) {
+            m_p1Invincible = false;
+            m_p1InvincibilityTimer = 0.0f;
+            if (CharacterAnimation* anim = m_player.GetAnimation()) {
+                if (Object* obj = anim->GetCharacterObject()) {
+                    obj->SetVisible(true);
+                }
+            }
+        }
+    }
+    
+    if (m_p2Invincible) {
+        m_p2InvincibilityTimer += deltaTime;
+        
+        bool shouldBeVisible = fmodf(m_p2InvincibilityTimer, RESPAWN_BLINK_INTERVAL * 2.0f) < RESPAWN_BLINK_INTERVAL;
+        if (CharacterAnimation* anim = m_player2.GetAnimation()) {
+            if (Object* obj = anim->GetCharacterObject()) {
+                obj->SetVisible(shouldBeVisible);
+            }
+        }
+        
+        if (m_p2InvincibilityTimer >= RESPAWN_INVINCIBILITY_DURATION) {
+            m_p2Invincible = false;
+            m_p2InvincibilityTimer = 0.0f;
+            if (CharacterAnimation* anim = m_player2.GetAnimation()) {
+                if (Object* obj = anim->GetCharacterObject()) {
+                    obj->SetVisible(true);
+                }
+            }
+        }
+    }
+}
+
+bool GSPlay::IsCharacterInvincible(const Character& character) const {
+    return (&character == &m_player && m_p1Invincible) || 
+           (&character == &m_player2 && m_p2Invincible);
 }

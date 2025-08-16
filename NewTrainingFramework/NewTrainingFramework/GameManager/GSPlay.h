@@ -405,10 +405,21 @@ private:
     std::vector<RespawnSlot> m_respawnSlots;
     bool m_p1Respawned = false;
     bool m_p2Respawned = false;
+    
+    // Respawn invincibility system
+    bool m_p1Invincible = false;
+    bool m_p2Invincible = false;
+    float m_p1InvincibilityTimer = 0.0f;
+    float m_p2InvincibilityTimer = 0.0f;
+    const float RESPAWN_INVINCIBILITY_DURATION = 3.0f;
+    const float RESPAWN_BLINK_INTERVAL = 0.15f;
+    
     void InitializeRespawnSlots();
     void UpdateCharacterRespawn(float deltaTime);
     void RespawnCharacter(Character& character);
     void ResetCharacterToInitialState(Character& character, bool isPlayer1);
     int ChooseRandomRespawnPosition();
+    void UpdateRespawnInvincibility(float deltaTime);
+    bool IsCharacterInvincible(const Character& character) const;
 }; 
 
