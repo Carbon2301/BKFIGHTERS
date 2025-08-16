@@ -122,6 +122,16 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         }
     }
 
+    if (m_batWindActive && m_batWindAnim) {
+        m_batWindAnim->Update(deltaTime);
+        if (!m_batWindAnim->IsPlaying()) {
+            m_batWindActive = false;
+            if (m_batWindObject) {
+                m_batWindObject->SetVisible(false);
+            }
+        }
+    }
+
     if (m_batSlashCooldownTimer > 0.0f) {
         m_batSlashCooldownTimer -= deltaTime;
         if (m_batSlashCooldownTimer < 0.0f) m_batSlashCooldownTimer = 0.0f;
@@ -344,6 +354,15 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
         m_kitsuneAppearObject->SetCustomUV(u0, v0, u1, v1);
         if (camera) {
             m_kitsuneAppearObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        }
+    }
+
+    if (m_batWindActive && m_batWindObject && m_batWindObject->GetModelId() >= 0 && m_batWindObject->GetModelPtr()) {
+        float u0, v0, u1, v1;
+        m_batWindAnim->GetUV(u0, v0, u1, v1);
+        m_batWindObject->SetCustomUV(u0, v0, u1, v1);
+        if (camera) {
+            m_batWindObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
         }
     }
 }
@@ -1165,6 +1184,35 @@ void CharacterAnimation::TriggerBatDemonSlash() {
         m_animManager->Play(1, false);
         m_lastAnimation = 1;
         m_batSlashActive = true;
+    }
+
+    if (!m_batWindAnim) {
+        m_batWindAnim = std::make_shared<AnimationManager>();
+    }
+    if (!m_batWindObject) {
+        m_batWindObject = std::make_unique<Object>(m_objectId + 25000);
+        if (Object* originalObj = SceneManager::GetInstance()->GetObject(m_objectId)) {
+            m_batWindObject->SetModel(originalObj->GetModelId());
+            m_batWindObject->SetShader(originalObj->GetShaderId());
+            m_batWindObject->SetScale(originalObj->GetScale());
+        }
+    }
+    if (auto texData = ResourceManager::GetInstance()->GetTextureData(68)) {
+        std::vector<AnimationData> anims;
+        anims.reserve(texData->animations.size());
+        for (const auto& a : texData->animations) {
+            anims.push_back({a.startFrame, a.numFrames, a.duration, 0.0f});
+        }
+        m_batWindAnim->Initialize(texData->spriteWidth, texData->spriteHeight, anims);
+        m_batWindAnim->Play(0, false);
+        m_batWindActive = true;
+        if (m_batWindObject && m_characterObject) {
+            m_batWindObject->SetTexture(68, 0);
+            m_batWindObject->SetVisible(true);
+            const Vector3& pos = m_characterObject->GetPosition();
+            m_batWindObject->SetPosition(pos.x + 0.32f, pos.y, pos.z);
+            m_batWindObject->SetScale(0.7f, 0.7f, 0.0f);
+        }
     }
 }
 

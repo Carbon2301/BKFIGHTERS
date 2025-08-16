@@ -111,6 +111,10 @@ private:
     std::shared_ptr<AnimationManager> m_kitsuneAppearAnim;
     std::unique_ptr<class Object> m_kitsuneAppearObject;
     static constexpr float KITSUNE_APPEAR_Y_OFFSET = 0.05f;
+
+    bool m_batWindActive = false;
+    std::shared_ptr<AnimationManager> m_batWindAnim;
+    std::unique_ptr<class Object> m_batWindObject;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;
