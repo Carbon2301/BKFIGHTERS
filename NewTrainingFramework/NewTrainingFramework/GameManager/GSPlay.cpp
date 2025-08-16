@@ -101,14 +101,14 @@ void GSPlay::InitializeRandomItemSpawns() {
         Vector3(-3.22f,  1.47f, 0.0f),
         Vector3(-3.60f, -0.76f, 0.0f),
         Vector3(-2.96f, -1.22f, 0.0f),
-        Vector3(-1.80f, -1.385f, 0.0f),
-        Vector3(-0.90f, -1.385f, 0.0f),
+        Vector3(-1.80f, -1.375f, 0.0f),
+        Vector3(-0.90f, -1.375f, 0.0f),
         Vector3(-0.45f, -0.70f, 0.0f),
         Vector3( 0.05f, -0.47f, 0.0f),
-        Vector3(-0.15f, -1.385f, 0.0f),
+        Vector3(-0.15f, -1.375f, 0.0f),
         Vector3( 2.00f, -1.3f, 0.0f),
         Vector3( 2.50f, -0.44f,0.0f),
-        Vector3( 2.95f,  0.355f, 0.0f)
+        Vector3( 2.95f,  0.345f, 0.0f)
     };
     m_spawnSlots.clear();
     m_spawnSlots.resize(11);
@@ -117,8 +117,10 @@ void GSPlay::InitializeRandomItemSpawns() {
         m_spawnSlots[i].currentId = -1;
         m_spawnSlots[i].lifeTimer = 0.0f;
         m_spawnSlots[i].respawnTimer = 0.0f;
+        m_spawnSlots[i].respawnDelay = 1.0f;
         m_spawnSlots[i].active = false;
     }
+    m_itemIdToSlot.clear();
 
     for (int id : m_candidateItemIds) {
         if (scene->GetObject(id)) {
@@ -171,7 +173,7 @@ bool GSPlay::SpawnItemIntoSlot(int slotIndex, int itemId) {
     const ItemTemplate& t = it->second;
     obj->SetModel(t.modelId);
     for (int i = 0; i < (int)t.textureIds.size(); ++i) obj->SetTexture(t.textureIds[i], i);
-    obj->SetShader(t.shaderId);
+    obj->SetShader(1);
     obj->SetScale(t.scale);
     obj->SetPosition(m_spawnSlots[slotIndex].pos);
     obj->SetVisible(true);
@@ -179,8 +181,23 @@ bool GSPlay::SpawnItemIntoSlot(int slotIndex, int itemId) {
     m_spawnSlots[slotIndex].currentId = itemId;
     m_spawnSlots[slotIndex].lifeTimer = 0.0f;
     m_spawnSlots[slotIndex].respawnTimer = 0.0f;
+    m_spawnSlots[slotIndex].respawnDelay = 1.0f;
     m_spawnSlots[slotIndex].active = true;
+    m_itemIdToSlot[itemId] = slotIndex;
     return true;
+}
+
+void GSPlay::MarkSlotPickedByItemId(int itemId) {
+    auto it = m_itemIdToSlot.find(itemId);
+    if (it == m_itemIdToSlot.end()) return;
+    int slotIndex = it->second;
+    if (slotIndex >= 0 && slotIndex < (int)m_spawnSlots.size()) {
+        m_spawnSlots[slotIndex].active = false;
+        m_spawnSlots[slotIndex].currentId = -1;
+        m_spawnSlots[slotIndex].lifeTimer = 0.0f;
+        m_spawnSlots[slotIndex].respawnTimer = 0.0f;
+        m_spawnSlots[slotIndex].respawnDelay = 10.0f;
+    }
 }
 
 void GSPlay::UpdateRandomItemSpawns(float deltaTime) {
@@ -211,11 +228,12 @@ void GSPlay::UpdateRandomItemSpawns(float deltaTime) {
                     slot.active = false;
                     slot.currentId = -1;
                     slot.respawnTimer = 0.0f;
+                    slot.respawnDelay = 1.0f;
                 }
             }
         } else {
             slot.respawnTimer += deltaTime;
-            if (slot.respawnTimer >= RESPAWN_DELAY) {
+            if (slot.respawnTimer >= slot.respawnDelay) {
                 int itemId = ChooseRandomAvailableItemId();
                 if (!SpawnItemIntoSlot(i, itemId)) {
                     for (int id : m_candidateItemIds) {
@@ -3176,6 +3194,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = objRef->GetId();
             scene->RemoveObject(removedId);
+            MarkSlotPickedByItemId(removedId);
             objRef = nullptr;
             availFlag = false;
             player.CancelAllCombos();
@@ -3200,9 +3219,9 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = gunObj->GetId();
             scene->RemoveObject(removedId);
+            MarkSlotPickedByItemId(removedId);
             gunObj = nullptr;
             if (isPlayer1) m_player1GunTexId = texId; else m_player2GunTexId = texId;
-            // Also switch top overlay animations to this gun
             if (CharacterAnimation* a1 = player.GetAnimation()) {
                 a1->SetGunByTextureId(texId);
             }
@@ -3237,6 +3256,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = bombObj->GetId();
             scene->RemoveObject(removedId);
+            MarkSlotPickedByItemId(removedId);
             bombObj = nullptr;
             if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
             UpdateHudBombDigits();
@@ -3259,6 +3279,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = healObj->GetId();
             scene->RemoveObject(removedId);
+            MarkSlotPickedByItemId(removedId);
             healObj = nullptr;
             player.ResetHealth();
             std::cout << "Picked up heal box ID " << removedId << " -> health restored to max\n";

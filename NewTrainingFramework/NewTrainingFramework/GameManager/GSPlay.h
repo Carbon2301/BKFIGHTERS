@@ -385,14 +385,16 @@ private:
 
     // Random item
     struct ItemTemplate { int modelId; std::vector<int> textureIds; int shaderId; Vector3 scale; };
-    struct SpawnSlot { Vector3 pos; int currentId = -1; float lifeTimer = 0.0f; float respawnTimer = 0.0f; bool active = false; };
+    struct SpawnSlot { Vector3 pos; int currentId = -1; float lifeTimer = 0.0f; float respawnTimer = 0.0f; float respawnDelay = 1.0f; bool active = false; };
     std::unordered_map<int, ItemTemplate> m_itemTemplates;
     std::vector<int> m_candidateItemIds;
     std::vector<SpawnSlot> m_spawnSlots;
     float m_itemBlinkTimer = 0.0f;
+    std::unordered_map<int,int> m_itemIdToSlot;
     void InitializeRandomItemSpawns();
     void UpdateRandomItemSpawns(float deltaTime);
     bool SpawnItemIntoSlot(int slotIndex, int itemId);
     int  ChooseRandomAvailableItemId();
+    void MarkSlotPickedByItemId(int itemId);
 }; 
 
