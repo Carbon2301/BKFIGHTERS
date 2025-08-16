@@ -1517,6 +1517,7 @@ void GSPlay::DrawHudPortraits() {
 
     // HUD Player 1 (ID 916)
     if (Object* hud1 = scene->GetObject(916)) {
+        hud1->SetTexture(m_player.GetBodyTextureId(), 0);
         float u0, v0, u1, v1;
         m_player.GetCurrentFrameUV(u0, v0, u1, v1);
         // Flip horizontally if player is facing left so HUD mirrors in the same direction
@@ -1524,8 +1525,20 @@ void GSPlay::DrawHudPortraits() {
         if (flip) {
             std::swap(u0, u1);
         }
+        float baseScaleX1 = hud1->GetScale().x;
+        float baseScaleY1 = hud1->GetScale().y;
+        float baseScaleZ1 = hud1->GetScale().z;
+        Vector3 scaled1 = ComputeHudPortraitScale(m_player, Vector3(baseScaleX1, baseScaleY1, baseScaleZ1));
+        hud1->SetScale(scaled1.x, scaled1.y, scaled1.z);
+        float oldPosX1b = hud1->GetPosition().x;
+        float oldPosY1b = hud1->GetPosition().y;
+        float oldPosZ1b = hud1->GetPosition().z;
+        Vector3 offset1 = ComputeHudPortraitOffset(m_player);
+        hud1->SetPosition(oldPosX1b + offset1.x, oldPosY1b + offset1.y, oldPosZ1b + offset1.z);
         hud1->SetCustomUV(u0, v0, u1, v1);
         hud1->Draw(uiView, uiProj);
+        hud1->SetScale(baseScaleX1, baseScaleY1, baseScaleZ1);
+        hud1->SetPosition(oldPosX1b, oldPosY1b, oldPosZ1b);
 
         if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
             float hu0, hv0, hu1, hv1;
@@ -1565,14 +1578,27 @@ void GSPlay::DrawHudPortraits() {
 
     // HUD Player 2 (ID 917)
     if (Object* hud2 = scene->GetObject(917)) {
+        hud2->SetTexture(m_player2.GetBodyTextureId(), 0);
         float u0, v0, u1, v1;
         m_player2.GetCurrentFrameUV(u0, v0, u1, v1);
         bool flip2 = m_player2.IsFacingLeft();
         if (flip2) {
             std::swap(u0, u1);
         }
+        float baseScaleX2 = hud2->GetScale().x;
+        float baseScaleY2 = hud2->GetScale().y;
+        float baseScaleZ2 = hud2->GetScale().z;
+        Vector3 scaled2 = ComputeHudPortraitScale(m_player2, Vector3(baseScaleX2, baseScaleY2, baseScaleZ2));
+        hud2->SetScale(scaled2.x, scaled2.y, scaled2.z);
+        float oldPosX2b = hud2->GetPosition().x;
+        float oldPosY2b = hud2->GetPosition().y;
+        float oldPosZ2b = hud2->GetPosition().z;
+        Vector3 offset2 = ComputeHudPortraitOffset(m_player2);
+        hud2->SetPosition(oldPosX2b + offset2.x, oldPosY2b + offset2.y, oldPosZ2b + offset2.z);
         hud2->SetCustomUV(u0, v0, u1, v1);
         hud2->Draw(uiView, uiProj);
+        hud2->SetScale(baseScaleX2, baseScaleY2, baseScaleZ2);
+        hud2->SetPosition(oldPosX2b, oldPosY2b, oldPosZ2b);
 
         if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
             float hu0, hv0, hu1, hv1;
@@ -1608,6 +1634,33 @@ void GSPlay::DrawHudPortraits() {
             hud2->SetRotation(oldRotX2, oldRotY2, oldRotZ2);
         }
     }
+}
+
+Vector3 GSPlay::ComputeHudPortraitScale(const Character& ch, const Vector3& baseScale) const {
+    float mul = 1.0f;
+    if (ch.IsWerewolf()) {
+        mul = m_portraitScaleMulWerewolf;
+    } else if (ch.IsBatDemon()) {
+        mul = m_portraitScaleMulBatDemon;
+    } else if (ch.IsKitsune()) {
+        mul = m_portraitScaleMulKitsune;
+    } else if (ch.IsOrc()) {
+        mul = m_portraitScaleMulOrc;
+    }
+    return Vector3(baseScale.x * mul, baseScale.y * mul, baseScale.z);
+}
+
+Vector3 GSPlay::ComputeHudPortraitOffset(const Character& ch) const {
+    if (ch.IsWerewolf()) {
+        return Vector3(m_portraitOffsetWerewolf.x, m_portraitOffsetWerewolf.y, m_portraitOffsetWerewolf.z);
+    } else if (ch.IsBatDemon()) {
+        return Vector3(m_portraitOffsetBatDemon.x, m_portraitOffsetBatDemon.y, m_portraitOffsetBatDemon.z);
+    } else if (ch.IsKitsune()) {
+        return Vector3(m_portraitOffsetKitsune.x, m_portraitOffsetKitsune.y, m_portraitOffsetKitsune.z);
+    } else if (ch.IsOrc()) {
+        return Vector3(m_portraitOffsetOrc.x, m_portraitOffsetOrc.y, m_portraitOffsetOrc.z);
+    }
+    return Vector3(0.0f, 0.0f, 0.0f);
 }
 
 void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {

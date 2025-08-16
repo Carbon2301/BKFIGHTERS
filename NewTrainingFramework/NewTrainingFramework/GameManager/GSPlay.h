@@ -338,6 +338,17 @@ private:
     bool m_prevRollingP2 = false;
     void DrawHudPortraits();
     void UpdateStaminaBars();
+    // HUD portrait
+    Vector3 ComputeHudPortraitScale(const class Character& ch, const Vector3& baseScale) const;
+    Vector3 ComputeHudPortraitOffset(const class Character& ch) const;
+    float  m_portraitScaleMulWerewolf = 0.6f;
+    float  m_portraitScaleMulBatDemon = 0.4f;
+    float  m_portraitScaleMulKitsune  = 0.5f;
+    float  m_portraitScaleMulOrc      = 0.5f;
+    Vector3 m_portraitOffsetWerewolf = Vector3(0.0f, 0.01f, 0.0f);
+    Vector3 m_portraitOffsetBatDemon = Vector3(0.0f, -0.03f, 0.0f);
+    Vector3 m_portraitOffsetKitsune  = Vector3(0.0f, 0.01f, 0.0f);
+    Vector3 m_portraitOffsetOrc      = Vector3(0.0f, 0.0f, 0.0f);
     // Item pickup system
     void HandleItemPickup();
     static const int AXE_OBJECT_ID = 1100;
