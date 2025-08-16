@@ -42,7 +42,7 @@ void WallCollision::ClearWalls() {
 void WallCollision::LoadWallsFromScene() {
     ClearWalls();
 
-    std::ifstream file("Resources/Scenes/GSPlay.txt");
+    std::ifstream file("../Resources/GSPlay.txt");
     if (!file.is_open()) {
         std::cerr << "Cannot open GSPlay.txt" << std::endl;
         return;

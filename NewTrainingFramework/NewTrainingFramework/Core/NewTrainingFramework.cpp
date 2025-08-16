@@ -32,12 +32,12 @@ int Init(ESContext* esContext)
 	std::cout << "Initializing New Training Framework Engine..." << std::endl;
 	
 	g_resourceManager = ResourceManager::GetInstance();
-	if (!g_resourceManager->LoadFromFile("RM.txt")) {
+	if (!g_resourceManager->LoadFromFile("../Resources/RM.txt")) {
 		std::cout << "Failed to load resources!" << std::endl;
 		return -1;
 	}
 	
-	SoundManager::Instance().LoadMusicFromFile("../NewTrainingFramework/RM.txt");
+	SoundManager::Instance().LoadMusicFromFile("../Resources/RM.txt");
 	
 	g_sceneManager = SceneManager::GetInstance();
 	

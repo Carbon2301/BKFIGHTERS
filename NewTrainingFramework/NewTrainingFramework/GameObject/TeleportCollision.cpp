@@ -19,7 +19,7 @@ void TeleportCollision::AddTeleport(float x, float y, float width, float height,
 void TeleportCollision::LoadTeleportsFromScene() {
     ClearTeleports();
 
-    std::ifstream file("Resources/Scenes/GSPlay.txt");
+    std::ifstream file("../Resources/GSPlay.txt");
     if (!file.is_open()) {
         std::cerr << "Cannot open GSPlay.txt" << std::endl;
         return;

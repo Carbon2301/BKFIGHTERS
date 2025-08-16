@@ -205,7 +205,7 @@ void GSPlay::Init() {
     m_player.GetMovement()->ClearMovingPlatforms();
     m_player2.GetMovement()->ClearMovingPlatforms();
     {
-        std::ifstream sceneFile("Resources/Scenes/GSPlay.txt");
+        std::ifstream sceneFile("../Resources/GSPlay.txt");
         if (sceneFile.is_open()) {
             std::string line;
             bool inPlatformBlock = false;

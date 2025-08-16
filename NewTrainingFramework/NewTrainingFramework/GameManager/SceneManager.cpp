@@ -41,11 +41,11 @@ SceneManager::~SceneManager() {
 std::string SceneManager::GetSceneFileForState(StateType stateType) {
     switch (stateType) {
         case StateType::INTRO:
-            return "Resources/Scenes/GSIntro.txt";
+            return "../Resources/GSIntro.txt";
         case StateType::MENU:
-            return "Resources/Scenes/GSMenu.txt";
+            return "../Resources/GSMenu.txt";
         case StateType::PLAY:
-            return "Resources/Scenes/GSPlay.txt";
+            return "../Resources/GSPlay.txt";
         default:
             std::cout << "Unknown state type for scene loading: " << (int)stateType << std::endl;
             return "";
