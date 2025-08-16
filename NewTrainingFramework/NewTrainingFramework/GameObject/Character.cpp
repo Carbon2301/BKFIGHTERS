@@ -274,6 +274,11 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
                                   GetHurtboxWidth(), GetHurtboxHeight(), 
                                   GetHurtboxOffsetX(), GetHurtboxOffsetY());
     
+    if (IsSpecialForm() && m_movement) {
+        (void)m_movement->ConsumePendingFallDamage();
+        (void)m_movement->ConsumeHardLandingRequested();
+    }
+    
     if (m_animation) {
         m_animation->HandleMovementAnimations(keyStates, m_movement.get(), m_combat.get());
     }
@@ -719,6 +724,7 @@ void Character::TriggerGetHit(const Character& attacker) {
 
 void Character::TakeDamage(float damage, bool playSfx) {
     if (m_isDead) return;
+    if (IsSpecialForm()) return;
     
     m_health -= damage;
     if (m_health < 0.0f) {

@@ -322,6 +322,13 @@ private:
     bool m_prevRollingP2 = false;
     void DrawHudPortraits();
     void UpdateStaminaBars();
+    
+    void UpdateSpecialFormTimers();
+    int  GetSpecialType(const class Character& ch) const; // 0=normal, 1=Werewolf, 2=BatDemon, 3=Kitsune, 4=Orc
+    float m_p1SpecialExpireTime = -1.0f;
+    float m_p2SpecialExpireTime = -1.0f;
+    int   m_p1SpecialType = 0;
+    int   m_p2SpecialType = 0;
     // HUD portrait
     Vector3 ComputeHudPortraitScale(const class Character& ch, const Vector3& baseScale) const;
     Vector3 ComputeHudPortraitOffset(const class Character& ch) const;

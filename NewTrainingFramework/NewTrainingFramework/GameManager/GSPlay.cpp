@@ -74,6 +74,44 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
     if (auto mv = character.GetMovement()) mv->SetInputLocked(false);
 }
 
+int GSPlay::GetSpecialType(const Character& ch) const {
+    if (ch.IsWerewolf()) return 1;
+    if (ch.IsBatDemon()) return 2;
+    if (ch.IsKitsune())  return 3;
+    if (ch.IsOrc())      return 4;
+    return 0;
+}
+
+void GSPlay::UpdateSpecialFormTimers() {
+    auto ensureExpire = [&](Character& ch, float& expire, int& type){
+        int cur = GetSpecialType(ch);
+        if (cur != 0) {
+            if (type != cur) {
+                type = cur;
+                expire = m_gameTime + 10.0f;
+            }
+        } else {
+            type = 0; expire = -1.0f;
+        }
+    };
+    ensureExpire(m_player,  m_p1SpecialExpireTime, m_p1SpecialType);
+    ensureExpire(m_player2, m_p2SpecialExpireTime, m_p2SpecialType);
+
+    auto revertIfExpired = [&](Character& ch, float& expire, int& type){
+        if (type != 0 && m_gameTime >= expire) {
+            switch (type) {
+                case 1: ch.SetWerewolfMode(false); break;
+                case 2: ch.SetBatDemonMode(false); break;
+                case 3: ch.SetKitsuneMode(false);  break;
+                case 4: ch.SetOrcMode(false);      break;
+            }
+            type = 0; expire = -1.0f;
+        }
+    };
+    revertIfExpired(m_player,  m_p1SpecialExpireTime, m_p1SpecialType);
+    revertIfExpired(m_player2, m_p2SpecialExpireTime, m_p2SpecialType);
+}
+
 bool GSPlay_IsShowPlatformBoxes() {
     return GSPlay::IsShowPlatformBoxes();
 }
@@ -676,6 +714,7 @@ void GSPlay::Update(float deltaTime) {
     m_gameTime += deltaTime;
     
     SceneManager::GetInstance()->Update(deltaTime);
+    UpdateSpecialFormTimers();
     
     if (m_inputManager) {
         HandleItemPickup();
