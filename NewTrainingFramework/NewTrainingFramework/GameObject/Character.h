@@ -27,6 +27,12 @@ private:
     const float DAMAGE_PER_HIT = 10.0f;
     bool m_isDead;
     bool m_prevHardLandingActive = false;
+    
+    // Auto-heal system
+    float m_lastDamageTime = 0.0f;
+    float m_healStartDelay = 3.0f;
+    float m_healRate = 2.5f;
+    bool m_isHealing = false;
 
     // Stamina system
     float m_stamina;
@@ -34,7 +40,9 @@ private:
     bool m_prevRolling = false;
     bool m_prevJumpingForStamina = false;
     void UpdateStamina(float deltaTime);
+    void UpdateAutoHeal(float deltaTime);
     bool IsSpecialForm() const;
+    bool ShouldBlockInput() const;
 
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
@@ -169,7 +177,9 @@ public:
     // Health system
     float GetHealth() const { return m_health; }
     float GetMaxHealth() const { return MAX_HEALTH; }
-    bool IsDead() const { return m_isDead; }
+    bool IsDead() const { 
+        return m_isDead && m_movement && m_movement->IsDead(); 
+    }
     void TakeDamage(float damage, bool playSfx = true);
     void Heal(float amount);
     void ResetHealth();

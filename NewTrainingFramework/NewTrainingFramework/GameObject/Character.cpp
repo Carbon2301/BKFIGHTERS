@@ -249,11 +249,13 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
     
     if (m_movement && m_combat) {
 		bool lock = m_combat->IsKicking();
-		if (m_animation && m_animation->IsHardLandingActive()) {
+		
+		if (ShouldBlockInput()) {
 			lock = true;
 			SetGunMode(false);
 			SetGrenadeMode(false);
 		}
+		
 		if (m_animation && m_animation->IsGunMode()) lock = true;
 		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
 		if (m_animation && m_animation->IsOrcMeteorStrikeActive()) lock = true;
@@ -303,7 +305,7 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         if (punchDown) {
             m_animation->TriggerBatDemonSlash();
         }
-    } else if (!m_movement->IsInputLocked() && !IsGrenadeMode() && punchDown) {
+    } else if (!m_movement->IsInputLocked() && !IsGrenadeMode() && !ShouldBlockInput() && punchDown) {
         if (m_suppressNextPunch) {
             m_suppressNextPunch = false;
         } else {
@@ -321,23 +323,28 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
         }
     }
     
-    if (!(m_animation && (m_animation->IsBatDemon() || m_animation->IsKitsune())) && !m_movement->IsInputLocked() && !IsGrenadeMode() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
+    if (!(m_animation && (m_animation->IsBatDemon() || m_animation->IsKitsune())) && !m_movement->IsInputLocked() && !IsGrenadeMode() && !ShouldBlockInput() && inputManager->IsKeyJustPressed(inputConfig.kickKey)) {
         if (!m_movement->IsJumping()) {
         HandleKick();
         }
     }
 
-    if (keyStates[inputConfig.sitKey]) {
+    if (!ShouldBlockInput() && keyStates[inputConfig.sitKey]) {
         if (m_combat && (m_combat->IsKicking() || m_combat->IsInCombo() || m_combat->IsInAxeCombo())) {
             m_combat->CancelAllCombos();
         }
     }
     
-    if (inputManager->IsKeyJustPressed(inputConfig.dieKey)) {
+    if (!ShouldBlockInput() && inputManager->IsKeyJustPressed(inputConfig.dieKey)) {
         HandleDie();
     }
 	if (m_movement && m_combat) {
 		bool lock = m_combat->IsKicking();
+		
+		if (ShouldBlockInput()) {
+			lock = true;
+		}
+		
 		if (m_animation && m_animation->IsGunMode()) lock = true;
 		if (m_animation && m_animation->IsGrenadeMode()) lock = true;
 		if (m_animation && m_animation->IsOrcMeteorStrikeActive()) lock = true;
@@ -380,6 +387,7 @@ void Character::Update(float deltaTime) {
 	}
 
     UpdateStamina(deltaTime);
+    UpdateAutoHeal(deltaTime);
 
     if (m_movement) {
         bool allowRun = true;
@@ -730,6 +738,10 @@ void Character::TakeDamage(float damage, bool playSfx) {
     if (m_health < 0.0f) {
         m_health = 0.0f;
     }
+    
+    m_lastDamageTime = 0.0f;
+    m_isHealing = false;
+    
     if (playSfx) {
         SoundManager::Instance().PlaySFXByID(6, 0);
     }
@@ -751,10 +763,27 @@ void Character::Heal(float amount) {
 void Character::ResetHealth() {
     m_health = MAX_HEALTH;
     m_isDead = false;
+    
+    m_lastDamageTime = 0.0f;
+    m_isHealing = false;
 } 
 
 bool Character::IsSpecialForm() const {
     return (IsWerewolf() || IsBatDemon() || IsKitsune() || IsOrc());
+}
+
+bool Character::ShouldBlockInput() const {
+    if (m_isDead) return true;
+    if (m_movement && m_movement->IsDying()) return true;
+    if (m_animation && m_animation->IsHardLandingActive()) return true;
+    
+    if (m_animation) {
+        int currentAnim = m_animation->GetCurrentAnimation();
+        if (currentAnim == 8 || currentAnim == 9) { // GetHit1, GetHit2
+            return true;
+        }
+    }
+    return false;
 }
 
 void Character::UpdateStamina(float deltaTime) {
@@ -791,6 +820,31 @@ void Character::UpdateStamina(float deltaTime) {
 
     if (m_stamina < 0.0f) m_stamina = 0.0f;
     if (m_stamina > MAX_STAMINA) m_stamina = MAX_STAMINA;
+}
+
+void Character::UpdateAutoHeal(float deltaTime) {
+    if (m_isDead || IsSpecialForm()) {
+        return;
+    }
+    
+    float timeSinceLastDamage = m_lastDamageTime;
+    if (timeSinceLastDamage >= m_healStartDelay) {
+        if (!m_isHealing) {
+            m_isHealing = true;
+        }
+        
+        if (m_isHealing && m_health < MAX_HEALTH) {
+            m_health += m_healRate * deltaTime;
+            if (m_health > MAX_HEALTH) {
+                m_health = MAX_HEALTH;
+                m_isHealing = false;
+            }
+        }
+    } else {
+        m_isHealing = false;
+    }
+    
+    m_lastDamageTime += deltaTime;
 }
 
 Vector3 Character::GetGunTopWorldPosition() const {

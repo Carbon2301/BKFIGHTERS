@@ -8,6 +8,7 @@
 #include "../GameObject/EnergyOrbProjectile.h"
 #include "../../Utilities/Math.h"
 #include <vector>
+#include <unordered_map>
 
 class GSPlay : public GameStateBase {
 private:
@@ -72,9 +73,9 @@ private:
     std::vector<int> m_freeBazokaTrailSlots;
     int CreateOrAcquireBazokaTrailObject();
     const float BAZOKA_TRAIL_LIFETIME = 0.35f;
-    const float BAZOKA_TRAIL_SPAWN_INTERVAL = 0.002f;
-    const float BAZOKA_TRAIL_SCALE_X = 0.6f;
-    const float BAZOKA_TRAIL_SCALE_Y = 0.6f;
+    const float BAZOKA_TRAIL_SPAWN_INTERVAL = 0.001f;
+    const float BAZOKA_TRAIL_SCALE_X = 0.4f;
+    const float BAZOKA_TRAIL_SCALE_Y = 0.4f;
     const float BAZOKA_TRAIL_BACK_OFFSET = 0.01f;
     std::vector<std::shared_ptr<class Texture2D>> m_bazokaTrailTextures;
 
@@ -128,17 +129,20 @@ private:
          float frameTimer; float frameDuration;
          bool damagedP1 = false;
          bool damagedP2 = false;
+         float damageRadiusMul = 1.0f;
      };
      std::vector<Explosion> m_explosions;
      std::vector<std::unique_ptr<Object>> m_explosionObjs;
      std::vector<int> m_freeExplosionSlots;
      int m_explosionObjectId = 1501;
      int CreateOrAcquireExplosionObjectFromProto(int protoObjectId);
-     void SpawnExplosionAt(float x, float y);
+     void SpawnExplosionAt(float x, float y, float radiusMul = EXPLOSION_DAMAGE_RADIUS_MUL);
      void UpdateExplosions(float dt);
      void DrawExplosions(class Camera* cam);
      void SetSpriteUV(Object* obj, int cols, int rows, int frameIndex);
-     static constexpr float EXPLOSION_FRAME_DURATION = 0.05f; // seconds per frame
+     static constexpr float EXPLOSION_FRAME_DURATION = 0.05f;
+     static constexpr float EXPLOSION_DAMAGE_RADIUS_MUL = 1.8f;
+     static constexpr float BAZOKA_EXPLOSION_RADIUS_MUL = 1.8f;
      void ApplyExplosionDamageAt(float x, float y, float halfW, float halfH, Explosion* e = nullptr);
 
     std::unique_ptr<WallCollision> m_wallCollision;
@@ -381,5 +385,47 @@ private:
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };
     std::vector<ItemLife> m_itemLives;
+
+    // Random item
+    struct ItemTemplate { int modelId; std::vector<int> textureIds; int shaderId; Vector3 scale; };
+    struct SpawnSlot { Vector3 pos; int currentId = -1; int typeId = -1; float lifeTimer = 0.0f; float respawnTimer = 0.0f; float respawnDelay = 1.0f; bool active = false; };
+    std::unordered_map<int, ItemTemplate> m_itemTemplates;
+    std::vector<int> m_candidateItemIds;
+    std::vector<SpawnSlot> m_spawnSlots;
+    float m_itemBlinkTimer = 0.0f;
+    std::unordered_map<int,int> m_objectIdToSlot;
+    void InitializeRandomItemSpawns();
+    void UpdateRandomItemSpawns(float deltaTime);
+    bool SpawnItemIntoSlot(int slotIndex, int typeId);
+    int  ChooseRandomAvailableItemId();
+    void MarkSlotPickedByObjectId(int objectId);
+
+    // Character respawn system
+    struct RespawnSlot { Vector3 pos; bool occupied = false; };
+    std::vector<RespawnSlot> m_respawnSlots;
+    bool m_p1Respawned = false;
+    bool m_p2Respawned = false;
+    
+    // Respawn invincibility system
+    bool m_p1Invincible = false;
+    bool m_p2Invincible = false;
+    float m_p1InvincibilityTimer = 0.0f;
+    float m_p2InvincibilityTimer = 0.0f;
+    const float RESPAWN_INVINCIBILITY_DURATION = 3.0f;
+    const float RESPAWN_BLINK_INTERVAL = 0.15f;
+    
+    bool m_gameStartBlinkActive = false;
+    float m_gameStartBlinkTimer = 0.0f;
+    const float GAME_START_BLINK_DURATION = 3.0f;
+    const float GAME_START_BLINK_INTERVAL = 0.15f;
+    
+    void InitializeRespawnSlots();
+    void UpdateCharacterRespawn(float deltaTime);
+    void RespawnCharacter(Character& character);
+    void ResetCharacterToInitialState(Character& character, bool isPlayer1);
+    int ChooseRandomRespawnPosition();
+    void UpdateRespawnInvincibility(float deltaTime);
+    void UpdateGameStartBlink(float deltaTime);
+    bool IsCharacterInvincible(const Character& character) const;
 }; 
 

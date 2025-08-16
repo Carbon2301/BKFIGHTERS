@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <random>
 #include "GSPlay.h"
 #include "GameStateMachine.h"
 #include "../Core/Globals.h"
@@ -6,6 +7,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <random>
 #include "../GameObject/Object.h"
 #include "../GameObject/Texture2D.h"
 #include "../GameObject/Camera.h"
@@ -74,6 +76,187 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
     if (auto mv = character.GetMovement()) mv->SetInputLocked(false);
 }
 
+//Random Item Spawns
+void GSPlay::InitializeRandomItemSpawns() {
+    SceneManager* scene = SceneManager::GetInstance();
+
+    m_candidateItemIds = { 1200,1201,1202,1203,1205,1206,1207,
+                           AXE_OBJECT_ID, SWORD_OBJECT_ID, PIPE_OBJECT_ID,
+                           1502, 1510,
+                           1506,1507,1508,1509 };
+
+    auto cacheTemplate = [&](int id){
+        if (Object* o = scene->GetObject(id)) {
+            ItemTemplate t{};
+            t.modelId = o->GetModelId();
+            t.textureIds = o->GetTextureIds();
+            t.shaderId = o->GetShaderId();
+            t.scale = Vector3();
+            t.scale = o->GetScale();
+            m_itemTemplates[id] = std::move(t);
+        }
+    };
+    for (int id : m_candidateItemIds) cacheTemplate(id);
+
+    const Vector3 kPositions[11] = {
+        Vector3(-3.22f,  1.47f, 0.0f),
+        Vector3(-3.60f, -0.76f, 0.0f),
+        Vector3(-2.96f, -1.22f, 0.0f),
+        Vector3(-1.80f, -1.375f, 0.0f),
+        Vector3(-0.90f, -1.375f, 0.0f),
+        Vector3(-0.45f, -0.70f, 0.0f),
+        Vector3( 0.05f, -0.47f, 0.0f),
+        Vector3(-0.15f, -1.375f, 0.0f),
+        Vector3( 2.00f, -1.3f, 0.0f),
+        Vector3( 2.50f, -0.44f,0.0f),
+        Vector3( 2.95f,  0.345f, 0.0f)
+    };
+    m_spawnSlots.clear();
+    m_spawnSlots.resize(11);
+    for (int i = 0; i < 11; ++i) {
+        m_spawnSlots[i].pos = kPositions[i];
+        m_spawnSlots[i].currentId = -1;
+        m_spawnSlots[i].lifeTimer = 0.0f;
+        m_spawnSlots[i].respawnTimer = 0.0f;
+        m_spawnSlots[i].respawnDelay = 1.0f;
+        m_spawnSlots[i].active = false;
+    }
+    m_objectIdToSlot.clear();
+
+    for (int id : m_candidateItemIds) {
+        if (scene->GetObject(id)) {
+            scene->RemoveObject(id);
+        }
+    }
+
+    for (int i = 0; i < (int)m_spawnSlots.size(); ++i) {
+        int itemId = ChooseRandomAvailableItemId();
+        if (!SpawnItemIntoSlot(i, itemId)) {
+            for (int id : m_candidateItemIds) {
+                if (SpawnItemIntoSlot(i, id)) break;
+            }
+        }
+    }
+}
+
+int GSPlay::ChooseRandomAvailableItemId() {
+    if (m_candidateItemIds.empty()) return -1;
+    struct Candidate { int id; int weight; };
+    std::vector<Candidate> pool;
+    pool.reserve(m_candidateItemIds.size());
+    auto isActiveId = [&](int id){
+        for (const auto& s : m_spawnSlots) {
+            if (s.active && s.currentId == id) return true;
+        }
+        return false;
+    };
+    for (int id : m_candidateItemIds) {
+        if (m_itemTemplates.find(id) == m_itemTemplates.end()) continue;
+        if (isActiveId(id)) continue;
+        bool isSpecial = (id == 1506 || id == 1507 || id == 1508 || id == 1509);
+        int weight = isSpecial ? 1 : 8;
+        pool.push_back({id, weight});
+    }
+    if (pool.empty()) return -1;
+    int total = 0;
+    for (const auto& c : pool) total += c.weight;
+    static std::mt19937 rng{ std::random_device{}() };
+    std::uniform_int_distribution<int> dist(0, total - 1);
+    int r = dist(rng);
+    for (const auto& c : pool) {
+        if (r < c.weight) return c.id;
+        r -= c.weight;
+    }
+    return pool.back().id;
+}
+
+bool GSPlay::SpawnItemIntoSlot(int slotIndex, int itemId) {
+    if (slotIndex < 0 || slotIndex >= (int)m_spawnSlots.size()) return false;
+    SceneManager* scene = SceneManager::GetInstance();
+    auto it = m_itemTemplates.find(itemId);
+    if (it == m_itemTemplates.end()) return false;
+    int objectId = itemId * 100 + slotIndex;
+    if (Object* existing = scene->GetObject(objectId)) { scene->RemoveObject(objectId); }
+    Object* obj = scene->CreateObject(objectId);
+    if (!obj) return false;
+
+    const ItemTemplate& t = it->second;
+    obj->SetModel(t.modelId);
+    for (int i = 0; i < (int)t.textureIds.size(); ++i) obj->SetTexture(t.textureIds[i], i);
+    obj->SetShader(1);
+    obj->SetScale(t.scale);
+    obj->SetPosition(m_spawnSlots[slotIndex].pos);
+    obj->SetVisible(true);
+
+    m_spawnSlots[slotIndex].currentId = objectId;
+    m_spawnSlots[slotIndex].typeId = itemId;
+    m_spawnSlots[slotIndex].lifeTimer = 0.0f;
+    m_spawnSlots[slotIndex].respawnTimer = 0.0f;
+    m_spawnSlots[slotIndex].respawnDelay = 1.0f;
+    m_spawnSlots[slotIndex].active = true;
+    m_objectIdToSlot[objectId] = slotIndex;
+    return true;
+}
+
+void GSPlay::MarkSlotPickedByObjectId(int itemId) {
+    auto it = m_objectIdToSlot.find(itemId);
+    if (it == m_objectIdToSlot.end()) return;
+    int slotIndex = it->second;
+    if (slotIndex >= 0 && slotIndex < (int)m_spawnSlots.size()) {
+        m_spawnSlots[slotIndex].active = false;
+        m_spawnSlots[slotIndex].currentId = -1;
+        m_spawnSlots[slotIndex].typeId = -1;
+        m_spawnSlots[slotIndex].lifeTimer = 0.0f;
+        m_spawnSlots[slotIndex].respawnTimer = 0.0f;
+        m_spawnSlots[slotIndex].respawnDelay = 10.0f;
+    }
+}
+
+void GSPlay::UpdateRandomItemSpawns(float deltaTime) {
+    SceneManager* scene = SceneManager::GetInstance();
+    const float LIFETIME = 20.0f;
+    const float BLINK_START = 12.0f;
+    const float RESPAWN_DELAY = 1.0f;
+    m_itemBlinkTimer += deltaTime;
+    bool blinkVisible = fmodf(m_itemBlinkTimer, 0.3f) < 0.15f;
+
+    for (int i = 0; i < (int)m_spawnSlots.size(); ++i) {
+        SpawnSlot& slot = m_spawnSlots[i];
+        if (slot.active) {
+            Object* obj = scene->GetObject(slot.currentId);
+            if (!obj) {
+                slot.active = false;
+                slot.currentId = -1;
+                slot.respawnTimer = 0.0f;
+            } else {
+                slot.lifeTimer += deltaTime;
+                if (slot.lifeTimer >= BLINK_START) {
+                    obj->SetVisible(blinkVisible);
+                } else {
+                    obj->SetVisible(true);
+                }
+                if (slot.lifeTimer >= LIFETIME) {
+                    scene->RemoveObject(slot.currentId);
+                    slot.active = false;
+                    slot.currentId = -1;
+                    slot.respawnTimer = 0.0f;
+                    slot.respawnDelay = 1.0f;
+                }
+            }
+        } else {
+            slot.respawnTimer += deltaTime;
+            if (slot.respawnTimer >= slot.respawnDelay) {
+                int itemId = ChooseRandomAvailableItemId();
+                if (!SpawnItemIntoSlot(i, itemId)) {
+                    for (int id : m_candidateItemIds) {
+                        if (SpawnItemIntoSlot(i, id)) break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 int GSPlay::GetSpecialType(const Character& ch) const {
     if (ch.IsWerewolf()) return 1;
     if (ch.IsBatDemon()) return 2;
@@ -140,7 +323,7 @@ bool GSPlay_IsShowPlatformBoxes() {
 }
 
 GSPlay::GSPlay() 
-    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f), m_cloudSpeed(0.5f) {
+    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f), m_cloudSpeed(0.5f), m_p1Respawned(false), m_p2Respawned(false) {
 }
 
 GSPlay::~GSPlay() {
@@ -341,24 +524,11 @@ void GSPlay::Init() {
     m_isSwordAvailable = (sceneManager->GetObject(SWORD_OBJECT_ID) != nullptr);
     m_isPipeAvailable  = (sceneManager->GetObject(PIPE_OBJECT_ID)  != nullptr);
 
-    // Apply glint shader to world weapons (IDs 1100/1101/1102)
-    auto applyGlint = [&](int objId){ if (Object* o = sceneManager->GetObject(objId)) { o->SetShader(1); } };
-    applyGlint(AXE_OBJECT_ID);
-    applyGlint(SWORD_OBJECT_ID);
-    applyGlint(PIPE_OBJECT_ID);
-    int glintPickupIds[] = {1200,1201,1202,1203,1205,1206,1207,1502};
-    for (int gid : glintPickupIds) {
-        applyGlint(gid);
-    }
-
-    // Initialize lifetime tracking for item objects
-    m_itemLives.clear();
-    auto tryAdd = [&](int id){ if (sceneManager->GetObject(id)) m_itemLives.push_back({id, 0.0f}); };
-    tryAdd(AXE_OBJECT_ID);
-    tryAdd(SWORD_OBJECT_ID);
-    tryAdd(PIPE_OBJECT_ID);
-    int pickupIds[] = {1200,1201,1202,1203,1205,1206,1207,1502};
-    for (int pid : pickupIds) { tryAdd(pid); }
+    InitializeRandomItemSpawns();
+    InitializeRespawnSlots();
+    
+    m_gameStartBlinkActive = true;
+    m_gameStartBlinkTimer = 0.0f;
 
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
@@ -747,6 +917,10 @@ void GSPlay::Update(float deltaTime) {
     
     SceneManager::GetInstance()->Update(deltaTime);
     UpdateSpecialFormTimers();
+    UpdateRandomItemSpawns(deltaTime);
+    UpdateCharacterRespawn(deltaTime);
+    UpdateRespawnInvincibility(deltaTime);
+    UpdateGameStartBlink(deltaTime);
     
     if (m_inputManager) {
         HandleItemPickup();
@@ -781,6 +955,10 @@ void GSPlay::Update(float deltaTime) {
         bool overlapX = (r >= tl) && (l <= tr);
         bool overlapY = (t >= tb) && (b <= tt);
         if (overlapX && overlapY) {
+            if (IsCharacterInvincible(target)) {
+                return;
+            }
+            
             float prev = target.GetHealth();
             target.TakeDamage(100.0f);
             target.CancelAllCombos();
@@ -862,27 +1040,31 @@ void GSPlay::Update(float deltaTime) {
     UpdateHudAmmoAnim(deltaTime);
     UpdateHudBombDigits();
     
-    if (m_player.CheckHitboxCollision(m_player2)) {
-        if (m_player.IsWerewolf() && m_player.GetAnimation() && (((m_player.GetAnimation()->GetCurrentAnimation() == 1) && m_player.IsAnimationPlaying()) || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
-            m_player2.TakeDamage(100.0f);
-            m_player2.TriggerGetHit(m_player);
-        } else if (m_player.IsWerewolf() && m_player.GetAnimation() && ((m_player.GetAnimation()->GetCurrentAnimation() == 3 && m_player.IsAnimationPlaying()))) {
-            m_player2.TakeDamage(100.0f);
-            m_player2.TriggerGetHit(m_player);
-        } else {
-            m_player2.TriggerGetHit(m_player);
+            if (m_player.CheckHitboxCollision(m_player2)) {
+            if (!IsCharacterInvincible(m_player2)) {
+                if (m_player.IsWerewolf() && m_player.GetAnimation() && (((m_player.GetAnimation()->GetCurrentAnimation() == 1) && m_player.IsAnimationPlaying()) || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+                    m_player2.TakeDamage(100.0f);
+                    m_player2.TriggerGetHit(m_player);
+                } else if (m_player.IsWerewolf() && m_player.GetAnimation() && ((m_player.GetAnimation()->GetCurrentAnimation() == 3 && m_player.IsAnimationPlaying()))) {
+                    m_player2.TakeDamage(100.0f);
+                    m_player2.TriggerGetHit(m_player);
+                } else {
+                    m_player2.TriggerGetHit(m_player);
+                }
+            }
         }
-    }
     
     if (m_player2.CheckHitboxCollision(m_player)) {
-        if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (((m_player2.GetAnimation()->GetCurrentAnimation() == 1) && m_player2.IsAnimationPlaying()) || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
-            m_player.TakeDamage(100.0f);
-            m_player.TriggerGetHit(m_player2);
-        } else if (m_player2.IsWerewolf() && m_player2.GetAnimation() && ((m_player2.GetAnimation()->GetCurrentAnimation() == 3 && m_player2.IsAnimationPlaying()))) {
-            m_player.TakeDamage(100.0f);
-            m_player.TriggerGetHit(m_player2);
-        } else {
-            m_player.TriggerGetHit(m_player2);
+        if (!IsCharacterInvincible(m_player)) {
+            if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (((m_player2.GetAnimation()->GetCurrentAnimation() == 1) && m_player2.IsAnimationPlaying()) || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+                m_player.TakeDamage(100.0f);
+                m_player.TriggerGetHit(m_player2);
+            } else if (m_player2.IsWerewolf() && m_player2.GetAnimation() && ((m_player2.GetAnimation()->GetCurrentAnimation() == 3 && m_player2.IsAnimationPlaying()))) {
+                m_player.TakeDamage(100.0f);
+                m_player.TriggerGetHit(m_player2);
+            } else {
+                m_player.TriggerGetHit(m_player2);
+            }
         }
     }
     
@@ -909,30 +1091,6 @@ void GSPlay::Update(float deltaTime) {
     
     // Update fan rotation
     UpdateFanRotation(deltaTime);
-
-    {
-        SceneManager* scene = SceneManager::GetInstance();
-        const float LIFETIME = 20.0f;
-        const float BLINK_START = 12.0f;
-        static float blinkTimer = 0.0f;
-        blinkTimer += deltaTime;
-        bool blinkVisible = fmodf(blinkTimer, 0.3f) < 0.15f; // toggle every 0.15s
-
-        for (auto it = m_itemLives.begin(); it != m_itemLives.end(); ) {
-            it->timer += deltaTime;
-            Object* obj = scene->GetObject(it->id);
-            if (!obj) { it = m_itemLives.erase(it); continue; }
-            if (it->timer >= LIFETIME) {
-                scene->RemoveObject(it->id);
-                it = m_itemLives.erase(it);
-                continue;
-            }
-            if (it->timer >= BLINK_START) {
-                obj->SetVisible(blinkVisible);
-            }
-            ++it;
-        }
-    }
 
     UpdateBloods(deltaTime);
 }
@@ -1171,6 +1329,10 @@ void GSPlay::UpdateFireRains(float deltaTime) {
                 bool overlapX = aRight >= bLeft && aLeft <= bRight;
                 bool overlapY = aTop >= bBottom && aBottom <= bTop;
                 if (overlapX && overlapY) {
+                    if (IsCharacterInvincible(target)) {
+                        return;
+                    }
+                    
                     float prev = target.GetHealth();
                     target.TakeDamage(100.0f);
                     target.CancelAllCombos();
@@ -1369,7 +1531,7 @@ void GSPlay::UpdateBombs(float dt) {
         }
 
         if (it->life <= 0.0f) {
-            SpawnExplosionAt(it->x, it->y);
+            SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
             if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                 cam->AddShake(0.04f, 0.4f, 18.0f);
             }
@@ -1411,9 +1573,9 @@ int GSPlay::CreateOrAcquireExplosionObjectFromProto(int protoObjectId) {
     return (int)m_explosionObjs.size() - 1;
 }
 
-void GSPlay::SpawnExplosionAt(float x, float y) {
+void GSPlay::SpawnExplosionAt(float x, float y, float radiusMul) {
     int idx = CreateOrAcquireExplosionObjectFromProto(m_explosionObjectId);
-    Explosion e{}; e.x = x; e.y = y; e.objIdx = idx; e.cols = 11; e.rows = 1; e.frameIndex = 0; e.frameCount = 11; e.frameTimer = 0.0f; e.frameDuration = EXPLOSION_FRAME_DURATION;
+    Explosion e{}; e.x = x; e.y = y; e.objIdx = idx; e.cols = 11; e.rows = 1; e.frameIndex = 0; e.frameCount = 11; e.frameTimer = 0.0f; e.frameDuration = EXPLOSION_FRAME_DURATION; e.damageRadiusMul = radiusMul;
     if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
         m_explosionObjs[idx]->SetPosition(x, y, 0.0f);
         SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, 0);
@@ -1429,8 +1591,9 @@ void GSPlay::UpdateExplosions(float dt) {
             float halfW = 0.15f, halfH = 0.15f;
             if (e.objIdx >= 0 && e.objIdx < (int)m_explosionObjs.size() && m_explosionObjs[e.objIdx]) {
                 const Vector3& sc = m_explosionObjs[e.objIdx]->GetScale();
-                halfW = fabsf(sc.x) * 0.5f;
-                halfH = fabsf(sc.y) * 0.5f;
+                float mul = (e.damageRadiusMul > 0.0f) ? e.damageRadiusMul : EXPLOSION_DAMAGE_RADIUS_MUL;
+                halfW = fabsf(sc.x) * 0.5f * mul;
+                halfH = fabsf(sc.y) * 0.5f * mul;
             }
             auto applyDamage = [&](Character& target){
                 Vector3 pos = target.GetPosition();
@@ -1450,6 +1613,11 @@ void GSPlay::UpdateExplosions(float dt) {
                 if (ratio < 0.0f) ratio = 0.0f; if (ratio > 1.0f) ratio = 1.0f;
                 float damage = 100.0f * ratio;
                 if (damage <= 0.0f) return;
+                
+                if (IsCharacterInvincible(target)) {
+                    return;
+                }
+                
                 float prev = target.GetHealth();
                 target.TakeDamage(damage);
                 target.CancelAllCombos();
@@ -2095,14 +2263,8 @@ void GSPlay::SpawnBulletFromCharacter(const Character& ch) {
                         vLocalForward.x * sinA + vLocalForward.y * cosA,
                         0.0f);
     Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
-    {
-        float len = dir.Length();
-        if (len > 1e-6f) {
-            dir = dir / len;
-        } else {
-            dir = Vector3(faceSign, 0.0f, 0.0f);
-        }
-    }
+    float len = dir.Length();
+    if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
 
     int slot = CreateOrAcquireBulletObject();
     bool isP1 = (&ch == &m_player);
@@ -2261,7 +2423,7 @@ void GSPlay::UpdateBullets(float dt) {
             Vector3 pos(it->x, it->y, 0.0f);
             if (m_wallCollision->CheckWallCollision(pos, BULLET_COLLISION_WIDTH, BULLET_COLLISION_HEIGHT, 0.0f, 0.0f)) {
                 if (it->isBazoka) {
-                    SpawnExplosionAt(it->x, it->y);
+                    SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
                     }
@@ -2292,6 +2454,10 @@ void GSPlay::UpdateBullets(float dt) {
             float bTop = it->y + bHalfH;
 
             if (aabbOverlap(bLeft, bRight, bBottom, bTop, tLeft, tRight, tBottom, tTop)) {
+                if (IsCharacterInvincible(*target)) {
+                    removeBullet(it); continue;
+                }
+                
                 float prev = target->GetHealth();
                 float dmg = it->damage > 0.0f ? it->damage : 10.0f;
                 target->TakeDamage(dmg);
@@ -2304,7 +2470,7 @@ void GSPlay::UpdateBullets(float dt) {
                 }
                 SpawnBloodAt(it->x, it->y, it->angleRad);
                 if (it->isBazoka) {
-                    SpawnExplosionAt(it->x, it->y);
+                    SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
                     }
@@ -3063,6 +3229,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = objRef->GetId();
             scene->RemoveObject(removedId);
+            MarkSlotPickedByObjectId(removedId);
             objRef = nullptr;
             availFlag = false;
             player.CancelAllCombos();
@@ -3087,9 +3254,9 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = gunObj->GetId();
             scene->RemoveObject(removedId);
+            MarkSlotPickedByObjectId(removedId);
             gunObj = nullptr;
             if (isPlayer1) m_player1GunTexId = texId; else m_player2GunTexId = texId;
-            // Also switch top overlay animations to this gun
             if (CharacterAnimation* a1 = player.GetAnimation()) {
                 a1->SetGunByTextureId(texId);
             }
@@ -3111,6 +3278,97 @@ void GSPlay::HandleItemPickup() {
         return false;
     };
 
+    auto tryPickupFromSlots = [&](Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
+        if (!sitHeld || !pickupJust) return false;
+        auto texIdForGun = [](int typeId)->int{
+            switch (typeId) {
+                case 1200: return 40; // Pistol
+                case 1201: return 41; // M4A1
+                case 1202: return 42; // Shotgun
+                case 1203: return 43; // Bazoka
+                case 1205: return 45; // Deagle
+                case 1206: return 46; // Sniper
+                case 1207: return 47; // Uzi
+                default: return -1;
+            }
+        };
+        for (auto& slot : m_spawnSlots) {
+            if (!slot.active) continue;
+            Object* obj = SceneManager::GetInstance()->GetObject(slot.currentId);
+            if (!obj) continue;
+            const Vector3& objPos = obj->GetPosition();
+            const Vector3& objScale = obj->GetScale();
+            Vector3 pPos = player.GetPosition();
+            float w = player.GetHurtboxWidth();
+            float h = player.GetHurtboxHeight();
+            pPos.x += player.GetHurtboxOffsetX();
+            pPos.y += player.GetHurtboxOffsetY();
+            if (!isOverlapping(pPos, w, h, objPos, objScale)) continue;
+
+            int typeId = slot.typeId;
+            if (typeId == AXE_OBJECT_ID || typeId == SWORD_OBJECT_ID || typeId == PIPE_OBJECT_ID) {
+                Character::WeaponType wt = Character::WeaponType::None;
+                if (typeId == AXE_OBJECT_ID) wt = Character::WeaponType::Axe;
+                else if (typeId == SWORD_OBJECT_ID) wt = Character::WeaponType::Sword;
+                else if (typeId == PIPE_OBJECT_ID) wt = Character::WeaponType::Pipe;
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                player.CancelAllCombos();
+                player.SetWeapon(wt);
+                player.SuppressNextPunch();
+                SoundManager::Instance().PlaySFXByID(1, 0);
+                return true;
+            }
+            int gunTex = texIdForGun(typeId);
+            if (gunTex != -1) {
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                if (CharacterAnimation* a1 = player.GetAnimation()) {
+                    a1->SetGunByTextureId(gunTex);
+                }
+                if (isPlayer1) m_player1GunTexId = gunTex; else m_player2GunTexId = gunTex;
+                int cap = AmmoCapacityFor(gunTex);
+                int& ammoRef = AmmoRefFor(gunTex, isPlayer1);
+                ammoRef = cap;
+                UpdateHudWeapons();
+                UpdateHudAmmoDigits();
+                RefreshHudAmmoInstant(isPlayer1);
+                player.SuppressNextPunch();
+                if (gunTex == 43 || gunTex == 44) { SoundManager::Instance().PlaySFXByID(23, 0); }
+                else { SoundManager::Instance().PlaySFXByID(11, 0); }
+                return true;
+            }
+            if (typeId == 1502) { // Bomb pickup
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
+                UpdateHudBombDigits();
+                SoundManager::Instance().PlaySFXByID(7, 0);
+                return true;
+            }
+            if (typeId == 1510) { // Heal
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                player.ResetHealth();
+                SoundManager::Instance().PlaySFXByID(17, 0);
+                return true;
+            }
+            if (typeId == 1506 || typeId == 1507 || typeId == 1508 || typeId == 1509) {
+                int texId = (typeId == 1506 ? 75 : typeId == 1507 ? 76 : typeId == 1508 ? 77 : 78);
+                SceneManager::GetInstance()->RemoveObject(slot.currentId);
+                MarkSlotPickedByObjectId(slot.currentId);
+                if (isPlayer1) m_p1SpecialItemTexId = texId; else m_p2SpecialItemTexId = texId;
+                UpdateHudSpecialIcon(isPlayer1);
+                SoundManager::Instance().PlaySFXByID(17, 0);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    if ( p1CanPickup && tryPickupFromSlots(m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p2CanPickup && tryPickupFromSlots(m_player2, p2Sit, p2PickupJust, false) ) { return; }
+
     // Try pick up bomb (Player 1)
     auto tryPickupBomb = [&](Object*& bombObj, Character& player, bool sitHeld, bool pickupJust, bool isPlayer1){
         if (!sitHeld || !pickupJust || !bombObj) return false;
@@ -3124,6 +3382,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = bombObj->GetId();
             scene->RemoveObject(removedId);
+            MarkSlotPickedByObjectId(removedId);
             bombObj = nullptr;
             if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
             UpdateHudBombDigits();
@@ -3146,6 +3405,7 @@ void GSPlay::HandleItemPickup() {
         if (isOverlapping(pPos, w, h, objPos, objScale)) {
             int removedId = healObj->GetId();
             scene->RemoveObject(removedId);
+            MarkSlotPickedByObjectId(removedId);
             healObj = nullptr;
             player.ResetHealth();
             std::cout << "Picked up heal box ID " << removedId << " -> health restored to max\n";
@@ -3412,8 +3672,10 @@ void GSPlay::CheckLightningDamage() {
             bool collisionY1 = lightning.hitboxTop >= playerHurtboxBottom && lightning.hitboxBottom <= playerHurtboxTop;
             
             if (collisionX1 && collisionY1) {
-                m_player.TakeDamage(100);
-                lightning.hasDealtDamage = true;
+                if (!IsCharacterInvincible(m_player)) {
+                    m_player.TakeDamage(100);
+                    lightning.hasDealtDamage = true;
+                }
             }
             
             Vector3 player2Pos = m_player2.GetPosition();
@@ -3428,9 +3690,247 @@ void GSPlay::CheckLightningDamage() {
             bool collisionY2 = lightning.hitboxTop >= player2HurtboxBottom && lightning.hitboxBottom <= player2HurtboxTop;
             
             if (collisionX2 && collisionY2) {
-                m_player2.TakeDamage(100);
-                lightning.hasDealtDamage = true;
+                if (!IsCharacterInvincible(m_player2)) {
+                    m_player2.TakeDamage(100);
+                    lightning.hasDealtDamage = true;
+                }
             }
         }
     }
+}
+
+void GSPlay::InitializeRespawnSlots() {
+    const Vector3 kRespawnPositions[11] = {
+        Vector3(-3.5f,  1.55f, 0.0f),
+        Vector3(-3.25f, -1.1f, 0.0f),
+        Vector3(-2.6f, -0.25f, 0.0f),
+        Vector3(-2.3f, -1.2f, 0.0f),
+        Vector3(-1.5f, -1.31f, 0.0f),
+        Vector3(-0.35f, -0.22f, 0.0f),
+        Vector3( 0.2f, -0.84f, 0.0f),
+        Vector3( 1.25f, -1.2f, 0.0f),
+        Vector3( 1.73f, -0.36f, 0.0f),
+        Vector3( 2.4f, -1.2f, 0.0f),
+        Vector3( 3.2f, -0.36f, 0.0f)
+    };
+    
+    m_respawnSlots.clear();
+    m_respawnSlots.resize(11);
+    for (int i = 0; i < 11; ++i) {
+        m_respawnSlots[i].pos = kRespawnPositions[i];
+        m_respawnSlots[i].occupied = false;
+    }
+}
+
+void GSPlay::UpdateCharacterRespawn(float deltaTime) {
+    if (m_player.IsDead() && !m_p1Respawned) {
+        RespawnCharacter(m_player);
+        m_p1Respawned = true;
+    }
+    
+    if (m_player2.IsDead() && !m_p2Respawned) {
+        RespawnCharacter(m_player2);
+        m_p2Respawned = true;
+    }
+    
+    if (!m_player.IsDead()) {
+        m_p1Respawned = false;
+    }
+    if (!m_player2.IsDead()) {
+        m_p2Respawned = false;
+    }
+}
+
+void GSPlay::RespawnCharacter(Character& character) {
+    bool isPlayer1 = (&character == &m_player);
+    
+    int respawnIndex = ChooseRandomRespawnPosition();
+    if (respawnIndex >= 0 && respawnIndex < (int)m_respawnSlots.size()) {
+        const Vector3& respawnPos = m_respawnSlots[respawnIndex].pos;
+        
+        character.SetPosition(respawnPos.x, respawnPos.y);
+        ResetCharacterToInitialState(character, isPlayer1);
+        
+        if (isPlayer1) {
+            m_p1Invincible = true;
+            m_p1InvincibilityTimer = 0.0f;
+        } else {
+            m_p2Invincible = true;
+            m_p2InvincibilityTimer = 0.0f;
+        }
+        
+        std::cout << "Character respawned at position " << respawnIndex 
+                  << " (" << respawnPos.x << ", " << respawnPos.y << ")" << std::endl;
+    }
+}
+
+void GSPlay::ResetCharacterToInitialState(Character& character, bool isPlayer1) {
+    character.ResetHealth();
+    character.ResetStamina();
+    
+    character.SetWeapon(Character::WeaponType::None);
+    
+    character.SetGunMode(false);
+    character.SetGrenadeMode(false);
+    character.SetBatDemonMode(false);
+    character.SetWerewolfMode(false);
+    character.SetKitsuneMode(false);
+    character.SetOrcMode(false);
+    
+    if (CharacterMovement* movement = character.GetMovement()) {
+        movement->SetInputLocked(false);
+        movement->SetNoClipNoGravity(false);
+        movement->SetMoveSpeedMultiplier(1.0f);
+        movement->SetLadderDoubleTapEnabled(true);
+        movement->SetLadderEnabled(true);
+        
+        movement->ResetDieState();
+    }
+    
+    character.CancelAllCombos();
+    
+    if (isPlayer1) {
+        m_player1GunTexId = 40;
+        m_p1Ammo40 = 15; m_p1Ammo41 = 30; m_p1Ammo42 = 60; m_p1Ammo43 = 3;
+        m_p1Ammo45 = 12; m_p1Ammo46 = 6; m_p1Ammo47 = 30;
+        m_p1Bombs = 3;
+        m_p1SpecialItemTexId = -1;
+        m_p1SpecialExpireTime = -1.0f;
+        m_p1SpecialType = 0;
+        
+        if (CharacterAnimation* anim = character.GetAnimation()) {
+            anim->SetGunByTextureId(40);
+        }
+    } else {
+        m_player2GunTexId = 40;
+        m_p2Ammo40 = 15; m_p2Ammo41 = 30; m_p2Ammo42 = 60; m_p2Ammo43 = 3;
+        m_p2Ammo45 = 12; m_p2Ammo46 = 6; m_p2Ammo47 = 30;
+        m_p2Bombs = 3;
+        m_p2SpecialItemTexId = -1;
+        m_p2SpecialExpireTime = -1.0f;
+        m_p2SpecialType = 0;
+        
+        if (CharacterAnimation* anim = character.GetAnimation()) {
+            anim->SetGunByTextureId(40);
+        }
+    }
+    
+    UpdateHudWeapons();
+    UpdateHudAmmoDigits();
+    RefreshHudAmmoInstant(true);
+    RefreshHudAmmoInstant(false);
+    UpdateHudBombDigits();
+    UpdateHudSpecialIcon(true);
+    UpdateHudSpecialIcon(false);
+}
+
+int GSPlay::ChooseRandomRespawnPosition() {
+    if (m_respawnSlots.empty()) return -1;
+    
+    std::vector<int> availablePositions;
+    for (int i = 0; i < (int)m_respawnSlots.size(); ++i) {
+        if (!m_respawnSlots[i].occupied) {
+            availablePositions.push_back(i);
+        }
+    }
+    
+    if (availablePositions.empty()) {
+        for (int i = 0; i < (int)m_respawnSlots.size(); ++i) {
+            availablePositions.push_back(i);
+        }
+    }
+    
+    if (!availablePositions.empty()) {
+        static std::mt19937 rng{ std::random_device{}() };
+        std::uniform_int_distribution<int> dist(0, (int)availablePositions.size() - 1);
+        int randomIndex = dist(rng);
+        return availablePositions[randomIndex];
+    }
+    
+    return -1;
+}
+
+void GSPlay::UpdateRespawnInvincibility(float deltaTime) {
+    if (m_p1Invincible) {
+        m_p1InvincibilityTimer += deltaTime;
+        
+        bool shouldBeVisible = fmodf(m_p1InvincibilityTimer, RESPAWN_BLINK_INTERVAL * 2.0f) < RESPAWN_BLINK_INTERVAL;
+        if (CharacterAnimation* anim = m_player.GetAnimation()) {
+            if (Object* obj = anim->GetCharacterObject()) {
+                obj->SetVisible(shouldBeVisible);
+            }
+        }
+        
+        if (m_p1InvincibilityTimer >= RESPAWN_INVINCIBILITY_DURATION) {
+            m_p1Invincible = false;
+            m_p1InvincibilityTimer = 0.0f;
+            if (CharacterAnimation* anim = m_player.GetAnimation()) {
+                if (Object* obj = anim->GetCharacterObject()) {
+                    obj->SetVisible(true);
+                }
+            }
+        }
+    }
+    
+    if (m_p2Invincible) {
+        m_p2InvincibilityTimer += deltaTime;
+        
+        bool shouldBeVisible = fmodf(m_p2InvincibilityTimer, RESPAWN_BLINK_INTERVAL * 2.0f) < RESPAWN_BLINK_INTERVAL;
+        if (CharacterAnimation* anim = m_player2.GetAnimation()) {
+            if (Object* obj = anim->GetCharacterObject()) {
+                obj->SetVisible(shouldBeVisible);
+            }
+        }
+        
+        if (m_p2InvincibilityTimer >= RESPAWN_INVINCIBILITY_DURATION) {
+            m_p2Invincible = false;
+            m_p2InvincibilityTimer = 0.0f;
+            if (CharacterAnimation* anim = m_player2.GetAnimation()) {
+                if (Object* obj = anim->GetCharacterObject()) {
+                    obj->SetVisible(true);
+                }
+            }
+        }
+    }
+}
+
+void GSPlay::UpdateGameStartBlink(float deltaTime) {
+    if (m_gameStartBlinkActive) {
+        m_gameStartBlinkTimer += deltaTime;
+        
+        bool shouldBeVisible = fmodf(m_gameStartBlinkTimer, GAME_START_BLINK_INTERVAL * 2.0f) < GAME_START_BLINK_INTERVAL;
+        
+        if (CharacterAnimation* anim = m_player.GetAnimation()) {
+            if (Object* obj = anim->GetCharacterObject()) {
+                obj->SetVisible(shouldBeVisible);
+            }
+        }
+        
+        if (CharacterAnimation* anim = m_player2.GetAnimation()) {
+            if (Object* obj = anim->GetCharacterObject()) {
+                obj->SetVisible(shouldBeVisible);
+            }
+        }
+        
+        if (m_gameStartBlinkTimer >= GAME_START_BLINK_DURATION) {
+            m_gameStartBlinkActive = false;
+            m_gameStartBlinkTimer = 0.0f;
+            
+            if (CharacterAnimation* anim = m_player.GetAnimation()) {
+                if (Object* obj = anim->GetCharacterObject()) {
+                    obj->SetVisible(true);
+                }
+            }
+            if (CharacterAnimation* anim = m_player2.GetAnimation()) {
+                if (Object* obj = anim->GetCharacterObject()) {
+                    obj->SetVisible(true);
+                }
+            }
+        }
+    }
+}
+
+bool GSPlay::IsCharacterInvincible(const Character& character) const {
+    return (&character == &m_player && m_p1Invincible) || 
+           (&character == &m_player2 && m_p2Invincible);
 }

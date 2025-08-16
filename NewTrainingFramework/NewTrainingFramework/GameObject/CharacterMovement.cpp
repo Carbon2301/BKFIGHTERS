@@ -334,70 +334,23 @@ void CharacterMovement::TriggerDie(bool attackerFacingLeft) {
 }
 
 void CharacterMovement::HandleDie(float deltaTime) {
-    float timeScale = 1.0f;
-    if (m_dieTimer < DIE_SLOWMO_DURATION) {
-        timeScale = DIE_SLOWMO_SCALE;
-    }
-    float dt = deltaTime * timeScale;
-    m_dieTimer += dt;
+    m_dieTimer += deltaTime;
     
-    if (!m_knockdownComplete) {
-        m_knockdownTimer += dt;
-        
-        float knockdownProgress = m_knockdownTimer / 0.8f;
-        if (knockdownProgress > 1.0f) knockdownProgress = 1.0f;
-        float arcHeight = 0.15f * sin(knockdownProgress * 3.14159f);
-        
-        float backwardMovement = m_attackerFacingLeft ? -DIE_KNOCKBACK_SPEED * knockdownProgress : DIE_KNOCKBACK_SPEED * knockdownProgress;
-        
-        m_posY = m_dieBaseY + arcHeight;
-        m_posX += backwardMovement * dt;
-        
-        if (m_knockdownTimer >= 0.8f) {
-            m_knockdownComplete = true;
-            m_posY = m_dieBaseY;
-        }
-    } else if (m_knockdownComplete && !m_dieLanded) {
-        float prevY = m_posY;
-        m_dieVerticalVelocity -= GRAVITY * dt;
-        m_posY += m_dieVerticalVelocity * dt;
-
-        float newY = m_posY;
-        bool landedOnPlatform = CheckPlatformCollision(newY);
-        if (landedOnPlatform) {
-            m_posY = newY;
-            m_dieLanded = true;
-            m_dieVerticalVelocity = 0.0f;
-        } else if (m_posY <= m_groundY) {
-            m_posY = m_groundY;
-            m_dieLanded = true;
-            m_dieVerticalVelocity = 0.0f;
-        } else if (m_wallCollision) {
-            Vector3 currentPos(m_posX, prevY, 0.0f);
-            Vector3 newPos(m_posX, m_posY, 0.0f);
-            Vector3 resolvedPos = m_wallCollision->ResolveWallCollision(
-                currentPos,
-                newPos,
-                m_characterWidth,
-                m_characterHeight,
-                0.0f,
-                0.0f
-            );
-            if (resolvedPos.y > newPos.y && m_dieVerticalVelocity < 0.0f) {
-                m_posY = resolvedPos.y;
-                m_dieLanded = true;
-                m_dieVerticalVelocity = 0.0f;
-            } else {
-                m_posX = resolvedPos.x;
-                m_posY = resolvedPos.y;
-            }
-        }
-    } else if (m_knockdownComplete && m_dieLanded && m_dieTimer < 2.8f) {
-    } else if (m_dieTimer >= 2.8f && m_dieLanded) {
+    if (m_dieTimer >= 1.5f) {
         m_isDying = false;
-        m_isDead = false;
-        m_state = CharState::Idle;
+        m_isDead = true;
     }
+}
+
+void CharacterMovement::ResetDieState() {
+    m_isDying = false;
+    m_isDead = false;
+    m_dieTimer = 0.0f;
+    m_knockdownTimer = 0.0f;
+    m_knockdownComplete = false;
+    m_dieLanded = false;
+    m_dieVerticalVelocity = 0.0f;
+    m_state = CharState::Idle;
 }
 
 void CharacterMovement::HandleLanding(const bool* keyStates) {

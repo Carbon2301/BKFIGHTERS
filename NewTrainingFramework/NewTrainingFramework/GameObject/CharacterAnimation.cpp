@@ -871,17 +871,7 @@ void CharacterAnimation::HandleMovementAnimations(const bool* keyStates, Charact
     }
     
     if (movement->IsDying()) {
-        float dieTimer = movement->GetDieTimer();
-        
-        if (dieTimer < 0.8f) {
-            PlayAnimation(13, false);
-        }
-        else if (dieTimer < 2.8f) {
-            PlayAnimation(15, false);
-        }
-        else {
-            PlayAnimation(0, true);
-        }
+        PlayAnimation(15, false);
         return;
     }
     

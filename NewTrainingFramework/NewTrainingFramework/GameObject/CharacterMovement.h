@@ -188,6 +188,7 @@ public:
     
     void SetPosition(float x, float y);
     void TriggerDie(bool attackerFacingLeft = false);
+    void ResetDieState();
     Vector3 GetPosition() const { return Vector3(m_posX, m_posY, 0.0f); }
     float GetPosX() const { return m_posX; }
     float GetPosY() const { return m_posY; }
