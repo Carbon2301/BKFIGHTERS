@@ -150,6 +150,11 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         if (m_kitsuneEnergyOrbCooldownTimer < 0.0f) m_kitsuneEnergyOrbCooldownTimer = 0.0f;
     }
 
+    if (m_orcActionCooldownTimer > 0.0f) {
+        m_orcActionCooldownTimer -= deltaTime;
+        if (m_orcActionCooldownTimer < 0.0f) m_orcActionCooldownTimer = 0.0f;
+    }
+
     if (m_isWerewolf && movement) {
         if (movement->IsJumping()) {
             m_werewolfAirTimer += deltaTime;
@@ -1143,6 +1148,7 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
                 m_lastAnimation = 0;
             }
         }
+        m_batSlashCooldownTimer = 0.0f;
         m_orcMeteorStrikeActive = false;
     }
 }
@@ -1401,6 +1407,8 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
     m_werewolfComboActive = false;
     m_werewolfPounceActive = false;
     m_orcMeteorStrikeActive = false;
+    m_werewolfComboCooldownTimer = 0.0f;
+    m_werewolfPounceCooldownTimer = 0.0f;
     if (enabled) {
         // Disable gun/grenade overlays when werewolf
         m_gunMode = false;
@@ -1427,6 +1435,8 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
             TriggerWerewolfAppearEffectAt(pos.x, pos.y);
         }
     } else {
+        m_werewolfComboCooldownTimer = 0.0f;
+        m_werewolfPounceCooldownTimer = 0.0f;
         // Restore original player body texture and animations
         int bodyTexId = (m_objectId == 1000) ? 10 : 11;
         if (m_characterObject) {
@@ -1485,6 +1495,7 @@ void CharacterAnimation::SetKitsuneMode(bool enabled) {
         m_grenadeMode = false;
         m_isBatDemon = false;
         m_orcMeteorStrikeActive = false;
+        m_kitsuneEnergyOrbCooldownTimer = 0.0f;
         if (m_characterObject) {
             m_characterObject->SetTexture(62, 0);
         }
@@ -1501,12 +1512,12 @@ void CharacterAnimation::SetKitsuneMode(bool enabled) {
             m_animManager->Play(0, true);
             m_lastAnimation = 0;
         }
-        // Spawn Kitsune appear VFX at transform position
         if (m_characterObject) {
             const Vector3& pos = m_characterObject->GetPosition();
             TriggerKitsuneAppearEffectAt(pos.x, pos.y);
         }
     } else {
+        m_kitsuneEnergyOrbCooldownTimer = 0.0f;
         if (m_isWerewolf) {
             if (m_characterObject) {
                 m_characterObject->SetTexture(60, 0);
@@ -1611,6 +1622,7 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
         m_orcAppearActive = false;
         m_orcAppearAnim.reset();
         m_orcAppearObject.reset();
+        m_orcActionCooldownTimer = 0.0f;
         if (m_characterObject) {
             m_characterObject->SetTexture(63, 0);
         }
@@ -1636,6 +1648,7 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
         m_orcAppearActive = false;
         m_orcAppearAnim.reset();
         m_orcAppearObject.reset();
+        m_orcActionCooldownTimer = 0.0f;
         if (m_isWerewolf) {
             if (m_characterObject) {
                 m_characterObject->SetTexture(60, 0);
@@ -1770,20 +1783,24 @@ void CharacterAnimation::TriggerKitsuneEnergyOrb() {
 void CharacterAnimation::TriggerOrcMeteorStrike() {
     if (!m_isOrc) return;
     if (m_orcMeteorStrikeActive) return;
+    if (m_orcActionCooldownTimer > 0.0f) return;
     if (m_animManager) {
         m_animManager->Play(2, false);
         m_lastAnimation = 2;
         m_orcMeteorStrikeActive = true;
+        m_orcActionCooldownTimer = ORC_ACTION_COOLDOWN;
     }
 }
 
 void CharacterAnimation::TriggerOrcFlameBurst() {
     if (!m_isOrc) return;
     if (m_orcMeteorStrikeActive || m_orcFlameBurstActive) return;
+    if (m_orcActionCooldownTimer > 0.0f) return;
     if (m_animManager) {
         m_animManager->Play(3, false);
         m_lastAnimation = 3;
         m_orcFlameBurstActive = true;
+        m_orcActionCooldownTimer = ORC_ACTION_COOLDOWN;
     }
 
     if (!m_orcFireAnim) {

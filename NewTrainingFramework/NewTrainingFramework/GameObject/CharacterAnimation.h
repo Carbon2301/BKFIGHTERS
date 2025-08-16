@@ -86,14 +86,16 @@ private:
     bool m_isOrc = false;
     bool m_batSlashActive = false;
     float m_batSlashCooldownTimer = 0.0f;
-    static constexpr float BAT_SLASH_COOLDOWN = 0.5f;
+    static constexpr float BAT_SLASH_COOLDOWN = 10.0f;
     bool m_kitsuneEnergyOrbActive = false;
     float m_kitsuneEnergyOrbCooldownTimer = 0.0f;
-    static constexpr float KITSUNE_ENERGY_ORB_COOLDOWN = 0.5f;
+    static constexpr float KITSUNE_ENERGY_ORB_COOLDOWN = 10.0f;
     bool m_kitsuneEnergyOrbAnimationComplete = false;
     bool m_orcMeteorStrikeActive = false;
     bool m_orcFlameBurstActive = false;
     bool m_orcFireActive = false;
+    float m_orcActionCooldownTimer = 0.0f;
+    static constexpr float ORC_ACTION_COOLDOWN = 10.0f;
     std::shared_ptr<AnimationManager> m_orcFireAnim;
     std::unique_ptr<class Object> m_orcFireObject;
     bool m_orcAppearActive = false;
@@ -111,7 +113,7 @@ private:
     bool m_kitsuneAppearActive = false;
     std::shared_ptr<AnimationManager> m_kitsuneAppearAnim;
     std::unique_ptr<class Object> m_kitsuneAppearObject;
-    static constexpr float KITSUNE_APPEAR_Y_OFFSET = 0.05f;
+    static constexpr float KITSUNE_APPEAR_Y_OFFSET = 0.19f;
 
     bool m_batWindActive = false;
     std::shared_ptr<AnimationManager> m_batWindAnim;
@@ -128,12 +130,12 @@ private:
     static constexpr float WEREWOLF_AIR_DEBOUNCE = 0.06f;
     float m_werewolfPounceSpeed = 1.0f;
     float m_werewolfPounceCooldownTimer = 0.0f;
-    float m_werewolfPounceCooldown = 0.5f;
+    float m_werewolfPounceCooldown = 10.0f;
     float m_werewolfPounceHitWindowTimer = 0.0f;
     float m_werewolfPounceHitWindow = 0.12f;
     // Combo cooldown
     float m_werewolfComboCooldownTimer = 0.0f;
-    float m_werewolfComboCooldown = 0.5f;
+    float m_werewolfComboCooldown = 10.0f;
     float m_werewolfComboHitWindowTimer = 0.0f;
     float m_werewolfComboHitWindow = 0.15f;
 
