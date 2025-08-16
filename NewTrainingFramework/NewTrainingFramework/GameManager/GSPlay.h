@@ -8,6 +8,7 @@
 #include "../GameObject/EnergyOrbProjectile.h"
 #include "../../Utilities/Math.h"
 #include <vector>
+#include <unordered_map>
 
 class GSPlay : public GameStateBase {
 private:
@@ -381,5 +382,17 @@ private:
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };
     std::vector<ItemLife> m_itemLives;
+
+    // Random item
+    struct ItemTemplate { int modelId; std::vector<int> textureIds; int shaderId; Vector3 scale; };
+    struct SpawnSlot { Vector3 pos; int currentId = -1; float lifeTimer = 0.0f; float respawnTimer = 0.0f; bool active = false; };
+    std::unordered_map<int, ItemTemplate> m_itemTemplates;
+    std::vector<int> m_candidateItemIds;
+    std::vector<SpawnSlot> m_spawnSlots;
+    float m_itemBlinkTimer = 0.0f;
+    void InitializeRandomItemSpawns();
+    void UpdateRandomItemSpawns(float deltaTime);
+    bool SpawnItemIntoSlot(int slotIndex, int itemId);
+    int  ChooseRandomAvailableItemId();
 }; 
 

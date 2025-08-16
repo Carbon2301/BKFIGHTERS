@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <random>
 #include "../GameObject/Object.h"
 #include "../GameObject/Texture2D.h"
 #include "../GameObject/Camera.h"
@@ -72,6 +73,158 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
     }
 
     if (auto mv = character.GetMovement()) mv->SetInputLocked(false);
+}
+
+//Random Item Spawns
+void GSPlay::InitializeRandomItemSpawns() {
+    SceneManager* scene = SceneManager::GetInstance();
+
+    m_candidateItemIds = { 1200,1201,1202,1203,1205,1206,1207,
+                           AXE_OBJECT_ID, SWORD_OBJECT_ID, PIPE_OBJECT_ID,
+                           1502, 1510,
+                           1506,1507,1508,1509 };
+
+    auto cacheTemplate = [&](int id){
+        if (Object* o = scene->GetObject(id)) {
+            ItemTemplate t{};
+            t.modelId = o->GetModelId();
+            t.textureIds = o->GetTextureIds();
+            t.shaderId = o->GetShaderId();
+            t.scale = Vector3();
+            t.scale = o->GetScale();
+            m_itemTemplates[id] = std::move(t);
+        }
+    };
+    for (int id : m_candidateItemIds) cacheTemplate(id);
+
+    const Vector3 kPositions[11] = {
+        Vector3(-3.22f,  1.47f, 0.0f),
+        Vector3(-3.60f, -0.76f, 0.0f),
+        Vector3(-2.96f, -1.22f, 0.0f),
+        Vector3(-1.80f, -1.385f, 0.0f),
+        Vector3(-0.90f, -1.385f, 0.0f),
+        Vector3(-0.45f, -0.70f, 0.0f),
+        Vector3( 0.05f, -0.47f, 0.0f),
+        Vector3(-0.15f, -1.385f, 0.0f),
+        Vector3( 2.00f, -1.3f, 0.0f),
+        Vector3( 2.50f, -0.44f,0.0f),
+        Vector3( 2.95f,  0.355f, 0.0f)
+    };
+    m_spawnSlots.clear();
+    m_spawnSlots.resize(11);
+    for (int i = 0; i < 11; ++i) {
+        m_spawnSlots[i].pos = kPositions[i];
+        m_spawnSlots[i].currentId = -1;
+        m_spawnSlots[i].lifeTimer = 0.0f;
+        m_spawnSlots[i].respawnTimer = 0.0f;
+        m_spawnSlots[i].active = false;
+    }
+
+    for (int id : m_candidateItemIds) {
+        if (scene->GetObject(id)) {
+            scene->RemoveObject(id);
+        }
+    }
+
+    for (int i = 0; i < (int)m_spawnSlots.size(); ++i) {
+        int itemId = ChooseRandomAvailableItemId();
+        if (!SpawnItemIntoSlot(i, itemId)) {
+            for (int id : m_candidateItemIds) {
+                if (SpawnItemIntoSlot(i, id)) break;
+            }
+        }
+    }
+}
+
+int GSPlay::ChooseRandomAvailableItemId() {
+    if (m_candidateItemIds.empty()) return -1;
+    std::vector<int> pool;
+    pool.reserve(m_candidateItemIds.size());
+    for (int id : m_candidateItemIds) {
+        if (m_itemTemplates.find(id) == m_itemTemplates.end()) continue;
+        bool used = false;
+        for (const auto& s : m_spawnSlots) {
+            if (s.active && s.currentId == id) { used = true; break; }
+        }
+        if (!used) pool.push_back(id);
+    }
+    if (pool.empty()) {
+        pool = m_candidateItemIds;
+    }
+    static std::mt19937 rng{ std::random_device{}() };
+    std::uniform_int_distribution<int> dist(0, (int)pool.size() - 1);
+    return pool[dist(rng)];
+}
+
+bool GSPlay::SpawnItemIntoSlot(int slotIndex, int itemId) {
+    if (slotIndex < 0 || slotIndex >= (int)m_spawnSlots.size()) return false;
+    SceneManager* scene = SceneManager::GetInstance();
+    auto it = m_itemTemplates.find(itemId);
+    if (it == m_itemTemplates.end()) return false;
+
+    if (Object* existing = scene->GetObject(itemId)) {
+        scene->RemoveObject(itemId);
+    }
+    Object* obj = scene->CreateObject(itemId);
+    if (!obj) return false;
+
+    const ItemTemplate& t = it->second;
+    obj->SetModel(t.modelId);
+    for (int i = 0; i < (int)t.textureIds.size(); ++i) obj->SetTexture(t.textureIds[i], i);
+    obj->SetShader(t.shaderId);
+    obj->SetScale(t.scale);
+    obj->SetPosition(m_spawnSlots[slotIndex].pos);
+    obj->SetVisible(true);
+
+    m_spawnSlots[slotIndex].currentId = itemId;
+    m_spawnSlots[slotIndex].lifeTimer = 0.0f;
+    m_spawnSlots[slotIndex].respawnTimer = 0.0f;
+    m_spawnSlots[slotIndex].active = true;
+    return true;
+}
+
+void GSPlay::UpdateRandomItemSpawns(float deltaTime) {
+    SceneManager* scene = SceneManager::GetInstance();
+    const float LIFETIME = 20.0f;
+    const float BLINK_START = 12.0f;
+    const float RESPAWN_DELAY = 1.0f;
+    m_itemBlinkTimer += deltaTime;
+    bool blinkVisible = fmodf(m_itemBlinkTimer, 0.3f) < 0.15f;
+
+    for (int i = 0; i < (int)m_spawnSlots.size(); ++i) {
+        SpawnSlot& slot = m_spawnSlots[i];
+        if (slot.active) {
+            Object* obj = scene->GetObject(slot.currentId);
+            if (!obj) {
+                slot.active = false;
+                slot.currentId = -1;
+                slot.respawnTimer = 0.0f;
+            } else {
+                slot.lifeTimer += deltaTime;
+                if (slot.lifeTimer >= BLINK_START) {
+                    obj->SetVisible(blinkVisible);
+                } else {
+                    obj->SetVisible(true);
+                }
+                if (slot.lifeTimer >= LIFETIME) {
+                    scene->RemoveObject(slot.currentId);
+                    slot.active = false;
+                    slot.currentId = -1;
+                    slot.respawnTimer = 0.0f;
+                }
+            }
+        } else {
+            slot.respawnTimer += deltaTime;
+            if (slot.respawnTimer >= RESPAWN_DELAY) {
+                int itemId = ChooseRandomAvailableItemId();
+                if (!SpawnItemIntoSlot(i, itemId)) {
+                    for (int id : m_candidateItemIds) {
+                        if (SpawnItemIntoSlot(i, id)) break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 int GSPlay::GetSpecialType(const Character& ch) const {
@@ -341,24 +494,7 @@ void GSPlay::Init() {
     m_isSwordAvailable = (sceneManager->GetObject(SWORD_OBJECT_ID) != nullptr);
     m_isPipeAvailable  = (sceneManager->GetObject(PIPE_OBJECT_ID)  != nullptr);
 
-    // Apply glint shader to world weapons (IDs 1100/1101/1102)
-    auto applyGlint = [&](int objId){ if (Object* o = sceneManager->GetObject(objId)) { o->SetShader(1); } };
-    applyGlint(AXE_OBJECT_ID);
-    applyGlint(SWORD_OBJECT_ID);
-    applyGlint(PIPE_OBJECT_ID);
-    int glintPickupIds[] = {1200,1201,1202,1203,1205,1206,1207,1502};
-    for (int gid : glintPickupIds) {
-        applyGlint(gid);
-    }
-
-    // Initialize lifetime tracking for item objects
-    m_itemLives.clear();
-    auto tryAdd = [&](int id){ if (sceneManager->GetObject(id)) m_itemLives.push_back({id, 0.0f}); };
-    tryAdd(AXE_OBJECT_ID);
-    tryAdd(SWORD_OBJECT_ID);
-    tryAdd(PIPE_OBJECT_ID);
-    int pickupIds[] = {1200,1201,1202,1203,1205,1206,1207,1502};
-    for (int pid : pickupIds) { tryAdd(pid); }
+    InitializeRandomItemSpawns();
 
     // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
@@ -747,6 +883,7 @@ void GSPlay::Update(float deltaTime) {
     
     SceneManager::GetInstance()->Update(deltaTime);
     UpdateSpecialFormTimers();
+    UpdateRandomItemSpawns(deltaTime);
     
     if (m_inputManager) {
         HandleItemPickup();
@@ -909,30 +1046,6 @@ void GSPlay::Update(float deltaTime) {
     
     // Update fan rotation
     UpdateFanRotation(deltaTime);
-
-    {
-        SceneManager* scene = SceneManager::GetInstance();
-        const float LIFETIME = 20.0f;
-        const float BLINK_START = 12.0f;
-        static float blinkTimer = 0.0f;
-        blinkTimer += deltaTime;
-        bool blinkVisible = fmodf(blinkTimer, 0.3f) < 0.15f; // toggle every 0.15s
-
-        for (auto it = m_itemLives.begin(); it != m_itemLives.end(); ) {
-            it->timer += deltaTime;
-            Object* obj = scene->GetObject(it->id);
-            if (!obj) { it = m_itemLives.erase(it); continue; }
-            if (it->timer >= LIFETIME) {
-                scene->RemoveObject(it->id);
-                it = m_itemLives.erase(it);
-                continue;
-            }
-            if (it->timer >= BLINK_START) {
-                obj->SetVisible(blinkVisible);
-            }
-            ++it;
-        }
-    }
 
     UpdateBloods(deltaTime);
 }
