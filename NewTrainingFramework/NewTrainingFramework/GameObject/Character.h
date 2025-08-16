@@ -42,6 +42,7 @@ private:
     void UpdateStamina(float deltaTime);
     void UpdateAutoHeal(float deltaTime);
     bool IsSpecialForm() const;
+    bool ShouldBlockInput() const;
 
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
