@@ -97,6 +97,27 @@ void GSPlay::UpdateSpecialFormTimers() {
     ensureExpire(m_player,  m_p1SpecialExpireTime, m_p1SpecialType);
     ensureExpire(m_player2, m_p2SpecialExpireTime, m_p2SpecialType);
 
+    auto updateHudTime = [&](bool isP1){
+        int id = isP1 ? 936 : 937;
+        float expire = isP1 ? m_p1SpecialExpireTime : m_p2SpecialExpireTime;
+        int   type   = isP1 ? m_p1SpecialType      : m_p2SpecialType;
+        Vector3 base = isP1 ? m_hudSpecialTime1BaseScale : m_hudSpecialTime2BaseScale;
+        Object* bar = SceneManager::GetInstance()->GetObject(id);
+        if (!bar) return;
+        if (type == 0 || expire < 0.0f) {
+            bar->SetScale(0.0f, 0.0f, base.z);
+            return;
+        }
+        float remain = expire - m_gameTime;
+        if (remain < 0.0f) remain = 0.0f;
+        float t = remain / 10.0f; 
+        float smooth = 1.0f - (1.0f - t) * (1.0f - t);
+        float width = base.x * smooth;
+        bar->SetScale(width, base.y, base.z);
+    };
+    updateHudTime(true);
+    updateHudTime(false);
+
     auto revertIfExpired = [&](Character& ch, float& expire, int& type){
         if (type != 0 && m_gameTime >= expire) {
             switch (type) {
@@ -106,6 +127,8 @@ void GSPlay::UpdateSpecialFormTimers() {
                 case 4: ch.SetOrcMode(false);      break;
             }
             type = 0; expire = -1.0f;
+            if (&ch == &m_player) { m_p1SpecialItemTexId = -1; UpdateHudSpecialIcon(true); }
+            else { m_p2SpecialItemTexId = -1; UpdateHudSpecialIcon(false); }
         }
     };
     revertIfExpired(m_player,  m_p1SpecialExpireTime, m_p1SpecialType);
@@ -354,6 +377,15 @@ void GSPlay::Init() {
     if (Object* hudSpec2 = sceneManager->GetObject(935)) {
         m_hudSpecial2BaseScale = hudSpec2->GetScale();
         hudSpec2->SetScale(0.0f, 0.0f, m_hudSpecial2BaseScale.z);
+    }
+
+    if (Object* hudTime1 = sceneManager->GetObject(936)) {
+        m_hudSpecialTime1BaseScale = hudTime1->GetScale();
+        hudTime1->SetScale(0.0f, 0.0f, m_hudSpecialTime1BaseScale.z);
+    }
+    if (Object* hudTime2 = sceneManager->GetObject(937)) {
+        m_hudSpecialTime2BaseScale = hudTime2->GetScale();
+        hudTime2->SetScale(0.0f, 0.0f, m_hudSpecialTime2BaseScale.z);
     }
 
     if (Object* hudGun1 = sceneManager->GetObject(920)) {
@@ -1846,10 +1878,24 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     }
 
     if (bIsPressed && key == '4') {
-        ToggleSpecialForm_Internal(m_player, m_p1SpecialItemTexId);
+        if (!(m_player.IsWerewolf() || m_player.IsBatDemon() || m_player.IsKitsune() || m_player.IsOrc())) {
+            if (m_p1SpecialItemTexId >= 0) {
+                ToggleSpecialForm_Internal(m_player, m_p1SpecialItemTexId);
+                if (m_player.IsWerewolf() || m_player.IsBatDemon() || m_player.IsKitsune() || m_player.IsOrc()) {
+                    m_p1SpecialItemTexId = -1; UpdateHudSpecialIcon(true);
+                }
+            }
+        }
     }
     if (bIsPressed && (key == '.' || key == 0xBE)) {
-        ToggleSpecialForm_Internal(m_player2, m_p2SpecialItemTexId);
+        if (!(m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc())) {
+            if (m_p2SpecialItemTexId >= 0) {
+                ToggleSpecialForm_Internal(m_player2, m_p2SpecialItemTexId);
+                if (m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc()) {
+                    m_p2SpecialItemTexId = -1; UpdateHudSpecialIcon(false);
+                }
+            }
+        }
     }
     
     if (bIsPressed && key == '1') { 

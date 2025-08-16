@@ -359,6 +359,9 @@ private:
     Vector3 m_hudAmmo1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
     Vector3 m_hudAmmo2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
 
+    Vector3 m_hudSpecialTime1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudSpecialTime2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+
     // HUD Special Character icons
     int m_p1SpecialItemTexId = -1;
     int m_p2SpecialItemTexId = -1;
