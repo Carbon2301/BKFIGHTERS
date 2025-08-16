@@ -125,6 +125,11 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
     }
 
     m_isRolling = anyRollHeld && m_rollCadenceActive && m_rollPhaseIsRoll;
+
+    if (!m_allowRun) {
+        m_isRunningLeft = false;
+        m_isRunningRight = false;
+    }
     
     bool isOtherAction = keyStates[m_inputConfig.jumpKey];
     
@@ -132,7 +137,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
 
     if (keyStates[m_inputConfig.moveLeftKey] && !m_prevLeftKey) {
         if (currentTime - m_lastLeftPressTime < DOUBLE_TAP_THRESHOLD) {
-            m_isRunningLeft = true;
+            m_isRunningLeft = m_allowRun;
         }
         m_lastLeftPressTime = currentTime;
     }
@@ -143,7 +148,7 @@ void CharacterMovement::HandleMovement(float deltaTime, const bool* keyStates) {
 
     if (keyStates[m_inputConfig.moveRightKey] && !m_prevRightKey) {
         if (currentTime - m_lastRightPressTime < DOUBLE_TAP_THRESHOLD) {
-            m_isRunningRight = true;
+            m_isRunningRight = m_allowRun;
         }
         m_lastRightPressTime = currentTime;
     }
@@ -226,6 +231,10 @@ void CharacterMovement::HandleJump(float deltaTime, const bool* keyStates) {
 
     
     if (m_isJumping) {
+        if (!m_allowRun) {
+            m_isRunningLeft = false;
+            m_isRunningRight = false;
+        }
         m_jumpVelocity -= GRAVITY * deltaTime;
         m_posY += m_jumpVelocity * deltaTime;
         if (m_posY > m_highestYInAir) m_highestYInAir = m_posY;

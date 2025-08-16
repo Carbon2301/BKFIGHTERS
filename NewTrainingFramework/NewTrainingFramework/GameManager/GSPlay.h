@@ -337,6 +337,7 @@ private:
     bool m_prevRollingP1 = false;
     bool m_prevRollingP2 = false;
     void DrawHudPortraits();
+    void UpdateStaminaBars();
     // Item pickup system
     void HandleItemPickup();
     static const int AXE_OBJECT_ID = 1100;

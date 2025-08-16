@@ -28,6 +28,13 @@ private:
     bool m_isDead;
     bool m_prevHardLandingActive = false;
 
+    // Stamina system
+    float m_stamina;
+    const float MAX_STAMINA = 100.0f;
+    bool m_prevRolling = false;
+    void UpdateStamina(float deltaTime);
+    bool IsSpecialForm() const;
+
     // Helper methods
     void CancelCombosOnOtherAction(const bool* keyStates);
 
@@ -165,6 +172,11 @@ public:
     void TakeDamage(float damage, bool playSfx = true);
     void Heal(float amount);
     void ResetHealth();
+
+     // Stamina system
+     float GetStamina() const { return m_stamina; }
+     float GetMaxStamina() const { return MAX_STAMINA; }
+     void ResetStamina() { m_stamina = MAX_STAMINA; }
 
      Vector3 GetGunTopWorldPosition() const;
      float GetAimAngleDeg() const;

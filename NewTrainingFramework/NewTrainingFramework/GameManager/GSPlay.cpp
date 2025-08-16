@@ -765,6 +765,7 @@ void GSPlay::Update(float deltaTime) {
     m_player2Health = m_player2.GetHealth();
     
     UpdateHealthBars();
+    UpdateStaminaBars();
     
     Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
     if (menuButton) {
@@ -2771,6 +2772,58 @@ void GSPlay::UpdateHealthBars() {
         const Vector3& hudScale2 = hudHealth2->GetScale();
         // Base width defined in scene file: 0.94
         hudHealth2->SetScale(healthRatio2 * 0.94f, hudScale2.y, hudScale2.z);
+    }
+}
+
+void GSPlay::UpdateStaminaBars() {
+    SceneManager* sceneManager = SceneManager::GetInstance();
+
+    // Player 1 stamina bar (ID 2002)
+    if (Object* staminaBar1 = sceneManager->GetObject(2002)) {
+        const Vector3& player1Pos = m_player.GetPosition();
+
+        Object* player1Obj = sceneManager->GetObject(1000);
+        float characterHeight = 0.24f;
+        if (player1Obj) {
+            characterHeight = player1Obj->GetScale().y;
+        }
+        float healthBarOffsetY = characterHeight / 6.0f;
+        float staminaBarOffsetY = healthBarOffsetY - 0.025f;
+        float barOffsetX = -0.05f;
+        staminaBar1->SetPosition(player1Pos.x + barOffsetX, player1Pos.y + staminaBarOffsetY, 0.0f);
+        float staminaRatio1 = m_player.GetStamina() / m_player.GetMaxStamina();
+        const Vector3& scaleRef = staminaBar1->GetScale();
+        Vector3 currentScale(scaleRef.x, scaleRef.y, scaleRef.z);
+        staminaBar1->SetScale(staminaRatio1 * 0.18f, currentScale.y, currentScale.z);
+    }
+
+    if (Object* staminaBar2 = sceneManager->GetObject(2003)) {
+        const Vector3& player2Pos = m_player2.GetPosition();
+
+        Object* player2Obj = sceneManager->GetObject(1001);
+        float characterHeight = 0.24f;
+        if (player2Obj) {
+            characterHeight = player2Obj->GetScale().y;
+        }
+        float healthBarOffsetY = characterHeight / 6.0f;
+        float staminaBarOffsetY = healthBarOffsetY - 0.025f;
+        float barOffsetX = -0.05f;
+        staminaBar2->SetPosition(player2Pos.x + barOffsetX, player2Pos.y + staminaBarOffsetY, 0.0f);
+        float staminaRatio2 = m_player2.GetStamina() / m_player2.GetMaxStamina();
+        const Vector3& scaleRef2 = staminaBar2->GetScale();
+        Vector3 currentScale2(scaleRef2.x, scaleRef2.y, scaleRef2.z);
+        staminaBar2->SetScale(staminaRatio2 * 0.18f, currentScale2.y, currentScale2.z);
+    }
+
+    if (Object* hudStamina1 = sceneManager->GetObject(932)) {
+        float staminaRatio1 = m_player.GetStamina() / m_player.GetMaxStamina();
+        const Vector3& hudScale1 = hudStamina1->GetScale();
+        hudStamina1->SetScale(staminaRatio1 * 0.94f, hudScale1.y, hudScale1.z);
+    }
+    if (Object* hudStamina2 = sceneManager->GetObject(933)) {
+        float staminaRatio2 = m_player2.GetStamina() / m_player2.GetMaxStamina();
+        const Vector3& hudScale2 = hudStamina2->GetScale();
+        hudStamina2->SetScale(staminaRatio2 * 0.94f, hudScale2.y, hudScale2.z);
     }
 }
 

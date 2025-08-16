@@ -20,7 +20,8 @@ Character::Character()
       m_combat(std::make_unique<CharacterCombat>()),
       m_hitbox(std::make_unique<CharacterHitbox>()),
       m_animation(std::make_unique<CharacterAnimation>()),
-      m_health(100.0f), m_isDead(false) {
+      m_health(100.0f), m_isDead(false),
+      m_stamina(100.0f) {
 }
 
 Character::~Character() {
@@ -372,6 +373,16 @@ void Character::Update(float deltaTime) {
 		}
 		m_movement->SetInputLocked(lock);
 	}
+
+    UpdateStamina(deltaTime);
+
+    if (m_movement) {
+        bool allowRun = true;
+        if (!IsSpecialForm()) {
+            allowRun = (m_stamina > 0.0f);
+        }
+        m_movement->SetAllowRun(allowRun);
+    }
 }
 
 void Character::Draw(Camera* camera) {
@@ -735,6 +746,44 @@ void Character::ResetHealth() {
     m_health = MAX_HEALTH;
     m_isDead = false;
 } 
+
+bool Character::IsSpecialForm() const {
+    return (IsWerewolf() || IsBatDemon() || IsKitsune() || IsOrc());
+}
+
+void Character::UpdateStamina(float deltaTime) {
+    if (!m_movement || IsSpecialForm()) {
+        return;
+    }
+
+    const float runDrainPerSecond = MAX_STAMINA / 5.0f;
+    const float regenPerSecond    = MAX_STAMINA / 3.0f;
+    const float jumpCost = 5.0f;
+    const float rollCost = 5.0f;
+
+    bool isRunning = (m_movement->IsRunningLeft() || m_movement->IsRunningRight());
+    bool isJumping = m_movement->IsJumping();
+    bool isRolling = m_movement->IsRolling();
+
+    if (isRunning) {
+        m_stamina -= runDrainPerSecond * deltaTime;
+    }
+
+    if (m_movement->ConsumeJustStartedUpwardJump()) {
+        m_stamina -= jumpCost;
+    }
+    if (isRolling && !m_prevRolling) {
+        m_stamina -= rollCost;
+    }
+    m_prevRolling = isRolling;
+
+    if (!isRunning && !isJumping && !isRolling) {
+        m_stamina += regenPerSecond * deltaTime;
+    }
+
+    if (m_stamina < 0.0f) m_stamina = 0.0f;
+    if (m_stamina > MAX_STAMINA) m_stamina = MAX_STAMINA;
+}
 
 Vector3 Character::GetGunTopWorldPosition() const {
     if (m_animation && m_movement) {
