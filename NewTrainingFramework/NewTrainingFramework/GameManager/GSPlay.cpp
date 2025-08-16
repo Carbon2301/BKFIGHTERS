@@ -48,6 +48,32 @@ bool GSPlay::s_showWallBoxes = false;
 bool GSPlay::s_showLadderBoxes = false;
 bool GSPlay::s_showTeleportBoxes = false;
 
+static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
+    if (specialTexId < 0) return;
+    character.SetGunMode(false);
+    character.SetGrenadeMode(false);
+
+    if (specialTexId == 75) { // Werewolf
+        bool toWerewolf = !character.IsWerewolf();
+        if (toWerewolf) { character.SetBatDemonMode(false); character.SetKitsuneMode(false); character.SetOrcMode(false); }
+        character.SetWerewolfMode(toWerewolf);
+    } else if (specialTexId == 76) { // BatDemon
+        bool toBat = !character.IsBatDemon();
+        if (toBat) { character.SetWerewolfMode(false); character.SetKitsuneMode(false); character.SetOrcMode(false); }
+        character.SetBatDemonMode(toBat);
+    } else if (specialTexId == 77) { // Kitsune
+        bool toKitsune = !character.IsKitsune();
+        if (toKitsune) { character.SetBatDemonMode(false); character.SetWerewolfMode(false); character.SetOrcMode(false); }
+        character.SetKitsuneMode(toKitsune);
+    } else if (specialTexId == 78) { // Orc
+        bool toOrc = !character.IsOrc();
+        if (toOrc) { character.SetBatDemonMode(false); character.SetWerewolfMode(false); character.SetKitsuneMode(false); }
+        character.SetOrcMode(toOrc);
+    }
+
+    if (auto mv = character.GetMovement()) mv->SetInputLocked(false);
+}
+
 bool GSPlay_IsShowPlatformBoxes() {
     return GSPlay::IsShowPlatformBoxes();
 }
@@ -1784,75 +1810,12 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
 
-    if (bIsPressed && key == '5') {
-        bool toBat = !m_player.IsBatDemon();
-        m_player.SetGunMode(false);
-        m_player.SetGrenadeMode(false);
-        if (toBat) { m_player.SetWerewolfMode(false); }
-        m_player.SetBatDemonMode(toBat);
-        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
-    }
-    if (bIsPressed && (key == '?' || key == '/' || key == 0xBF)) {
-        bool toBat2 = !m_player2.IsBatDemon();
-        m_player2.SetGunMode(false);
-        m_player2.SetGrenadeMode(false);
-        if (toBat2) { m_player2.SetWerewolfMode(false); }
-        m_player2.SetBatDemonMode(toBat2);
-        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
-    }
-
     if (bIsPressed && key == '4') {
-        bool toWerewolf = !m_player.IsWerewolf();
-        m_player.SetGunMode(false);
-        m_player.SetGrenadeMode(false);
-        if (toWerewolf) { m_player.SetBatDemonMode(false); }
-        m_player.SetWerewolfMode(toWerewolf);
-        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
+        ToggleSpecialForm_Internal(m_player, m_p1SpecialItemTexId);
     }
-    if (bIsPressed && (key == '.' || key == 0xBE)) { 
-        bool toWerewolf2 = !m_player2.IsWerewolf();
-        m_player2.SetGunMode(false);
-        m_player2.SetGrenadeMode(false);
-        if (toWerewolf2) { m_player2.SetBatDemonMode(false); }
-        m_player2.SetWerewolfMode(toWerewolf2);
-        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
+    if (bIsPressed && (key == '.' || key == 0xBE)) {
+        ToggleSpecialForm_Internal(m_player2, m_p2SpecialItemTexId);
     }
-
-    if (bIsPressed && key == '6') {
-        bool toKitsune = !m_player.IsKitsune();
-        m_player.SetGunMode(false);
-        m_player.SetGrenadeMode(false);
-        if (toKitsune) { m_player.SetBatDemonMode(false); m_player.SetWerewolfMode(false); }
-        m_player.SetKitsuneMode(toKitsune);
-        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
-    }
-    if (bIsPressed && (key == 'K' || key == 'k')) {
-        bool toKitsune2 = !m_player2.IsKitsune();
-        m_player2.SetGunMode(false);
-        m_player2.SetGrenadeMode(false);
-        if (toKitsune2) { m_player2.SetBatDemonMode(false); m_player2.SetWerewolfMode(false); }
-        m_player2.SetKitsuneMode(toKitsune2);
-        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
-    }
-
-    if (bIsPressed && key == '7') {
-        bool toOrc = !m_player.IsOrc();
-        m_player.SetGunMode(false);
-        m_player.SetGrenadeMode(false);
-        if (toOrc) { m_player.SetBatDemonMode(false); m_player.SetWerewolfMode(false); m_player.SetKitsuneMode(false); }
-        m_player.SetOrcMode(toOrc);
-        if (auto mv = m_player.GetMovement()) mv->SetInputLocked(false);
-    }
-    if (bIsPressed && (key == 'L' || key == 'l')) {
-        bool toOrc2 = !m_player2.IsOrc();
-        m_player2.SetGunMode(false);
-        m_player2.SetGrenadeMode(false);
-        if (toOrc2) { m_player2.SetBatDemonMode(false); m_player2.SetWerewolfMode(false); m_player2.SetKitsuneMode(false); }
-        m_player2.SetOrcMode(toOrc2);
-        if (auto mv2 = m_player2.GetMovement()) mv2->SetInputLocked(false);
-    }
-
-
     
     if (bIsPressed && key == '1') { 
         if (m_player.IsOrc()) {
@@ -1876,7 +1839,6 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
 
-    
     if (bIsPressed && (key == 'N' || key == 'n')) {
         if (m_player2.IsOrc()) {
             m_player2.TriggerOrcMeteorStrike();
