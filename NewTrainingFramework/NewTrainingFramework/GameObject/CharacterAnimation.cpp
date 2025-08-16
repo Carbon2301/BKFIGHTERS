@@ -73,6 +73,9 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
         m_animManager->Update(deltaTime);
         UpdateAnimationState(movement, combat);
     }
+    if (movement) {
+        m_lastFacingLeft = movement->IsFacingLeft();
+    }
     if (m_topAnimManager) {
         m_topAnimManager->Update(deltaTime);
     }
@@ -124,6 +127,11 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
 
     if (m_batWindActive && m_batWindAnim) {
         m_batWindAnim->Update(deltaTime);
+        if (m_batWindObject) {
+            const Vector3& p = m_batWindObject->GetPosition();
+            float dx = m_batWindSpeed * m_batWindFaceSign * deltaTime;
+            m_batWindObject->SetPosition(p.x + dx, p.y, p.z);
+        }
         if (!m_batWindAnim->IsPlaying()) {
             m_batWindActive = false;
             if (m_batWindObject) {
@@ -360,6 +368,9 @@ void CharacterAnimation::Draw(Camera* camera, CharacterMovement* movement) {
     if (m_batWindActive && m_batWindObject && m_batWindObject->GetModelId() >= 0 && m_batWindObject->GetModelPtr()) {
         float u0, v0, u1, v1;
         m_batWindAnim->GetUV(u0, v0, u1, v1);
+        if (m_batWindFaceSign < 0.0f) {
+            std::swap(u0, u1);
+        }
         m_batWindObject->SetCustomUV(u0, v0, u1, v1);
         if (camera) {
             m_batWindObject->Draw(camera->GetViewMatrix(), camera->GetProjectionMatrix());
@@ -1210,7 +1221,9 @@ void CharacterAnimation::TriggerBatDemonSlash() {
             m_batWindObject->SetTexture(68, 0);
             m_batWindObject->SetVisible(true);
             const Vector3& pos = m_characterObject->GetPosition();
-            m_batWindObject->SetPosition(pos.x + 0.32f, pos.y, pos.z);
+            float face = m_lastFacingLeft ? -1.0f : 1.0f;
+            m_batWindFaceSign = face;
+            m_batWindObject->SetPosition(pos.x + 0.24f * face, pos.y, pos.z);
             m_batWindObject->SetScale(0.7f, 0.7f, 0.0f);
         }
     }

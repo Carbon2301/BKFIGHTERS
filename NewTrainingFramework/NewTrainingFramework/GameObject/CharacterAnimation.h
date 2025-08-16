@@ -47,6 +47,7 @@ private:
     static constexpr float TURN_DURATION = 0.12f;
     bool m_turnInitialLeft = false;
     bool m_prevFacingLeft = false;
+    bool m_lastFacingLeft = false;
 
     float m_aimAngleDeg = 0.0f;
     bool m_prevAimUp = false;
@@ -115,6 +116,8 @@ private:
     bool m_batWindActive = false;
     std::shared_ptr<AnimationManager> m_batWindAnim;
     std::unique_ptr<class Object> m_batWindObject;
+    float m_batWindSpeed = 0.8f;
+    float m_batWindFaceSign = 1.0f;
     bool m_werewolfComboActive = false;
     bool m_werewolfPounceActive = false;
     float m_werewolfBodyOffsetY = 0.0f;

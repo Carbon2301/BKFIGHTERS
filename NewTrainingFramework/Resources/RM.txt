@@ -512,7 +512,7 @@ TILING GL_CLAMP_TO_EDGE
 SIZE 8 1
 ANINUM 1
 * Animation 0: Wind
-0 6 1000
+0 6 600
 
 ID 70
 FILE "../Resources/Fighter/Stages/Stage_1/windWheel.tga"
