@@ -27,6 +27,12 @@ private:
     const float DAMAGE_PER_HIT = 10.0f;
     bool m_isDead;
     bool m_prevHardLandingActive = false;
+    
+    // Auto-heal system
+    float m_lastDamageTime = 0.0f;
+    float m_healStartDelay = 3.0f;
+    float m_healRate = 2.5f;
+    bool m_isHealing = false;
 
     // Stamina system
     float m_stamina;
@@ -34,6 +40,7 @@ private:
     bool m_prevRolling = false;
     bool m_prevJumpingForStamina = false;
     void UpdateStamina(float deltaTime);
+    void UpdateAutoHeal(float deltaTime);
     bool IsSpecialForm() const;
 
     // Helper methods

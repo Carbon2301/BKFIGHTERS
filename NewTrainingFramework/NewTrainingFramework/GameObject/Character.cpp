@@ -380,6 +380,7 @@ void Character::Update(float deltaTime) {
 	}
 
     UpdateStamina(deltaTime);
+    UpdateAutoHeal(deltaTime);
 
     if (m_movement) {
         bool allowRun = true;
@@ -730,6 +731,10 @@ void Character::TakeDamage(float damage, bool playSfx) {
     if (m_health < 0.0f) {
         m_health = 0.0f;
     }
+    
+    m_lastDamageTime = 0.0f;
+    m_isHealing = false;
+    
     if (playSfx) {
         SoundManager::Instance().PlaySFXByID(6, 0);
     }
@@ -751,6 +756,9 @@ void Character::Heal(float amount) {
 void Character::ResetHealth() {
     m_health = MAX_HEALTH;
     m_isDead = false;
+    
+    m_lastDamageTime = 0.0f;
+    m_isHealing = false;
 } 
 
 bool Character::IsSpecialForm() const {
@@ -791,6 +799,31 @@ void Character::UpdateStamina(float deltaTime) {
 
     if (m_stamina < 0.0f) m_stamina = 0.0f;
     if (m_stamina > MAX_STAMINA) m_stamina = MAX_STAMINA;
+}
+
+void Character::UpdateAutoHeal(float deltaTime) {
+    if (m_isDead || IsSpecialForm()) {
+        return;
+    }
+    
+    float timeSinceLastDamage = m_lastDamageTime;
+    if (timeSinceLastDamage >= m_healStartDelay) {
+        if (!m_isHealing) {
+            m_isHealing = true;
+        }
+        
+        if (m_isHealing && m_health < MAX_HEALTH) {
+            m_health += m_healRate * deltaTime;
+            if (m_health > MAX_HEALTH) {
+                m_health = MAX_HEALTH;
+                m_isHealing = false;
+            }
+        }
+    } else {
+        m_isHealing = false;
+    }
+    
+    m_lastDamageTime += deltaTime;
 }
 
 Vector3 Character::GetGunTopWorldPosition() const {
