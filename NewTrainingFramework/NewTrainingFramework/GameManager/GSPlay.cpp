@@ -2990,6 +2990,8 @@ void GSPlay::HandleItemPickup() {
     const PlayerInputConfig& cfg2 = m_player2.GetMovement()->GetInputConfig();
     bool p2Sit = keys[cfg2.sitKey];
     bool p2PickupJust = m_inputManager->IsKeyJustPressed('N') || m_inputManager->IsKeyJustPressed('n');
+    bool p1CanPickup = !(m_player.IsWerewolf() || m_player.IsBatDemon() || m_player.IsKitsune() || m_player.IsOrc());
+    bool p2CanPickup = !(m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc());
 
     auto isOverlapping = [](const Vector3& pos, float w, float h, const Vector3& objPos, const Vector3& objScale) {
         float halfW = w * 0.5f;
@@ -3108,46 +3110,46 @@ void GSPlay::HandleItemPickup() {
         return false;
     };
 
-    if ( tryPickupBomb(bomb_pickup, m_player,  p1Sit, p1PickupJust, true) ) { return; }
-    if ( tryPickupSpecial(item_werewolf, 75, m_player, p1Sit, p1PickupJust, true) ) { return; }
-    if ( tryPickupSpecial(item_batdemon, 76, m_player, p1Sit, p1PickupJust, true) ) { return; }
-    if ( tryPickupSpecial(item_kitsune,  77, m_player, p1Sit, p1PickupJust, true) ) { return; }
-    if ( tryPickupSpecial(item_orc,      78, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupBomb(bomb_pickup, m_player,  p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupSpecial(item_werewolf, 75, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupSpecial(item_batdemon, 76, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupSpecial(item_kitsune,  77, m_player, p1Sit, p1PickupJust, true) ) { return; }
+    if ( p1CanPickup && tryPickupSpecial(item_orc,      78, m_player, p1Sit, p1PickupJust, true) ) { return; }
 
     // Check Player 1 melee
-    if ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+    if ( p1CanPickup && ( tryPickup(m_player,  p1Sit, p1PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
          tryPickup(m_player,  p1Sit, p1PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
-         tryPickup(m_player,  p1Sit, p1PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+         tryPickup(m_player,  p1Sit, p1PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) ) { return; }
     // Check Player 1 guns
-    if ( tryPickupGun(40, gun_pistol,  m_player, p1Sit, p1PickupJust, true)  ||
+    if ( p1CanPickup && ( tryPickupGun(40, gun_pistol,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(41, gun_m4a1,    m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(42, gun_shotgun, m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(43, gun_bazoka,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(44, gun_flame,   m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(45, gun_deagle,  m_player, p1Sit, p1PickupJust, true)  ||
          tryPickupGun(46, gun_sniper,  m_player, p1Sit, p1PickupJust, true)  ||
-         tryPickupGun(47, gun_uzi,     m_player, p1Sit, p1PickupJust, true) ) { return; }
+         tryPickupGun(47, gun_uzi,     m_player, p1Sit, p1PickupJust, true) ) ) { return; }
 
     // Try pick up bomb (Player 2)
-    if ( tryPickupBomb(bomb_pickup, m_player2, p2Sit, p2PickupJust, false) ) { return; }
-    if ( tryPickupSpecial(item_werewolf, 75, m_player2, p2Sit, p2PickupJust, false) ) { return; }
-    if ( tryPickupSpecial(item_batdemon, 76, m_player2, p2Sit, p2PickupJust, false) ) { return; }
-    if ( tryPickupSpecial(item_kitsune,  77, m_player2, p2Sit, p2PickupJust, false) ) { return; }
-    if ( tryPickupSpecial(item_orc,      78, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupBomb(bomb_pickup, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupSpecial(item_werewolf, 75, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupSpecial(item_batdemon, 76, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupSpecial(item_kitsune,  77, m_player2, p2Sit, p2PickupJust, false) ) { return; }
+    if ( p2CanPickup && tryPickupSpecial(item_orc,      78, m_player2, p2Sit, p2PickupJust, false) ) { return; }
 
     // Check Player 2
-    if ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
+    if ( p2CanPickup && ( tryPickup(m_player2, p2Sit, p2PickupJust, axe,   m_isAxeAvailable,   Character::WeaponType::Axe)   ||
          tryPickup(m_player2, p2Sit, p2PickupJust, sword, m_isSwordAvailable, Character::WeaponType::Sword) ||
-         tryPickup(m_player2, p2Sit, p2PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) { return; }
+         tryPickup(m_player2, p2Sit, p2PickupJust, pipe,  m_isPipeAvailable,  Character::WeaponType::Pipe) ) ) { return; }
     // Check Player 2 guns
-    if ( tryPickupGun(40, gun_pistol,  m_player2, p2Sit, p2PickupJust, false) ||
+    if ( p2CanPickup && ( tryPickupGun(40, gun_pistol,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(41, gun_m4a1,    m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(42, gun_shotgun, m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(43, gun_bazoka,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(44, gun_flame,   m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(45, gun_deagle,  m_player2, p2Sit, p2PickupJust, false) ||
          tryPickupGun(46, gun_sniper,  m_player2, p2Sit, p2PickupJust, false) ||
-         tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) { return; }
+         tryPickupGun(47, gun_uzi,     m_player2, p2Sit, p2PickupJust, false) ) ) { return; }
 }
 
 void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
