@@ -1168,16 +1168,20 @@ void GSPlay::Update(float deltaTime) {
     UpdateEndScreenVisibility();
     
     if (m_inputManager) {
-        HandleItemPickup();
-        m_player.ProcessInput(deltaTime, m_inputManager);
-        m_player2.ProcessInput(deltaTime, m_inputManager);
+        if (!m_gameEnded) {
+            HandleItemPickup();
+            m_player.ProcessInput(deltaTime, m_inputManager);
+            m_player2.ProcessInput(deltaTime, m_inputManager);
+        }
         m_inputManager->Update();
     } else {
         m_inputManager = InputManager::GetInstance();
     }
     
-    m_player.Update(deltaTime);
-    m_player2.Update(deltaTime);
+    if (!m_gameEnded) {
+        m_player.Update(deltaTime);
+        m_player2.Update(deltaTime);
+    }
 
     auto checkFireDamage = [&](Character& source, Character& target){
         CharacterAnimation* anim = source.GetAnimation();
@@ -1253,57 +1257,61 @@ void GSPlay::Update(float deltaTime) {
     }
     m_prevRollingP1 = rollingP1;
     m_prevRollingP2 = rollingP2;
-    UpdateBullets(deltaTime);
-    UpdateEnergyOrbProjectiles(deltaTime);
-    UpdateLightningEffects(deltaTime);
-    UpdateFireRains(deltaTime);
-    UpdateFireRainSpawnQueue();
-    CheckLightningDamage();
-    
-    if (m_player.IsKitsuneEnergyOrbAnimationComplete()) {
-        SpawnEnergyOrbProjectile(m_player);
+    if (!m_gameEnded) {
+        UpdateBullets(deltaTime);
+        UpdateEnergyOrbProjectiles(deltaTime);
+        UpdateLightningEffects(deltaTime);
+        UpdateFireRains(deltaTime);
+        UpdateFireRainSpawnQueue();
+        CheckLightningDamage();
+        
+        if (m_player.IsKitsuneEnergyOrbAnimationComplete()) {
+            SpawnEnergyOrbProjectile(m_player);
+        }
+        if (m_player2.IsKitsuneEnergyOrbAnimationComplete()) {
+            SpawnEnergyOrbProjectile(m_player2);
+        }
+        
+        UpdateBombs(deltaTime);
+        UpdateExplosions(deltaTime);
+        UpdateGrenadeFuse();
+        UpdateGunBursts();
+        UpdateGunReloads();
+        TryCompletePendingShots();
+        UpdateHudWeapons();
+        UpdateHudAmmoAnim(deltaTime);
+        UpdateHudBombDigits();
     }
-    if (m_player2.IsKitsuneEnergyOrbAnimationComplete()) {
-        SpawnEnergyOrbProjectile(m_player2);
-    }
     
-    UpdateBombs(deltaTime);
-    UpdateExplosions(deltaTime);
-    UpdateGrenadeFuse();
-    UpdateGunBursts();
-    UpdateGunReloads();
-    TryCompletePendingShots();
-    UpdateHudWeapons();
-    UpdateHudAmmoAnim(deltaTime);
-    UpdateHudBombDigits();
-    
+        if (!m_gameEnded) {
             if (m_player.CheckHitboxCollision(m_player2)) {
-            if (!IsCharacterInvincible(m_player2)) {
-                if (m_player.IsWerewolf() && m_player.GetAnimation() && (((m_player.GetAnimation()->GetCurrentAnimation() == 1) && m_player.IsAnimationPlaying()) || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
-                    ProcessDamageAndScore(m_player, m_player2, 100.0f);
-                    m_player2.TriggerGetHit(m_player);
-                } else if (m_player.IsWerewolf() && m_player.GetAnimation() && ((m_player.GetAnimation()->GetCurrentAnimation() == 3 && m_player.IsAnimationPlaying()))) {
-                    ProcessDamageAndScore(m_player, m_player2, 100.0f);
-                    m_player2.TriggerGetHit(m_player);
-                } else {
-                    m_player2.TriggerGetHit(m_player);
+                if (!IsCharacterInvincible(m_player2)) {
+                    if (m_player.IsWerewolf() && m_player.GetAnimation() && (((m_player.GetAnimation()->GetCurrentAnimation() == 1) && m_player.IsAnimationPlaying()) || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+                        ProcessDamageAndScore(m_player, m_player2, 100.0f);
+                        m_player2.TriggerGetHit(m_player);
+                    } else if (m_player.IsWerewolf() && m_player.GetAnimation() && ((m_player.GetAnimation()->GetCurrentAnimation() == 3 && m_player.IsAnimationPlaying()))) {
+                        ProcessDamageAndScore(m_player, m_player2, 100.0f);
+                        m_player2.TriggerGetHit(m_player);
+                    } else {
+                        m_player2.TriggerGetHit(m_player);
+                    }
+                }
+            }
+        
+            if (m_player2.CheckHitboxCollision(m_player)) {
+                if (!IsCharacterInvincible(m_player)) {
+                    if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (((m_player2.GetAnimation()->GetCurrentAnimation() == 1) && m_player2.IsAnimationPlaying()) || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
+                        ProcessDamageAndScore(m_player2, m_player, 100.0f);
+                        m_player.TriggerGetHit(m_player2);
+                    } else if (m_player2.IsWerewolf() && m_player2.GetAnimation() && ((m_player2.GetAnimation()->GetCurrentAnimation() == 3 && m_player2.IsAnimationPlaying()))) {
+                        ProcessDamageAndScore(m_player2, m_player, 100.0f);
+                        m_player.TriggerGetHit(m_player2);
+                    } else {
+                        m_player.TriggerGetHit(m_player2);
+                    }
                 }
             }
         }
-    
-    if (m_player2.CheckHitboxCollision(m_player)) {
-        if (!IsCharacterInvincible(m_player)) {
-            if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (((m_player2.GetAnimation()->GetCurrentAnimation() == 1) && m_player2.IsAnimationPlaying()) || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
-                ProcessDamageAndScore(m_player2, m_player, 100.0f);
-                m_player.TriggerGetHit(m_player2);
-            } else if (m_player2.IsWerewolf() && m_player2.GetAnimation() && ((m_player2.GetAnimation()->GetCurrentAnimation() == 3 && m_player2.IsAnimationPlaying()))) {
-                ProcessDamageAndScore(m_player2, m_player, 100.0f);
-                m_player.TriggerGetHit(m_player2);
-            } else {
-                m_player.TriggerGetHit(m_player2);
-            }
-        }
-    }
     
     Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
     if (camera && camera->IsAutoZoomEnabled()) {
@@ -1335,67 +1343,69 @@ void GSPlay::Update(float deltaTime) {
 void GSPlay::Draw() {
     SceneManager::GetInstance()->Draw();
     
-    Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
-    if (cam) {
-        m_player.Draw(cam);
-        m_player2.Draw(cam);
-    }
+    if (!m_gameEnded) {
+        Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
+        if (cam) {
+            m_player.Draw(cam);
+            m_player2.Draw(cam);
+        }
 
-    // Draw HUD portraits with independent UVs
-    DrawHudPortraits();
-    
-    if (m_scoreTextP1 && m_scoreTextP2) {
-        float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
-        Matrix uiView;
-        Matrix uiProj;
-        uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
-        uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+        // Draw HUD portraits with independent UVs
+        DrawHudPortraits();
         
-        m_scoreTextP1->Draw(uiView, uiProj);
-        m_scoreTextP2->Draw(uiView, uiProj);
-    }
-    
-    if (!m_scoreDigitObjectsP1.empty() && !m_scoreDigitObjectsP2.empty()) {
-        float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
-        Matrix uiView;
-        Matrix uiProj;
-        uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
-        uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+        if (m_scoreTextP1 && m_scoreTextP2) {
+            float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+            Matrix uiView;
+            Matrix uiProj;
+            uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+            uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+            
+            m_scoreTextP1->Draw(uiView, uiProj);
+            m_scoreTextP2->Draw(uiView, uiProj);
+        }
         
-        for (auto& digitObj : m_scoreDigitObjectsP1) {
-            if (digitObj) {
-                digitObj->Draw(uiView, uiProj);
+        if (!m_scoreDigitObjectsP1.empty() && !m_scoreDigitObjectsP2.empty()) {
+            float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+            Matrix uiView;
+            Matrix uiProj;
+            uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+            uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+            
+            for (auto& digitObj : m_scoreDigitObjectsP1) {
+                if (digitObj) {
+                    digitObj->Draw(uiView, uiProj);
+                }
+            }
+            
+            for (auto& digitObj : m_scoreDigitObjectsP2) {
+                if (digitObj) {
+                    digitObj->Draw(uiView, uiProj);
+                }
             }
         }
         
-        for (auto& digitObj : m_scoreDigitObjectsP2) {
-            if (digitObj) {
-                digitObj->Draw(uiView, uiProj);
+        if (!m_timeDigitObjects.empty()) {
+            float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+            Matrix uiView;
+            Matrix uiProj;
+            uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+            uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+            
+            for (auto& digitObj : m_timeDigitObjects) {
+                if (digitObj) {
+                    digitObj->Draw(uiView, uiProj);
+                }
             }
         }
-    }
-    
-    if (!m_timeDigitObjects.empty()) {
-        float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
-        Matrix uiView;
-        Matrix uiProj;
-        uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
-        uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
         
-        for (auto& digitObj : m_timeDigitObjects) {
-            if (digitObj) {
-                digitObj->Draw(uiView, uiProj);
-            }
-        }
+        if (cam) { DrawBullets(cam); }
+        if (cam) { DrawEnergyOrbProjectiles(cam); }
+        if (cam) { DrawLightningEffects(cam); }
+        if (cam) { DrawFireRains(cam); }
+        if (cam) { DrawBombs(cam); }
+        if (cam) { DrawExplosions(cam); }
+        if (cam) { DrawBloods(cam); }
     }
-    
-    if (cam) { DrawBullets(cam); }
-    if (cam) { DrawEnergyOrbProjectiles(cam); }
-    if (cam) { DrawLightningEffects(cam); }
-    if (cam) { DrawFireRains(cam); }
-    if (cam) { DrawBombs(cam); }
-    if (cam) { DrawExplosions(cam); }
-    if (cam) { DrawBloods(cam); }
     
     static float lastPosX = m_player.GetPosition().x;
     static int lastAnim = m_player.GetCurrentAnimation();
@@ -4460,11 +4470,107 @@ void GSPlay::UpdateEndScreenVisibility() {
     }
     
     if (m_gameEnded) {
+        for (int id : m_candidateItemIds) {
+            for (int slot = 0; slot < 11; ++slot) {
+                int objectId = id * 100 + slot;
+                if (Object* obj = scene->GetObject(objectId)) {
+                    obj->SetVisible(false);
+                }
+            }
+        }
+        
+        if (Object* player1Obj = scene->GetObject(1000)) {
+            player1Obj->SetVisible(false);
+        }
+        if (Object* player2Obj = scene->GetObject(1001)) {
+            player2Obj->SetVisible(false);
+        }
+        
+        if (Object* healthBar1 = scene->GetObject(2000)) {
+            healthBar1->SetVisible(false);
+        }
+        if (Object* healthBar2 = scene->GetObject(2001)) {
+            healthBar2->SetVisible(false);
+        }
+        
+        if (Object* staminaBar1 = scene->GetObject(2002)) {
+            staminaBar1->SetVisible(false);
+        }
+        if (Object* staminaBar2 = scene->GetObject(2003)) {
+            staminaBar2->SetVisible(false);
+        }
+        
+        if (Object* hudHealth1 = scene->GetObject(914)) {
+            hudHealth1->SetVisible(false);
+        }
+        if (Object* hudHealth2 = scene->GetObject(915)) {
+            hudHealth2->SetVisible(false);
+        }
+        
+        if (Object* hudPortrait1 = scene->GetObject(916)) {
+            hudPortrait1->SetVisible(false);
+        }
+        if (Object* hudPortrait2 = scene->GetObject(917)) {
+            hudPortrait2->SetVisible(false);
+        }
+        
+        for (int id = 918; id <= 931; ++id) {
+            if (Object* obj = scene->GetObject(id)) {
+                obj->SetVisible(false);
+            }
+        }
+        
+        m_player.SetGunMode(false);
+        m_player.SetGrenadeMode(false);
+        m_player2.SetGunMode(false);
+        m_player2.SetGrenadeMode(false);
+        
         UpdateWinnerText();
         UpdateFinalScoreText();
         UpdatePlayerScoreLabels();
         UpdatePlayerLabels();
         UpdatePlayerScores();
+    } else {
+        if (Object* player1Obj = scene->GetObject(1000)) {
+            player1Obj->SetVisible(true);
+        }
+        if (Object* player2Obj = scene->GetObject(1001)) {
+            player2Obj->SetVisible(true);
+        }
+        
+        if (Object* healthBar1 = scene->GetObject(2000)) {
+            healthBar1->SetVisible(true);
+        }
+        if (Object* healthBar2 = scene->GetObject(2001)) {
+            healthBar2->SetVisible(true);
+        }
+        
+        if (Object* staminaBar1 = scene->GetObject(2002)) {
+            staminaBar1->SetVisible(true);
+        }
+        if (Object* staminaBar2 = scene->GetObject(2003)) {
+            staminaBar2->SetVisible(true);
+        }
+        
+        if (Object* hudHealth1 = scene->GetObject(914)) {
+            hudHealth1->SetVisible(true);
+        }
+        if (Object* hudHealth2 = scene->GetObject(915)) {
+            hudHealth2->SetVisible(true);
+        }
+        
+        if (Object* hudPortrait1 = scene->GetObject(916)) {
+            hudPortrait1->SetVisible(true);
+        }
+        if (Object* hudPortrait2 = scene->GetObject(917)) {
+            hudPortrait2->SetVisible(true);
+        }
+        
+        for (int id = 918; id <= 931; ++id) {
+            if (Object* obj = scene->GetObject(id)) {
+                obj->SetVisible(true);
+            }
+        }
     }
 }
 
@@ -4855,6 +4961,13 @@ void GSPlay::ResetGame() {
     InitializeRespawnSlots();
     
     HideEndScreen();
+    
+    if (Object* player1Obj = scene->GetObject(1000)) {
+        player1Obj->SetVisible(true);
+    }
+    if (Object* player2Obj = scene->GetObject(1001)) {
+        player2Obj->SetVisible(true);
+    }
     
     UpdateScoreDisplay();
     UpdateTimeDisplay();
