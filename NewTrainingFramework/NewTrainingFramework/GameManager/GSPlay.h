@@ -211,12 +211,13 @@ private:
         float hitboxTop;
         float hitboxBottom;
         bool hasDealtDamage;
+        int attackerId = 0;
     };
     std::vector<LightningEffect> m_lightningEffects;
     std::vector<std::unique_ptr<Object>> m_lightningObjects;
     std::vector<int> m_freeLightningSlots;
     static constexpr int MAX_LIGHTNING_EFFECTS = 1000;
-    void SpawnLightningEffect(float x);
+    void SpawnLightningEffect(float x, int attackerId = 0);
     void UpdateLightningEffects(float deltaTime);
     void DrawLightningEffects(class Camera* camera);
     int CreateOrAcquireLightningObject();
@@ -235,6 +236,7 @@ private:
         std::shared_ptr<AnimationManager> anim;
         bool damagedP1 = false;
         bool damagedP2 = false;
+        int attackerId = 0; 
     };
     std::vector<FireRain> m_fireRains;
     std::vector<std::unique_ptr<Object>> m_fireRainObjects;
@@ -245,15 +247,15 @@ private:
     static constexpr float FIRE_RAIN_DAMAGE_W = 0.18f;
     static constexpr float FIRE_RAIN_DAMAGE_H = 0.18f;
     int CreateOrAcquireFireRainObject();
-    void SpawnFireRainAt(float x, float y);
+    void SpawnFireRainAt(float x, float y, int attackerId = 0);
     void UpdateFireRains(float deltaTime);
     void DrawFireRains(class Camera* camera);
     bool CheckFireRainWallCollision(const Vector3& pos, float halfW, float halfH) const;
 
     // Fire Rain spawn 
-    struct FireRainEvent { float spawnTime; float x; };
+    struct FireRainEvent { float spawnTime; float x; int attackerId = 0; };
     std::vector<FireRainEvent> m_fireRainSpawnQueue;
-    void QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration);
+    void QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration, int attackerId = 0);
     void UpdateFireRainSpawnQueue();
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;

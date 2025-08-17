@@ -1312,7 +1312,7 @@ int GSPlay::CreateOrAcquireFireRainObject() {
     return (int)m_fireRainObjects.size() - 1;
 }
 
-void GSPlay::SpawnFireRainAt(float x, float y) {
+void GSPlay::SpawnFireRainAt(float x, float y, int attackerId) {
     GSPlay::FireRain* fr = nullptr;
     for (auto& r : m_fireRains) {
         if (!r.isActive) { fr = &r; break; }
@@ -1333,6 +1333,7 @@ void GSPlay::SpawnFireRainAt(float x, float y) {
     fr->fadeTimer = 0.0f;
     fr->position = Vector3(x, y, 0.0f);
     fr->velocity = Vector3(0.0f, -1.5f, 0.0f);
+    fr->attackerId = attackerId;
 
     if (!fr->anim) fr->anim = std::make_shared<AnimationManager>();
     if (auto texData = ResourceManager::GetInstance()->GetTextureData(66)) {
@@ -1432,12 +1433,17 @@ void GSPlay::UpdateFireRains(float deltaTime) {
                     }
                     
                     float prev = target.GetHealth();
-                    target.TakeDamage(100.0f);
+                    if (fr.attackerId > 0) {
+                        Character& attacker = (fr.attackerId == 1) ? m_player : m_player2;
+                        ProcessDamageAndScore(attacker, target, 100.0f);
+                    } else {
+                        target.TakeDamage(100.0f);
+                        if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                            target.TriggerDie();
+                        }
+                    }
                     target.CancelAllCombos();
                     if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
-                    if (prev > 0.0f && target.GetHealth() <= 0.0f) {
-                        target.TriggerDie();
-                    }
                     alreadyDamaged = true;
                 }
             };
@@ -1475,7 +1481,7 @@ void GSPlay::DrawFireRains(Camera* camera) {
     }
 }
 
-void GSPlay::QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration) {
+void GSPlay::QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration, int attackerId) {
     if (step <= 0.0f) return;
     std::vector<float> xs;
     for (float x = xStart; x <= xEnd + 1e-6f; x += step) {
@@ -1484,7 +1490,7 @@ void GSPlay::QueueFireRainWave(float xStart, float xEnd, float step, float y, fl
     for (float x : xs) {
         float r = (float)rand() / (float)RAND_MAX;
         float spawnOffset = r * duration;
-        m_fireRainSpawnQueue.push_back(FireRainEvent{ m_gameTime + spawnOffset, x });
+        m_fireRainSpawnQueue.push_back(FireRainEvent{ m_gameTime + spawnOffset, x, attackerId });
     }
 }
 
@@ -1494,7 +1500,7 @@ void GSPlay::UpdateFireRainSpawnQueue() {
     for (size_t i = 0; i < m_fireRainSpawnQueue.size(); ++i) {
         const FireRainEvent& ev = m_fireRainSpawnQueue[i];
         if (m_gameTime >= ev.spawnTime) {
-            SpawnFireRainAt(ev.x, 1.2f);
+            SpawnFireRainAt(ev.x, 1.2f, ev.attackerId);
         } else {
             if (writeIdx != i) m_fireRainSpawnQueue[writeIdx] = ev;
             ++writeIdx;
@@ -2175,7 +2181,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (bIsPressed && key == '1') { 
         if (m_player.IsOrc()) {
             m_player.TriggerOrcMeteorStrike();
-            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f);
+            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f, 1);
         } else if (m_player.IsKitsune()) {
             m_player.TriggerKitsuneEnergyOrb();
         } else if (m_player.IsWerewolf()) {
@@ -2197,7 +2203,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (bIsPressed && (key == 'N' || key == 'n')) {
         if (m_player2.IsOrc()) {
             m_player2.TriggerOrcMeteorStrike();
-            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f);
+            QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f, 2);
         } else if (m_player2.IsKitsune()) {
             m_player2.TriggerKitsuneEnergyOrb();
         } else if (m_player2.IsWerewolf()) {
@@ -3606,7 +3612,8 @@ void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
         projectile = m_energyOrbProjectiles.back().get();
         projectile->Initialize();
         projectile->SetWallCollision(m_wallCollision.get());
-        projectile->SetExplosionCallback([this](float x) { SpawnLightningEffect(x); });
+        int attackerId = (&character == &m_player) ? 1 : 2;
+        projectile->SetExplosionCallback([this, attackerId](float x) { SpawnLightningEffect(x, attackerId); });
     }
     
     if (projectile) {
@@ -3649,7 +3656,7 @@ void GSPlay::DetonatePlayerProjectiles(int playerId) {
     }
 }
 
-void GSPlay::SpawnLightningEffect(float x) {
+void GSPlay::SpawnLightningEffect(float x, int attackerId) {
     LightningEffect* lightning = nullptr;
     
     for (auto& effect : m_lightningEffects) {
@@ -3682,6 +3689,7 @@ void GSPlay::SpawnLightningEffect(float x) {
             lightning->hitboxTop = 1.95f;
             lightning->hitboxBottom = -1.95f;
             lightning->hasDealtDamage = false;
+            lightning->attackerId = attackerId;
             
             // Set lightning object position and scale
             if (objIndex < (int)m_lightningObjects.size() && m_lightningObjects[objIndex]) {
@@ -3782,7 +3790,16 @@ void GSPlay::CheckLightningDamage() {
             
             if (collisionX1 && collisionY1) {
                 if (!IsCharacterInvincible(m_player)) {
-                    m_player.TakeDamage(100);
+                    if (lightning.attackerId > 0) {
+                        Character& attacker = (lightning.attackerId == 1) ? m_player : m_player2;
+                        ProcessDamageAndScore(attacker, m_player, 100.0f);
+                    } else {
+                        float prevHealth = m_player.GetHealth();
+                        m_player.TakeDamage(100);
+                        if (prevHealth > 0.0f && m_player.GetHealth() <= 0.0f) {
+                            m_player.TriggerDie();
+                        }
+                    }
                     lightning.hasDealtDamage = true;
                 }
             }
@@ -3800,7 +3817,16 @@ void GSPlay::CheckLightningDamage() {
             
             if (collisionX2 && collisionY2) {
                 if (!IsCharacterInvincible(m_player2)) {
-                    m_player2.TakeDamage(100);
+                    if (lightning.attackerId > 0) {
+                        Character& attacker = (lightning.attackerId == 1) ? m_player : m_player2;
+                        ProcessDamageAndScore(attacker, m_player2, 100.0f);
+                    } else {
+                        float prevHealth = m_player2.GetHealth();
+                        m_player2.TakeDamage(100);
+                        if (prevHealth > 0.0f && m_player2.GetHealth() <= 0.0f) {
+                            m_player2.TriggerDie();
+                        }
+                    }
                     lightning.hasDealtDamage = true;
                 }
             }
@@ -4175,12 +4201,14 @@ void GSPlay::AddScore(int playerId, int points) {
 void GSPlay::UpdateScoreDisplay() {
     int score1 = m_player1Score;
     for (int i = 4; i >= 0; --i) { 
+        int digit = score1 % 10;
         UpdateScoreDigit(1, i, digit);
         score1 /= 10;
     }
     
     int score2 = m_player2Score;
     for (int i = 4; i >= 0; --i) {
+        int digit = score2 % 10;
         UpdateScoreDigit(2, i, digit);
         score2 /= 10;
     }
@@ -4218,4 +4246,8 @@ void GSPlay::ProcessDamageAndScore(Character& attacker, Character& target, float
     int attackerId = (&attacker == &m_player) ? 1 : 2;
     
     AddScore(attackerId, (int)damage);
+    
+    if (prevHealth > 0.0f && target.GetHealth() <= 0.0f) {
+        target.TriggerDieFromAttack(attacker);
+    }
 }
