@@ -51,6 +51,11 @@ void Character::SetBatDemonMode(bool enabled) {
         m_animation->SetBatDemonMode(enabled);
     }
     if (enabled) {
+        m_isDead = false;
+        if (m_movement) {
+            m_movement->ResetDieState();
+        }
+        
         SetGunMode(false);
         SetGrenadeMode(false);
         if (m_movement) {
@@ -90,6 +95,11 @@ void Character::SetWerewolfMode(bool enabled) {
         m_animation->SetWerewolfMode(enabled);
     }
     if (enabled) {
+        m_isDead = false;
+        if (m_movement) {
+            m_movement->ResetDieState();
+        }
+        
         SetGunMode(false);
         SetGrenadeMode(false);
         if (m_movement) {
@@ -139,6 +149,11 @@ void Character::SetKitsuneMode(bool enabled) {
         m_animation->SetKitsuneMode(enabled);
     }
     if (enabled) {
+        m_isDead = false;
+        if (m_movement) {
+            m_movement->ResetDieState();
+        }
+        
         SetGunMode(false);
         SetGrenadeMode(false);
         if (m_movement) {
@@ -186,6 +201,11 @@ void Character::SetOrcMode(bool enabled) {
         m_animation->SetOrcMode(enabled);
     }
     if (enabled) {
+        m_isDead = false;
+        if (m_movement) {
+            m_movement->ResetDieState();
+        }
+        
         SetGunMode(false);
         SetGrenadeMode(false);
         if (m_movement) {

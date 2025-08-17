@@ -685,3 +685,35 @@ ID 24
 NAME "Gun(Bazoka)"
 FILE "../Resources/Music/Gun(Bazoka).mp3"
 
+ID 25
+NAME "Kitsune_Lightning"
+FILE "../Resources/Music/Kitsune_Lightning.mp3"
+
+ID 26
+NAME "Kitsune_Orc_Fire_Appear"
+FILE "../Resources/Music/Kitsune_Orc_Fire_Appear.mp3"
+
+ID 27
+NAME "Orc_explosion"
+FILE "../Resources/Music/Orc_explosion.mp3"
+
+ID 28
+NAME "Orc_Fire"
+FILE "../Resources/Music/Orc_Fire.mp3"
+
+ID 29
+NAME "Werewolf_BatDemon_Appear"
+FILE "../Resources/Music/Werewolf_BatDemon_Appear.mp3"
+
+ID 30
+NAME "Werewolf_Batdemon_sword"
+FILE "../Resources/Music/Werewolf_Batdemon_sword.mp3"
+
+ID 31
+NAME "Wereworf_breathing"
+FILE "../Resources/Music/Wereworf_breathing.mp3"
+
+ID 32
+NAME "Wing_flap"
+FILE "../Resources/Music/Wing_flap.mp3"
+
