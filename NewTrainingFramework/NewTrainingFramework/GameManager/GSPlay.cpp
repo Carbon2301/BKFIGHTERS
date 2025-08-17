@@ -23,7 +23,7 @@
 #include <SDL_ttf.h>
 #include "SoundManager.h"
 
-#define MENU_BUTTON_ID 301
+
 
 // HURTBOX CONFIG 
 namespace {
@@ -341,7 +341,7 @@ bool GSPlay_IsShowPlatformBoxes() {
 }
 
 GSPlay::GSPlay() 
-    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f), m_cloudSpeed(0.5f), m_p1Respawned(false), m_p2Respawned(false) {
+    : GameStateBase(StateType::PLAY), m_gameTime(0.0f), m_player1Health(100.0f), m_player2Health(100.0f), m_cloudSpeed(0.5f), m_p1Respawned(false), m_p2Respawned(false), m_isPaused(false) {
 }
 
 GSPlay::~GSPlay() {
@@ -350,6 +350,7 @@ GSPlay::~GSPlay() {
 void GSPlay::Init() {
     std::cout << "=== GAMEPLAY MODE ===" << std::endl;
     std::cout << "Game started!" << std::endl;
+    std::cout << "Press ESC to pause/unpause game" << std::endl;
     std::cout << "Press C to toggle hitbox/hurtbox display" << std::endl;
     std::cout << "Press V to toggle platform boxes display" << std::endl;
     std::cout << "Press Z to toggle camera auto-zoom" << std::endl;
@@ -744,10 +745,21 @@ void GSPlay::Init() {
     }
     
     CreateAllScoreTextures();
+    CreatePauseTextTexture();
     UpdateScoreDisplay();
     UpdateTimeDisplay();
     
     HideEndScreen();
+    HidePauseScreen();
+    
+    Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
+    if (camera) {
+        camera->ResetToInitialState();
+        camera->EnableAutoZoom(true);
+        Vector3 player1Pos = m_player.GetPosition();
+        Vector3 player2Pos = m_player2.GetPosition();
+        camera->UpdateCameraForCharacters(player1Pos, player2Pos, 0.0f);
+    }
 }
 
 void GSPlay::UpdateHudAmmoDigits() {
@@ -1156,6 +1168,15 @@ int GSPlay::AmmoCapacityFor(int texId) const {
 }
 
 void GSPlay::Update(float deltaTime) {
+    if (m_isPaused) {
+        if (m_inputManager) {
+            m_inputManager->Update();
+        } else {
+            m_inputManager = InputManager::GetInstance();
+        }
+        return;
+    }
+    
     m_gameTime += deltaTime;
     
     SceneManager::GetInstance()->Update(deltaTime);
@@ -1325,16 +1346,9 @@ void GSPlay::Update(float deltaTime) {
     
     UpdateHealthBars();
     UpdateStaminaBars();
-    
-    Object* menuButton = SceneManager::GetInstance()->GetObject(MENU_BUTTON_ID);
-    if (menuButton) {
-        menuButton->SetScale(Vector3(0.2f, 0.1f, 1.0f));
-    }
-    
-    // Update cloud movement
+
     UpdateCloudMovement(deltaTime);
     
-    // Update fan rotation
     UpdateFanRotation(deltaTime);
 
     UpdateBloods(deltaTime);
@@ -1405,6 +1419,28 @@ void GSPlay::Draw() {
         if (cam) { DrawBombs(cam); }
         if (cam) { DrawExplosions(cam); }
         if (cam) { DrawBloods(cam); }
+    }
+    
+    if (m_isPaused) {
+        SceneManager* scene = SceneManager::GetInstance();
+        float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+        Matrix uiView;
+        Matrix uiProj;
+        uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+        uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+        
+        if (Object* pauseFrame = scene->GetObject(PAUSE_FRAME_ID)) {
+            pauseFrame->Draw(uiView, uiProj);
+        }
+        if (Object* pauseText = scene->GetObject(PAUSE_TEXT_ID)) {
+            pauseText->Draw(uiView, uiProj);
+        }
+        if (Object* resumeButton = scene->GetObject(PAUSE_RESUME_ID)) {
+            resumeButton->Draw(uiView, uiProj);
+        }
+        if (Object* quitButton = scene->GetObject(PAUSE_QUIT_ID)) {
+            quitButton->Draw(uiView, uiProj);
+        }
     }
     
     static float lastPosX = m_player.GetPosition().x;
@@ -2268,6 +2304,17 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         m_inputManager->UpdateKeyState(key, bIsPressed);
     }
     
+    if (key == 27) {
+        if (bIsPressed && !m_gameEnded) {
+            TogglePause();
+        }
+        return;
+    }
+    
+    if (m_isPaused) {
+        return;
+    }
+    
     if (key == 'M' || key == 'm') {
         if (bIsPressed) {
             DetonatePlayerProjectiles(2);
@@ -2677,7 +2724,8 @@ void GSPlay::SpawnBazokaBulletFromCharacter(const Character& ch, float jitterDeg
     const float forwardStep = 0.02f;
     Vector3 vLocalForward(faceSign * forwardStep, 0.0f, 0.0f);
     Vector3 vRotForward(vLocalForward.x * c - vLocalForward.y * s,
-                        vLocalForward.x * s + vLocalForward.y * c, 0.0f);
+                        vLocalForward.x * s + vLocalForward.y * c,
+                        0.0f);
     Vector3 dir(vRotForward.x, vRotForward.y, 0.0f);
     float len = dir.Length();
     if (len > 1e-6f) dir = dir / len; else dir = Vector3(faceSign, 0.0f, 0.0f);
@@ -3258,6 +3306,11 @@ void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {
         HandleEndScreenInput(x, y, bIsPressed);
         return;
     }
+    
+    if (m_isPaused) {
+        HandlePauseScreenInput(x, y, bIsPressed);
+        return;
+    }
 
     SceneManager* sceneManager = SceneManager::GetInstance();
     Camera* camera = sceneManager->GetActiveCamera();
@@ -3270,25 +3323,6 @@ void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {
     std::cout << "Camera: left=" << camera->GetLeft() << ", right=" << camera->GetRight()
               << ", top=" << camera->GetTop() << ", bottom=" << camera->GetBottom() << std::endl;
 
-    Object* closeBtn = sceneManager->GetObject(MENU_BUTTON_ID);
-    if (closeBtn) {
-        const Vector3& pos = closeBtn->GetPosition();
-        const Vector3& scale = closeBtn->GetScale();
-        float width = scale.x;
-        float height = scale.y;
-        float leftBtn = pos.x - width / 2.0f;
-        float rightBtn = pos.x + width / 2.0f;
-        float bottomBtn = pos.y - height / 2.0f;
-        float topBtn = pos.y + height / 2.0f;
-        std::cout << "Button ID " << MENU_BUTTON_ID << " region: left=" << leftBtn << ", right=" << rightBtn
-                  << ", top=" << topBtn << ", bottom=" << bottomBtn << std::endl;
-        if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
-            std::cout << "HIT button ID " << MENU_BUTTON_ID << std::endl;
-            std::cout << "[Mouse] Close button clicked in Play!" << std::endl;
-            GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
-            return;
-        }
-    }
 }
 
 void GSPlay::HandleMouseMove(int x, int y) {
@@ -3302,6 +3336,8 @@ void GSPlay::Pause() {
 
 void GSPlay::Exit() {
     SoundManager::Instance().StopMusic();
+    HidePauseScreen();
+    m_isPaused = false;
 }
 
 void GSPlay::Cleanup() {
@@ -4893,6 +4929,15 @@ void GSPlay::ResetGame() {
     ResetCharacterToInitialState(m_player, true);
     ResetCharacterToInitialState(m_player2, false);
     
+    Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
+    if (camera) {
+        camera->ResetToInitialState();
+        camera->EnableAutoZoom(true);
+        Vector3 player1Pos = m_player.GetPosition();
+        Vector3 player2Pos = m_player2.GetPosition();
+        camera->UpdateCameraForCharacters(player1Pos, player2Pos, 0.0f);
+    }
+    
     if (CharacterMovement* movement1 = m_player.GetMovement()) {
         movement1->SetInputLocked(false);
         movement1->SetNoClipNoGravity(false);
@@ -4977,6 +5022,9 @@ void GSPlay::ResetGame() {
     UpdateHudSpecialIcon(true);
     UpdateHudSpecialIcon(false);
     
+    HidePauseScreen();
+    m_isPaused = false;
+    
     std::cout << "Game reset successfully!" << std::endl;
 }
 
@@ -4999,6 +5047,10 @@ void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
         float buttonBottom = buttonPos.y - buttonScale.y * 0.5f;
         float buttonTop = buttonPos.y + buttonScale.y * 0.5f;
         
+        if (buttonBottom > buttonTop) {
+            std::swap(buttonBottom, buttonTop);
+        }
+        
         if (worldX >= buttonLeft && worldX <= buttonRight && 
             worldY >= buttonBottom && worldY <= buttonTop) {
             ResetGame();
@@ -5016,9 +5068,154 @@ void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
         float buttonBottom = buttonPos.y - buttonScale.y * 0.5f;
         float buttonTop = buttonPos.y + buttonScale.y * 0.5f;
         
+        if (buttonBottom > buttonTop) {
+            std::swap(buttonBottom, buttonTop);
+        }
+        
         if (worldX >= buttonLeft && worldX <= buttonRight && 
             worldY >= buttonBottom && worldY <= buttonTop) {
             std::cout << "[Mouse] Home button clicked! Returning to menu..." << std::endl;
+            GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
+            return;
+        }
+    }
+}
+
+void GSPlay::CreatePauseTextTexture() {
+    if (TTF_WasInit() == 0) {
+        TTF_Init();
+    }
+    
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    if (!font) {
+        std::cout << "Failed to load font for pause text: " << TTF_GetError() << std::endl;
+        return;
+    }
+    
+    TTF_SetFontHinting(font, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    
+    SDL_Color color = {255, 255, 255, 255};
+    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "PAUSED", color);
+    if (!textSurface) {
+        std::cout << "Unable to render pause text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
+        TTF_CloseFont(font);
+        return;
+    }
+    
+    m_pauseTextTexture = std::make_shared<Texture2D>();
+    if (m_pauseTextTexture->LoadFromSDLSurface(textSurface)) {
+        m_pauseTextTexture->SetSharpFiltering();
+    }
+    
+    SDL_FreeSurface(textSurface);
+    TTF_CloseFont(font);
+}
+
+void GSPlay::TogglePause() {
+    m_isPaused = !m_isPaused;
+    
+    if (m_isPaused) {
+        ShowPauseScreen();
+        std::cout << "Game Paused" << std::endl;
+    } else {
+        HidePauseScreen();
+        std::cout << "Game Resumed" << std::endl;
+    }
+}
+
+void GSPlay::ShowPauseScreen() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    if (Object* pauseFrame = scene->GetObject(PAUSE_FRAME_ID)) {
+        m_pauseFrameOriginalPos = pauseFrame->GetPosition();
+        pauseFrame->SetVisible(true);
+    }
+    
+    if (Object* pauseText = scene->GetObject(PAUSE_TEXT_ID)) {
+        m_pauseTextOriginalPos = pauseText->GetPosition();
+        pauseText->SetVisible(true);
+        if (m_pauseTextTexture) {
+            pauseText->SetDynamicTexture(m_pauseTextTexture);
+        }
+    }
+    
+    if (Object* resumeButton = scene->GetObject(PAUSE_RESUME_ID)) {
+        m_resumeButtonOriginalPos = resumeButton->GetPosition();
+        resumeButton->SetVisible(true);
+    }
+    
+    if (Object* quitButton = scene->GetObject(PAUSE_QUIT_ID)) {
+        m_quitButtonOriginalPos = quitButton->GetPosition();
+        quitButton->SetVisible(true);
+    }
+}
+
+void GSPlay::HidePauseScreen() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    if (Object* pauseFrame = scene->GetObject(PAUSE_FRAME_ID)) {
+        pauseFrame->SetVisible(false);
+    }
+    if (Object* pauseText = scene->GetObject(PAUSE_TEXT_ID)) {
+        pauseText->SetVisible(false);
+    }
+    if (Object* resumeButton = scene->GetObject(PAUSE_RESUME_ID)) {
+        resumeButton->SetVisible(false);
+    }
+    if (Object* quitButton = scene->GetObject(PAUSE_QUIT_ID)) {
+        quitButton->SetVisible(false);
+    }
+}
+
+void GSPlay::HandlePauseScreenInput(int x, int y, bool isPressed) {
+    if (!m_isPaused || !isPressed) return;
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+    float uiX = (x / (float)Globals::screenWidth) * 2.0f * aspect - aspect;
+    float uiY = 1.0f - (y / (float)Globals::screenHeight) * 2.0f;
+    
+    Object* resumeButton = scene->GetObject(PAUSE_RESUME_ID);
+    if (resumeButton) {
+        const Vector3& pos = resumeButton->GetPosition();
+        const Vector3& scale = resumeButton->GetScale();
+        float width = scale.x;
+        float height = scale.y;
+        float leftBtn = pos.x - width / 2.0f;
+        float rightBtn = pos.x + width / 2.0f;
+        float bottomBtn = pos.y - height / 2.0f;
+        float topBtn = pos.y + height / 2.0f;
+        
+        if (bottomBtn > topBtn) {
+            std::swap(bottomBtn, topBtn);
+        }
+        
+        if (uiX >= leftBtn && uiX <= rightBtn && uiY >= bottomBtn && uiY <= topBtn) {
+            std::cout << "[Mouse] Resume button clicked!" << std::endl;
+            TogglePause();
+            return;
+        }
+    }
+    
+    Object* quitButton = scene->GetObject(PAUSE_QUIT_ID);
+    if (quitButton) {
+        const Vector3& pos = quitButton->GetPosition();
+        const Vector3& scale = quitButton->GetScale();
+        float width = scale.x;
+        float height = scale.y;
+        float leftBtn = pos.x - width / 2.0f;
+        float rightBtn = pos.x + width / 2.0f;
+        float bottomBtn = pos.y - height / 2.0f;
+        float topBtn = pos.y + height / 2.0f;
+        
+        if (bottomBtn > topBtn) {
+            std::swap(bottomBtn, topBtn);
+        }
+        
+        if (uiX >= leftBtn && uiX <= rightBtn && uiY >= bottomBtn && uiY <= topBtn) {
+            std::cout << "[Mouse] Quit button clicked! Returning to menu..." << std::endl;
             GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
             return;
         }

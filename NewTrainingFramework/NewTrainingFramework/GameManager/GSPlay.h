@@ -14,7 +14,7 @@ class GSPlay : public GameStateBase {
 private:
     float m_gameTime;
     
-    static const int MENU_BUTTON_ID = 301;
+
     static const int ANIM_OBJECT_ID = 1000;
     std::shared_ptr<AnimationManager> m_animManager;
     
@@ -468,6 +468,23 @@ private:
     void UpdatePlayerScores();
     void ResetGame();
     void HandleEndScreenInput(int x, int y, bool isPressed);
+    
+    // Pause system
+    bool m_isPaused = false;
+    static const int PAUSE_FRAME_ID = 976;
+    static const int PAUSE_TEXT_ID = 977;
+    static const int PAUSE_RESUME_ID = 978;
+    static const int PAUSE_QUIT_ID = 979;
+    std::shared_ptr<Texture2D> m_pauseTextTexture;
+    Vector3 m_pauseFrameOriginalPos;
+    Vector3 m_pauseTextOriginalPos;
+    Vector3 m_resumeButtonOriginalPos;
+    Vector3 m_quitButtonOriginalPos;
+    void CreatePauseTextTexture();
+    void TogglePause();
+    void ShowPauseScreen();
+    void HidePauseScreen();
+    void HandlePauseScreenInput(int x, int y, bool isPressed);
     
     void InitializeRespawnSlots();
     void UpdateCharacterRespawn(float deltaTime);
