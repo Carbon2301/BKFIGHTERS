@@ -57,19 +57,37 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
 
     if (specialTexId == 75) { // Werewolf
         bool toWerewolf = !character.IsWerewolf();
-        if (toWerewolf) { character.SetBatDemonMode(false); character.SetKitsuneMode(false); character.SetOrcMode(false); }
+        if (toWerewolf) { 
+            character.SetBatDemonMode(false); 
+            character.SetKitsuneMode(false); 
+            character.SetOrcMode(false); 
+        }
         character.SetWerewolfMode(toWerewolf);
     } else if (specialTexId == 76) { // BatDemon
         bool toBat = !character.IsBatDemon();
-        if (toBat) { character.SetWerewolfMode(false); character.SetKitsuneMode(false); character.SetOrcMode(false); }
+        if (toBat) { 
+            character.SetWerewolfMode(false); 
+            character.SetKitsuneMode(false); 
+            character.SetOrcMode(false); 
+        }
         character.SetBatDemonMode(toBat);
     } else if (specialTexId == 77) { // Kitsune
         bool toKitsune = !character.IsKitsune();
-        if (toKitsune) { character.SetBatDemonMode(false); character.SetWerewolfMode(false); character.SetOrcMode(false); }
+        if (toKitsune) { 
+            character.SetBatDemonMode(false); 
+            character.SetWerewolfMode(false); 
+            character.SetOrcMode(false);
+            SoundManager::Instance().PlaySFXByID(26, 0);
+        }
         character.SetKitsuneMode(toKitsune);
     } else if (specialTexId == 78) { // Orc
         bool toOrc = !character.IsOrc();
-        if (toOrc) { character.SetBatDemonMode(false); character.SetWerewolfMode(false); character.SetKitsuneMode(false); }
+        if (toOrc) { 
+            character.SetBatDemonMode(false); 
+            character.SetWerewolfMode(false); 
+            character.SetKitsuneMode(false);
+            SoundManager::Instance().PlaySFXByID(26, 0);
+        }
         character.SetOrcMode(toOrc);
     }
 
@@ -1533,6 +1551,8 @@ void GSPlay::UpdateFireRains(float deltaTime) {
 
             bool hitWall = CheckFireRainWallCollision(fr.position, FIRE_RAIN_COLLISION_W * 0.5f, FIRE_RAIN_COLLISION_H * 0.5f);
             if (hitWall) {
+                SoundManager::Instance().PlaySFXByID(27, 0);
+                
                 if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                     cam->AddShake(0.01f, 0.18f, 18.0f);
                 }
@@ -1594,6 +1614,8 @@ void GSPlay::UpdateFireRains(float deltaTime) {
                     if (IsCharacterInvincible(target)) {
                         return;
                     }
+                    
+                    SoundManager::Instance().PlaySFXByID(27, 0);
                     
                     float prev = target.GetHealth();
                     if (fr.attackerId > 0) {
@@ -3762,6 +3784,8 @@ void GSPlay::HandleItemPickup() {
 void GSPlay::SpawnEnergyOrbProjectile(Character& character) {
     character.ResetKitsuneEnergyOrbAnimationComplete();
     
+    SoundManager::Instance().PlaySFXByID(15, 0);
+    
     EnergyOrbProjectile* projectile = nullptr;
     
     for (auto& proj : m_energyOrbProjectiles) {
@@ -3821,6 +3845,8 @@ void GSPlay::DetonatePlayerProjectiles(int playerId) {
 }
 
 void GSPlay::SpawnLightningEffect(float x, int attackerId) {
+    SoundManager::Instance().PlaySFXByID(25, 0);
+    
     LightningEffect* lightning = nullptr;
     
     for (auto& effect : m_lightningEffects) {

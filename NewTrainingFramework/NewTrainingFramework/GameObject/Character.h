@@ -180,6 +180,9 @@ public:
     float GetHealth() const { return m_health; }
     float GetMaxHealth() const { return MAX_HEALTH; }
     bool IsDead() const { 
+        if (IsSpecialForm()) {
+            return false;
+        }
         return m_isDead && m_movement && m_movement->IsDead(); 
     }
     bool IsDying() const {

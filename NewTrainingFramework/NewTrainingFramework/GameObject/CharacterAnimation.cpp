@@ -6,6 +6,7 @@
 #include "AnimationManager.h"
 #include "SceneManager.h"
 #include "../GameManager/ResourceManager.h"
+#include "../GameManager/SoundManager.h"
 #include "Object.h"
 #include <SDL.h>
 #include <iostream>
@@ -143,6 +144,18 @@ void CharacterAnimation::Update(float deltaTime, CharacterMovement* movement, Ch
     if (m_batSlashCooldownTimer > 0.0f) {
         m_batSlashCooldownTimer -= deltaTime;
         if (m_batSlashCooldownTimer < 0.0f) m_batSlashCooldownTimer = 0.0f;
+    }
+    
+    if (m_isBatDemon) {
+        static float wingFlapTimer = 0.0f;
+        wingFlapTimer += deltaTime;
+        if (wingFlapTimer >= 2.0f) {
+            SoundManager::Instance().PlaySFXByID(32, 1);
+            wingFlapTimer = 0.0f;
+        }
+    } else {
+        static float wingFlapTimer = 0.0f;
+        wingFlapTimer = 0.0f;
     }
 
     if (m_kitsuneEnergyOrbCooldownTimer > 0.0f) {
@@ -1082,6 +1095,10 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
     m_isBatDemon = enabled;
     if (enabled) { m_isKitsune = false; }
     if (enabled) {
+        SoundManager::Instance().PlaySFXByID(29, 0);
+        
+        SoundManager::Instance().PlaySFXByID(32, 1);
+        
         // Disable overlays
         m_gunMode = false;
         m_grenadeMode = false;
@@ -1111,7 +1128,6 @@ void CharacterAnimation::SetBatDemonMode(bool enabled) {
             TriggerBatAppearEffectAt(pos.x, pos.y);
         }
     } else {
-        // Restore original player body or werewolf depending on state
         if (m_isWerewolf) {
             if (m_characterObject) {
                 m_characterObject->SetTexture(60, 0);
@@ -1187,6 +1203,9 @@ void CharacterAnimation::TriggerBatDemonSlash() {
     if (!m_isBatDemon) return;
     if (m_batSlashActive) return;
     if (m_batSlashCooldownTimer > 0.0f) return;
+    
+    SoundManager::Instance().PlaySFXByID(30, 0);
+    
     if (m_animManager) {
         m_animManager->Play(1, false);
         m_lastAnimation = 1;
@@ -1410,10 +1429,10 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
     m_werewolfComboCooldownTimer = 0.0f;
     m_werewolfPounceCooldownTimer = 0.0f;
     if (enabled) {
-        // Disable gun/grenade overlays when werewolf
+        SoundManager::Instance().PlaySFXByID(29, 0);
+        
         m_gunMode = false;
         m_grenadeMode = false;
-        // Switch texture immediately and start werewolf Idle
         if (m_characterObject) {
             m_characterObject->SetTexture(60, 0);
         }
@@ -1434,9 +1453,12 @@ void CharacterAnimation::SetWerewolfMode(bool enabled) {
             const Vector3& pos = m_characterObject->GetPosition();
             TriggerWerewolfAppearEffectAt(pos.x, pos.y);
         }
+        
+        SoundManager::Instance().PlaySFXByID(31, 1);
     } else {
         m_werewolfComboCooldownTimer = 0.0f;
         m_werewolfPounceCooldownTimer = 0.0f;
+        
         // Restore original player body texture and animations
         int bodyTexId = (m_objectId == 1000) ? 10 : 11;
         if (m_characterObject) {
@@ -1748,6 +1770,9 @@ void CharacterAnimation::SetOrcMode(bool enabled) {
 void CharacterAnimation::TriggerWerewolfCombo() {
     if (!m_isWerewolf) return;
     if (m_werewolfComboCooldownTimer > 0.0f || m_werewolfComboActive) return;
+    
+    SoundManager::Instance().PlaySFXByID(30, 0);
+    
     m_werewolfComboActive = true;
     m_werewolfComboHitWindowTimer = m_werewolfComboHitWindow;
     if (m_animManager) {
@@ -1759,6 +1784,9 @@ void CharacterAnimation::TriggerWerewolfCombo() {
 void CharacterAnimation::TriggerWerewolfPounce() {
     if (!m_isWerewolf) return;
     if (m_werewolfPounceCooldownTimer > 0.0f || m_werewolfPounceActive) return;
+    
+    SoundManager::Instance().PlaySFXByID(30, 0);
+    
     m_werewolfComboActive = false;
     m_werewolfPounceActive = true;
     m_werewolfPounceHitWindowTimer = m_werewolfPounceHitWindow;
@@ -1796,6 +1824,9 @@ void CharacterAnimation::TriggerOrcFlameBurst() {
     if (!m_isOrc) return;
     if (m_orcMeteorStrikeActive || m_orcFlameBurstActive) return;
     if (m_orcActionCooldownTimer > 0.0f) return;
+    
+    SoundManager::Instance().PlaySFXByID(28, 0);
+    
     if (m_animManager) {
         m_animManager->Play(3, false);
         m_lastAnimation = 3;
