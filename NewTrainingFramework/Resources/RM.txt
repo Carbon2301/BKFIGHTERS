@@ -574,6 +574,14 @@ ID 80
 FILE "../Resources/Fighter/UI/HealBox.tga"
 TILING GL_CLAMP_TO_EDGE
 
+ID 81
+FILE "../Resources/Button/PlayAgain_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 82
+FILE "../Resources/Button/Home_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
 # Shader 1
 ID 0
 VS "../Resources/Shaders/TriangleShaderVS.vs"

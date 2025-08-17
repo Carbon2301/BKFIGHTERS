@@ -3280,6 +3280,11 @@ void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {
         float rightBtn = pos.x + width / 2.0f;
         float bottomBtn = pos.y - height / 2.0f;
         float topBtn = pos.y + height / 2.0f;
+        
+        if (bottomBtn > topBtn) {
+            std::swap(bottomBtn, topBtn);
+        }
+        
         std::cout << "Button ID " << MENU_BUTTON_ID << " region: left=" << leftBtn << ", right=" << rightBtn
                   << ", top=" << topBtn << ", bottom=" << bottomBtn << std::endl;
         if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
@@ -4999,6 +5004,10 @@ void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
         float buttonBottom = buttonPos.y - buttonScale.y * 0.5f;
         float buttonTop = buttonPos.y + buttonScale.y * 0.5f;
         
+        if (buttonBottom > buttonTop) {
+            std::swap(buttonBottom, buttonTop);
+        }
+        
         if (worldX >= buttonLeft && worldX <= buttonRight && 
             worldY >= buttonBottom && worldY <= buttonTop) {
             ResetGame();
@@ -5015,6 +5024,10 @@ void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
         float buttonRight = buttonPos.x + buttonScale.x * 0.5f;
         float buttonBottom = buttonPos.y - buttonScale.y * 0.5f;
         float buttonTop = buttonPos.y + buttonScale.y * 0.5f;
+        
+        if (buttonBottom > buttonTop) {
+            std::swap(buttonBottom, buttonTop);
+        }
         
         if (worldX >= buttonLeft && worldX <= buttonRight && 
             worldY >= buttonBottom && worldY <= buttonTop) {

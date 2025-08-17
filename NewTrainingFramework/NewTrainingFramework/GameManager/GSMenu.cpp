@@ -11,6 +11,7 @@
 #include "../GameObject/Shaders.h"
 #include <SDL_mixer.h>
 #include "SoundManager.h"
+#include <algorithm>
 
 GSMenu::GSMenu() 
     : GameStateBase(StateType::MENU), m_buttonTimer(0.0f) {
@@ -129,6 +130,11 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
             float rightBtn = pos.x + width / 2.0f;
             float bottomBtn = pos.y - height / 2.0f;
             float topBtn = pos.y + height / 2.0f;
+            
+            if (bottomBtn > topBtn) {
+                std::swap(bottomBtn, topBtn);
+            }
+            
             std::cout << "Button ID " << id << " region: left=" << leftBtn << ", right=" << rightBtn
                       << ", top=" << topBtn << ", bottom=" << bottomBtn << std::endl;
             if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
