@@ -100,7 +100,7 @@ private:
     void DrawBloods(class Camera* cam);
 
      // Bomb system
-     struct Bomb { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; bool grounded = false; bool atRest = false; };
+     struct Bomb { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; bool grounded = false; bool atRest = false; int attackerId = 0; };
      std::vector<Bomb> m_bombs;
      std::vector<std::unique_ptr<Object>> m_bombObjs;
      std::vector<int> m_freeBombSlots;

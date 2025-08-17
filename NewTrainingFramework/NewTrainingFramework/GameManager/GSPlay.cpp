@@ -1566,6 +1566,7 @@ void GSPlay::SpawnBombFromCharacter(const Character& ch, float overrideLife) {
     Bomb b; b.x = spawn.x; b.y = spawn.y;
     b.vx = dir.x * BOMB_SPEED; b.vy = dir.y * BOMB_SPEED;
     b.life = (overrideLife > 0.0f) ? overrideLife : BOMB_LIFETIME; b.objIndex = slot; b.angleRad = angleWorld; b.faceSign = faceSign;
+    b.attackerId = (&ch == &m_player) ? 1 : 2;
     m_bombs.push_back(b);
 }
 
@@ -1635,7 +1636,7 @@ void GSPlay::UpdateBombs(float dt) {
         }
 
         if (it->life <= 0.0f) {
-            SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
+            SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL, it->attackerId);
             if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                 cam->AddShake(0.04f, 0.4f, 18.0f);
             }
