@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <functional>
 #include "CharacterMovement.h"
 #include "CharacterCombat.h"
 #include "CharacterHitbox.h"
@@ -51,6 +52,7 @@ private:
     WeaponType m_weapon = WeaponType::None;
 
     bool m_suppressNextPunch = false;
+    std::function<void(Character&)> m_selfDeathCallback;
 
 public:
     Character();
@@ -180,6 +182,9 @@ public:
     bool IsDead() const { 
         return m_isDead && m_movement && m_movement->IsDead(); 
     }
+    bool IsDying() const {
+        return m_movement && m_movement->IsDying();
+    }
     void TakeDamage(float damage, bool playSfx = true);
     void Heal(float amount);
     void ResetHealth();
@@ -197,6 +202,7 @@ public:
      void SuppressNextPunch() { m_suppressNextPunch = true; }
      CharacterAnimation* GetAnimation() const { return m_animation.get(); }
      CharacterCombat* GetCombat() const { return m_combat.get(); }
+     void SetSelfDeathCallback(std::function<void(Character&)> callback) { m_selfDeathCallback = callback; }
 
      // Werewolf action state queries for hurtbox selection
      bool IsWerewolfComboActive() const;

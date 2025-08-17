@@ -406,6 +406,8 @@ private:
     void UpdateScoreDisplay();
     void UpdateScoreDigit(int playerId, int digitPosition, int digitValue);
     void ProcessDamageAndScore(Character& attacker, Character& target, float damage);
+    void ProcessKillAndDeath(Character& attacker, Character& target);
+    void ProcessSelfDeath(Character& character);
 
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };

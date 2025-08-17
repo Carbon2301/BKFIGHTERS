@@ -291,7 +291,15 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
             float pendingDamage = m_movement->ConsumePendingFallDamage();
             if (pendingDamage > 0.0f) {
                 SoundManager::Instance().PlaySFXByID(9, 0);
+                float prevHealth = GetHealth();
                 TakeDamage(pendingDamage, false);
+                if (prevHealth > 0.0f && GetHealth() <= 0.0f) {
+                    if (m_selfDeathCallback) {
+                        m_selfDeathCallback(*this);
+                    } else {
+                        TriggerDie();
+                    }
+                }
             }
         }
         m_prevHardLandingActive = hardLandingNow;

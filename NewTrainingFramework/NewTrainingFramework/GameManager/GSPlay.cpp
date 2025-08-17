@@ -442,6 +442,13 @@ void GSPlay::Init() {
             ProcessDamageAndScore(attacker, target, damage);
         });
     }
+    
+    m_player.SetSelfDeathCallback([this](Character& character) {
+        ProcessSelfDeath(character);
+    });
+    m_player2.SetSelfDeathCallback([this](Character& character) {
+        ProcessSelfDeath(character);
+    });
 
     // Player 1 werewolf
     m_player.SetWerewolfHurtboxIdle   (0.19f, 0.19f,  0.015f, -0.1f);
@@ -1030,9 +1037,6 @@ void GSPlay::Update(float deltaTime) {
             ProcessDamageAndScore(source, target, 100.0f);
             target.CancelAllCombos();
             if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
-            if (target.GetHealth() <= 0.0f) {
-                target.TriggerDie();
-            }
         }
     };
     checkFireDamage(m_player, m_player2);
@@ -1056,9 +1060,6 @@ void GSPlay::Update(float deltaTime) {
             ProcessDamageAndScore(source, target, 100.0f);
             target.CancelAllCombos();
             if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
-            if (target.GetHealth() <= 0.0f) {
-                target.TriggerDie();
-            }
             anim->MarkBatWindDealtDamage();
         }
     };
@@ -1439,7 +1440,7 @@ void GSPlay::UpdateFireRains(float deltaTime) {
                     } else {
                         target.TakeDamage(100.0f);
                         if (prev > 0.0f && target.GetHealth() <= 0.0f) {
-                            target.TriggerDie();
+                            ProcessSelfDeath(target);
                         }
                     }
                     target.CancelAllCombos();
@@ -1736,7 +1737,7 @@ void GSPlay::UpdateExplosions(float dt) {
                 target.CancelAllCombos();
                 if (CharacterMovement* mv = target.GetMovement()) mv->SetInputLocked(false);
                 if (target.GetHealth() <= 0.0f) {
-                    target.TriggerDie();
+                    ProcessSelfDeath(target);
                 }
             };
             applyDamage(m_player);
@@ -2237,7 +2238,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             return;
         }
         if (bIsPressed) {
-            if (!m_player.IsGunMode() && m_p1Bombs > 0) {
+            if (!m_player.IsGunMode() && m_p1Bombs > 0 && !m_player.IsDead() && !m_player.IsDying()) {
                 bool entering = !m_player.IsGrenadeMode();
                 if (entering) {
                     m_player.SetGrenadeMode(true);
@@ -2255,7 +2256,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 if (remain <= 0.0f || m_p1GrenadeExplodedInHand) {
                 } else {
                     if (remain < 0.2f) remain = 0.2f;
-                    if (m_p1Bombs > 0 && !m_player.IsOrc()) { SpawnBombFromCharacter(m_player, remain); m_p1Bombs -= 1; UpdateHudBombDigits(); }
+                    if (m_p1Bombs > 0 && !m_player.IsOrc() && !m_player.IsDead() && !m_player.IsDying()) { SpawnBombFromCharacter(m_player, remain); m_p1Bombs -= 1; UpdateHudBombDigits(); }
                 }
                 m_p1GrenadePressTime = -1.0f;
                 m_p1GrenadeExplodedInHand = false;
@@ -2276,7 +2277,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             return;
         }
         if (bIsPressed) {
-            if (!m_player2.IsGunMode() && m_p2Bombs > 0) {
+            if (!m_player2.IsGunMode() && m_p2Bombs > 0 && !m_player2.IsDead() && !m_player2.IsDying()) {
                 bool entering2 = !m_player2.IsGrenadeMode();
                 if (entering2) {
                     m_player2.SetGrenadeMode(true);
@@ -2294,7 +2295,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 if (remain <= 0.0f || m_p2GrenadeExplodedInHand) {
                 } else {
                     if (remain < 0.2f) remain = 0.2f;
-                    if (m_p2Bombs > 0 && !m_player2.IsOrc()) { SpawnBombFromCharacter(m_player2, remain); m_p2Bombs -= 1; UpdateHudBombDigits(); }
+                    if (m_p2Bombs > 0 && !m_player2.IsOrc() && !m_player2.IsDead() && !m_player2.IsDying()) { SpawnBombFromCharacter(m_player2, remain); m_p2Bombs -= 1; UpdateHudBombDigits(); }
                 }
                 m_p2GrenadePressTime = -1.0f;
                 m_p2GrenadeExplodedInHand = false;
@@ -3798,7 +3799,7 @@ void GSPlay::CheckLightningDamage() {
                         float prevHealth = m_player.GetHealth();
                         m_player.TakeDamage(100);
                         if (prevHealth > 0.0f && m_player.GetHealth() <= 0.0f) {
-                            m_player.TriggerDie();
+                            ProcessSelfDeath(m_player);
                         }
                     }
                     lightning.hasDealtDamage = true;
@@ -3825,7 +3826,7 @@ void GSPlay::CheckLightningDamage() {
                         float prevHealth = m_player2.GetHealth();
                         m_player2.TakeDamage(100);
                         if (prevHealth > 0.0f && m_player2.GetHealth() <= 0.0f) {
-                            m_player2.TriggerDie();
+                            ProcessSelfDeath(m_player2);
                         }
                     }
                     lightning.hasDealtDamage = true;
@@ -4249,6 +4250,43 @@ void GSPlay::ProcessDamageAndScore(Character& attacker, Character& target, float
     AddScore(attackerId, (int)damage);
     
     if (prevHealth > 0.0f && target.GetHealth() <= 0.0f) {
-        target.TriggerDieFromAttack(attacker);
+        ProcessKillAndDeath(attacker, target);
     }
+}
+
+void GSPlay::ProcessKillAndDeath(Character& attacker, Character& target) {
+    int attackerId = (&attacker == &m_player) ? 1 : 2;
+    AddScore(attackerId, 100);
+    
+    int targetId = (&target == &m_player) ? 1 : 2;
+    AddScore(targetId, -50);
+    
+    if (&target == &m_player) {
+        m_player.SetGrenadeMode(false);
+        m_p1GrenadePressTime = -1.0f;
+        m_p1GrenadeExplodedInHand = false;
+    } else {
+        m_player2.SetGrenadeMode(false);
+        m_p2GrenadePressTime = -1.0f;
+        m_p2GrenadeExplodedInHand = false;
+    }
+    
+    target.TriggerDieFromAttack(attacker);
+}
+
+void GSPlay::ProcessSelfDeath(Character& character) {
+    int characterId = (&character == &m_player) ? 1 : 2;
+    AddScore(characterId, -50);
+    
+    if (&character == &m_player) {
+        m_player.SetGrenadeMode(false);
+        m_p1GrenadePressTime = -1.0f;
+        m_p1GrenadeExplodedInHand = false;
+    } else {
+        m_player2.SetGrenadeMode(false);
+        m_p2GrenadePressTime = -1.0f;
+        m_p2GrenadeExplodedInHand = false;
+    }
+    
+    character.TriggerDie();
 }
