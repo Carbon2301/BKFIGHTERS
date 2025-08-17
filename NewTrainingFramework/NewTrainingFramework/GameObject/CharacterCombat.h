@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <functional>
 #include "../../Utilities/Math.h"
 
 class AnimationManager;
@@ -56,7 +57,9 @@ private:
     class CharacterAnimation* m_lastAnimationCtx = nullptr;
     class CharacterMovement*  m_lastMovementCtx  = nullptr;
 
-  bool m_attackPressed = false;
+    bool m_attackPressed = false;
+    
+    std::function<void(Character&, Character&, float)> m_damageCallback;
 
 public:
     CharacterCombat();
@@ -78,7 +81,8 @@ public:
     bool CheckHitboxCollision(const Character& attacker, const Character& target) const;
     void TriggerGetHit(CharacterAnimation* animation, const Character& attacker, Character* target);
     bool IsHit() const { return m_isHit; }
-  void SetAttackPressed(bool pressed) { m_attackPressed = pressed; }
+      void SetAttackPressed(bool pressed) { m_attackPressed = pressed; }
+    void SetDamageCallback(std::function<void(Character&, Character&, float)> callback) { m_damageCallback = callback; }
     
     bool IsInCombo() const { return m_isInCombo; }
     int GetComboCount() const { return m_comboCount; }

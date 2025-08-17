@@ -176,12 +176,12 @@ public:
     void SetLadderEnabled(bool enabled) { m_ladderEnabled = enabled; if (!enabled) m_isOnLadder = false; }
     
     void Update(float deltaTime, const bool* keyStates);
-    void UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
+    void UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY, bool allowPlatformFallThrough = true);
     bool HandleLadderWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
     
     void HandleMovement(float deltaTime, const bool* keyStates);
     void HandleJump(float deltaTime, const bool* keyStates);
-    void HandleJumpWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
+    void HandleJumpWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY, bool allowPlatformFallThrough = true);
     void HandleLanding(const bool* keyStates);
     void HandleLandingWithHurtbox(const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY);
     void HandleDie(float deltaTime);

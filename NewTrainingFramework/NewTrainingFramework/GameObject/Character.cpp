@@ -63,6 +63,15 @@ void Character::SetBatDemonMode(bool enabled) {
             m_movement->SetNoClipNoGravity(false);
             m_movement->SetMoveSpeedMultiplier(1.0f);
         }
+        
+        Vector3 pos = GetPosition();
+        if (pos.x < -3.7f || pos.x > 3.4f || pos.y < -1.2f || pos.y > 1.7f) {
+            if (m_selfDeathCallback) {
+                m_selfDeathCallback(*this);
+            } else {
+                TriggerDie();
+            }
+        }
     }
 }
 
@@ -272,9 +281,12 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
 		m_movement->SetInputLocked(lock);
     }
     
+    bool allowPlatformFallThrough = !IsGunMode() && !IsGrenadeMode();
+    
     m_movement->UpdateWithHurtbox(deltaTime, keyStates, 
                                   GetHurtboxWidth(), GetHurtboxHeight(), 
-                                  GetHurtboxOffsetX(), GetHurtboxOffsetY());
+                                  GetHurtboxOffsetX(), GetHurtboxOffsetY(), 
+                                  allowPlatformFallThrough);
     
     if (IsSpecialForm() && m_movement) {
         (void)m_movement->ConsumePendingFallDamage();
@@ -291,7 +303,15 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
             float pendingDamage = m_movement->ConsumePendingFallDamage();
             if (pendingDamage > 0.0f) {
                 SoundManager::Instance().PlaySFXByID(9, 0);
+                float prevHealth = GetHealth();
                 TakeDamage(pendingDamage, false);
+                if (prevHealth > 0.0f && GetHealth() <= 0.0f) {
+                    if (m_selfDeathCallback) {
+                        m_selfDeathCallback(*this);
+                    } else {
+                        TriggerDie();
+                    }
+                }
             }
         }
         m_prevHardLandingActive = hardLandingNow;

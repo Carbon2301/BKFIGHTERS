@@ -100,7 +100,7 @@ private:
     void DrawBloods(class Camera* cam);
 
      // Bomb system
-     struct Bomb { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; bool grounded = false; bool atRest = false; };
+     struct Bomb { float x; float y; float vx; float vy; float life; int objIndex; float angleRad; float faceSign; bool grounded = false; bool atRest = false; int attackerId = 0; };
      std::vector<Bomb> m_bombs;
      std::vector<std::unique_ptr<Object>> m_bombObjs;
      std::vector<int> m_freeBombSlots;
@@ -130,13 +130,14 @@ private:
          bool damagedP1 = false;
          bool damagedP2 = false;
          float damageRadiusMul = 1.0f;
+         int attackerId = 0;
      };
      std::vector<Explosion> m_explosions;
      std::vector<std::unique_ptr<Object>> m_explosionObjs;
      std::vector<int> m_freeExplosionSlots;
      int m_explosionObjectId = 1501;
      int CreateOrAcquireExplosionObjectFromProto(int protoObjectId);
-     void SpawnExplosionAt(float x, float y, float radiusMul = EXPLOSION_DAMAGE_RADIUS_MUL);
+     void SpawnExplosionAt(float x, float y, float radiusMul = EXPLOSION_DAMAGE_RADIUS_MUL, int attackerId = 0);
      void UpdateExplosions(float dt);
      void DrawExplosions(class Camera* cam);
      void SetSpriteUV(Object* obj, int cols, int rows, int frameIndex);
@@ -210,12 +211,13 @@ private:
         float hitboxTop;
         float hitboxBottom;
         bool hasDealtDamage;
+        int attackerId = 0;
     };
     std::vector<LightningEffect> m_lightningEffects;
     std::vector<std::unique_ptr<Object>> m_lightningObjects;
     std::vector<int> m_freeLightningSlots;
     static constexpr int MAX_LIGHTNING_EFFECTS = 1000;
-    void SpawnLightningEffect(float x);
+    void SpawnLightningEffect(float x, int attackerId = 0);
     void UpdateLightningEffects(float deltaTime);
     void DrawLightningEffects(class Camera* camera);
     int CreateOrAcquireLightningObject();
@@ -234,6 +236,7 @@ private:
         std::shared_ptr<AnimationManager> anim;
         bool damagedP1 = false;
         bool damagedP2 = false;
+        int attackerId = 0; 
     };
     std::vector<FireRain> m_fireRains;
     std::vector<std::unique_ptr<Object>> m_fireRainObjects;
@@ -244,15 +247,15 @@ private:
     static constexpr float FIRE_RAIN_DAMAGE_W = 0.18f;
     static constexpr float FIRE_RAIN_DAMAGE_H = 0.18f;
     int CreateOrAcquireFireRainObject();
-    void SpawnFireRainAt(float x, float y);
+    void SpawnFireRainAt(float x, float y, int attackerId = 0);
     void UpdateFireRains(float deltaTime);
     void DrawFireRains(class Camera* camera);
     bool CheckFireRainWallCollision(const Vector3& pos, float halfW, float halfH) const;
 
     // Fire Rain spawn 
-    struct FireRainEvent { float spawnTime; float x; };
+    struct FireRainEvent { float spawnTime; float x; int attackerId = 0; };
     std::vector<FireRainEvent> m_fireRainSpawnQueue;
-    void QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration);
+    void QueueFireRainWave(float xStart, float xEnd, float step, float y, float duration, int attackerId = 0);
     void UpdateFireRainSpawnQueue();
 
     static constexpr float SHOTGUN_RELOAD_TIME = 0.30f;
@@ -381,6 +384,28 @@ private:
     Vector3 m_hudBombIcon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     Vector3 m_hudBombIcon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     void UpdateHudBombDigits();
+
+    // Score HUD Text
+    std::shared_ptr<Object> m_scoreTextP1;
+    std::shared_ptr<Object> m_scoreTextP2;
+    std::shared_ptr<Texture2D> m_scoreTextTexture;
+
+    // Score HUD Digits
+    std::vector<std::shared_ptr<Object>> m_scoreDigitObjectsP1; // IDs 941-945
+    std::vector<std::shared_ptr<Object>> m_scoreDigitObjectsP2; // IDs 947-951
+    std::shared_ptr<Texture2D> m_scoreDigitTexture;
+
+    // Score System
+    int m_player1Score = 0;
+    int m_player2Score = 0;
+    std::vector<std::shared_ptr<Texture2D>> m_digitTextures;
+    void CreateAllScoreTextures();
+    void AddScore(int playerId, int points);
+    void UpdateScoreDisplay();
+    void UpdateScoreDigit(int playerId, int digitPosition, int digitValue);
+    void ProcessDamageAndScore(Character& attacker, Character& target, float damage);
+    void ProcessKillAndDeath(Character& attacker, Character& target);
+    void ProcessSelfDeath(Character& character);
 
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };
