@@ -403,6 +403,7 @@ void GSPlay::Init() {
     Object* healthBar2 = sceneManager->GetObject(2001);
 
     m_gameTime = 0.0f;
+    m_gameEnded = false;
 
     m_inputManager = InputManager::GetInstance();
     m_prevJumpingP1 = false;
@@ -745,6 +746,8 @@ void GSPlay::Init() {
     CreateAllScoreTextures();
     UpdateScoreDisplay();
     UpdateTimeDisplay();
+    
+    HideEndScreen();
 }
 
 void GSPlay::UpdateHudAmmoDigits() {
@@ -1162,6 +1165,7 @@ void GSPlay::Update(float deltaTime) {
     UpdateRespawnInvincibility(deltaTime);
     UpdateGameStartBlink(deltaTime);
     UpdateGameTimer(deltaTime);
+    UpdateEndScreenVisibility();
     
     if (m_inputManager) {
         HandleItemPickup();
@@ -3240,6 +3244,11 @@ static float MousePixelToWorldY(int y, Camera* cam) {
 void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {
     if (!bIsPressed) return;
 
+    if (m_gameEnded) {
+        HandleEndScreenInput(x, y, bIsPressed);
+        return;
+    }
+
     SceneManager* sceneManager = SceneManager::GetInstance();
     Camera* camera = sceneManager->GetActiveCamera();
     if (!camera) return;
@@ -4282,6 +4291,11 @@ void GSPlay::UpdateGameTimer(float deltaTime) {
         m_gameTimer = 0.0f;
     }
     
+    if (m_gameTimer <= 0.0f && !m_gameEnded) {
+        m_gameEnded = true;
+        ShowEndScreen();
+    }
+    
     UpdateTimeDisplay();
 }
 
@@ -4434,4 +4448,466 @@ void GSPlay::ProcessSelfDeath(Character& character) {
     
     character.TakeDamage(character.GetHealth(), false);
     character.TriggerDie();
+}
+
+void GSPlay::UpdateEndScreenVisibility() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    for (int id = 958; id <= 975; ++id) {
+        if (Object* obj = scene->GetObject(id)) {
+            obj->SetVisible(m_gameEnded);
+        }
+    }
+    
+    if (m_gameEnded) {
+        UpdateWinnerText();
+        UpdateFinalScoreText();
+        UpdatePlayerScoreLabels();
+        UpdatePlayerLabels();
+        UpdatePlayerScores();
+    }
+}
+
+void GSPlay::ShowEndScreen() {
+    m_gameEnded = true;
+    UpdateEndScreenVisibility();
+    UpdateWinnerText();
+    UpdateFinalScoreText();
+    UpdatePlayerScoreLabels();
+    UpdatePlayerLabels();
+    UpdatePlayerScores();
+}
+
+void GSPlay::HideEndScreen() {
+    m_gameEnded = false;
+    UpdateEndScreenVisibility();
+}
+
+void GSPlay::UpdateWinnerText() {
+    if (!m_gameEnded) return;
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* winnerObj = scene->GetObject(959);
+    if (!winnerObj) return;
+    
+    const char* winnerText = nullptr;
+    if (m_player1Score > m_player2Score) {
+        winnerText = "P1 WINS";
+    } else if (m_player2Score > m_player1Score) {
+        winnerText = "P2 WINS";
+    } else {
+        winnerText = "DRAW";
+    }
+    
+    if (TTF_WasInit() == 0) {
+        TTF_Init();
+    }
+    
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    if (font) {
+        SDL_Color color = {255, 0, 0, 255};
+        SDL_Surface* surf = TTF_RenderUTF8_Blended(font, winnerText, color);
+        if (surf) {
+            auto textTexture = std::make_shared<Texture2D>();
+            if (textTexture->LoadFromSDLSurface(surf)) {
+                textTexture->SetSharpFiltering();
+                winnerObj->SetDynamicTexture(textTexture);
+            }
+            SDL_FreeSurface(surf);
+        }
+        TTF_CloseFont(font);
+    }
+}
+
+void GSPlay::UpdateFinalScoreText() {
+    if (!m_gameEnded) return;
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* finalScoreObj = scene->GetObject(960);
+    if (!finalScoreObj) return;
+    
+    if (TTF_WasInit() == 0) {
+        TTF_Init();
+    }
+    
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    if (font) {
+        SDL_Color color = {255, 255, 0, 255}; 
+        SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "FINAL SCORE", color);
+        if (surf) {
+            auto textTexture = std::make_shared<Texture2D>();
+            if (textTexture->LoadFromSDLSurface(surf)) {
+                textTexture->SetSharpFiltering();
+                finalScoreObj->SetDynamicTexture(textTexture);
+            }
+            SDL_FreeSurface(surf);
+        }
+        TTF_CloseFont(font);
+    }
+}
+
+void GSPlay::UpdatePlayerScoreLabels() {
+    if (!m_gameEnded) return;
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    Object* playerLabelObj = scene->GetObject(968);
+    if (playerLabelObj) {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (font) {
+            SDL_Color color = {255, 255, 255, 255};
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "PLAYER", color);
+            if (surf) {
+                auto textTexture = std::make_shared<Texture2D>();
+                if (textTexture->LoadFromSDLSurface(surf)) {
+                    textTexture->SetSharpFiltering();
+                    playerLabelObj->SetDynamicTexture(textTexture);
+                }
+                SDL_FreeSurface(surf);
+            }
+            TTF_CloseFont(font);
+        }
+    }
+    
+    Object* scoreLabelObj = scene->GetObject(969);
+    if (scoreLabelObj) {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (font) {
+            SDL_Color color = {255, 255, 255, 255}; // White color
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "SCORE", color);
+            if (surf) {
+                auto textTexture = std::make_shared<Texture2D>();
+                if (textTexture->LoadFromSDLSurface(surf)) {
+                    textTexture->SetSharpFiltering();
+                    scoreLabelObj->SetDynamicTexture(textTexture);
+                }
+                SDL_FreeSurface(surf);
+            }
+            TTF_CloseFont(font);
+        }
+    }
+}
+
+void GSPlay::UpdatePlayerLabels() {
+    if (!m_gameEnded) return;
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    Object* p1LabelObj = scene->GetObject(970);
+    if (p1LabelObj) {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (font) {
+            SDL_Color color = {255, 255, 255, 255}; 
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "P1", color);
+            if (surf) {
+                auto textTexture = std::make_shared<Texture2D>();
+                if (textTexture->LoadFromSDLSurface(surf)) {
+                    textTexture->SetSharpFiltering();
+                    p1LabelObj->SetDynamicTexture(textTexture);
+                }
+                SDL_FreeSurface(surf);
+            }
+            TTF_CloseFont(font);
+        }
+    }
+    
+    Object* p2LabelObj = scene->GetObject(971);
+    if (p2LabelObj) {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (font) {
+            SDL_Color color = {255, 255, 255, 255}; 
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "P2", color);
+            if (surf) {
+                auto textTexture = std::make_shared<Texture2D>();
+                if (textTexture->LoadFromSDLSurface(surf)) {
+                    textTexture->SetSharpFiltering();
+                    p2LabelObj->SetDynamicTexture(textTexture);
+                }
+                SDL_FreeSurface(surf);
+            }
+            TTF_CloseFont(font);
+        }
+    }
+}
+
+void GSPlay::UpdatePlayerScores() {
+    if (!m_gameEnded) return;
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    Object* p1ScoreObj = scene->GetObject(972);
+    if (p1ScoreObj) {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (font) {
+            SDL_Color color = {255, 255, 255, 255}; 
+            char scoreText[6];
+            snprintf(scoreText, sizeof(scoreText), "%05d", m_player1Score);
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(font, scoreText, color);
+            if (surf) {
+                auto textTexture = std::make_shared<Texture2D>();
+                if (textTexture->LoadFromSDLSurface(surf)) {
+                    textTexture->SetSharpFiltering();
+                    p1ScoreObj->SetDynamicTexture(textTexture);
+                }
+                SDL_FreeSurface(surf);
+            }
+            TTF_CloseFont(font);
+        }
+    }
+    
+    Object* p2ScoreObj = scene->GetObject(973);
+    if (p2ScoreObj) {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (font) {
+            SDL_Color color = {255, 255, 255, 255}; 
+            char scoreText[6];
+            snprintf(scoreText, sizeof(scoreText), "%05d", m_player2Score);
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(font, scoreText, color);
+            if (surf) {
+                auto textTexture = std::make_shared<Texture2D>();
+                if (textTexture->LoadFromSDLSurface(surf)) {
+                    textTexture->SetSharpFiltering();
+                    p2ScoreObj->SetDynamicTexture(textTexture);
+                }
+                SDL_FreeSurface(surf);
+            }
+            TTF_CloseFont(font);
+        }
+    }
+}
+
+void GSPlay::ResetGame() {
+    m_gameEnded = false;
+    m_gameTime = 0.0f;
+    m_gameTimer = GAME_DURATION;
+    
+    m_player1Score = 0;
+    m_player2Score = 0;
+    
+    if (m_player.GetAnimation()) {
+        m_player.GetAnimation()->Initialize(m_animManager, 1000);
+    }
+    
+    auto animManager2 = std::make_shared<AnimationManager>();
+    const TextureData* textureData2 = ResourceManager::GetInstance()->GetTextureData(11);
+    if (textureData2 && textureData2->spriteWidth > 0 && textureData2->spriteHeight > 0) {
+        std::vector<AnimationData> animations2;
+        for (const auto& anim : textureData2->animations) {
+            animations2.push_back({anim.startFrame, anim.numFrames, anim.duration, 0.0f});
+        }
+        animManager2->Initialize(textureData2->spriteWidth, textureData2->spriteHeight, animations2);
+    }
+    if (m_player2.GetAnimation()) {
+        m_player2.GetAnimation()->Initialize(animManager2, 1001);
+    }
+    
+    // Reset health and stamina
+    m_player.ResetHealth();
+    m_player.ResetStamina();
+    m_player2.ResetHealth();
+    m_player2.ResetStamina();
+    
+    m_player.SetInputConfig(CharacterMovement::PLAYER1_INPUT);
+    m_player.ResetHealth();
+    m_player.SetHurtboxDefault   (P1_HURTBOX_DEFAULT.w,    P1_HURTBOX_DEFAULT.h,    P1_HURTBOX_DEFAULT.ox,    P1_HURTBOX_DEFAULT.oy);
+    m_player.SetHurtboxFacingLeft(P1_HURTBOX_FACE_LEFT.w,  P1_HURTBOX_FACE_LEFT.h,  P1_HURTBOX_FACE_LEFT.ox,  P1_HURTBOX_FACE_LEFT.oy);
+    m_player.SetHurtboxFacingRight(P1_HURTBOX_FACE_RIGHT.w, P1_HURTBOX_FACE_RIGHT.h, P1_HURTBOX_FACE_RIGHT.ox, P1_HURTBOX_FACE_RIGHT.oy);
+    m_player.SetHurtboxCrouchRoll(P1_HURTBOX_CROUCH.w,     P1_HURTBOX_CROUCH.h,     P1_HURTBOX_CROUCH.ox,     P1_HURTBOX_CROUCH.oy);
+    
+    m_player2.SetInputConfig(CharacterMovement::PLAYER2_INPUT);
+    m_player2.ResetHealth();
+    m_player2.SetHurtboxDefault   (P2_HURTBOX_DEFAULT.w,    P2_HURTBOX_DEFAULT.h,    P2_HURTBOX_DEFAULT.ox,    P2_HURTBOX_DEFAULT.oy);
+    m_player2.SetHurtboxFacingLeft(P2_HURTBOX_FACE_LEFT.w,  P2_HURTBOX_FACE_LEFT.h,  P2_HURTBOX_FACE_LEFT.ox,  P2_HURTBOX_FACE_LEFT.oy);
+    m_player2.SetHurtboxFacingRight(P2_HURTBOX_FACE_RIGHT.w, P2_HURTBOX_FACE_RIGHT.h, P2_HURTBOX_FACE_RIGHT.ox, P2_HURTBOX_FACE_RIGHT.oy);
+    m_player2.SetHurtboxCrouchRoll(P2_HURTBOX_CROUCH.w,     P2_HURTBOX_CROUCH.h,     P2_HURTBOX_CROUCH.ox,     P2_HURTBOX_CROUCH.oy);
+    
+    m_player.SetWeapon(Character::WeaponType::None);
+    m_player2.SetWeapon(Character::WeaponType::None);
+    
+    m_player.SetGunMode(false);
+    m_player2.SetGunMode(false);
+    
+    m_player.SetGrenadeMode(false);
+    m_player2.SetGrenadeMode(false);
+    
+    m_player.SetBatDemonMode(false);
+    m_player2.SetBatDemonMode(false);
+    
+    m_player.SetWerewolfMode(false);
+    m_player2.SetWerewolfMode(false);
+    
+    m_player.SetKitsuneMode(false);
+    m_player2.SetKitsuneMode(false);
+    
+    m_player.SetOrcMode(false);
+    m_player2.SetOrcMode(false);
+    
+    if (CharacterCombat* combat1 = m_player.GetCombat()) {
+        combat1->SetDamageCallback([this](Character& attacker, Character& target, float damage) {
+            ProcessDamageAndScore(attacker, target, damage);
+        });
+    }
+    if (CharacterCombat* combat2 = m_player2.GetCombat()) {
+        combat2->SetDamageCallback([this](Character& attacker, Character& target, float damage) {
+            ProcessDamageAndScore(attacker, target, damage);
+        });
+    }
+    
+    m_player.SetSelfDeathCallback([this](Character& character) {
+        ProcessSelfDeath(character);
+    });
+    m_player2.SetSelfDeathCallback([this](Character& character) {
+        ProcessSelfDeath(character);
+    });
+    
+    ResetCharacterToInitialState(m_player, true);
+    ResetCharacterToInitialState(m_player2, false);
+    
+    if (CharacterMovement* movement1 = m_player.GetMovement()) {
+        movement1->SetInputLocked(false);
+        movement1->SetNoClipNoGravity(false);
+        movement1->SetMoveSpeedMultiplier(1.0f);
+        movement1->SetLadderDoubleTapEnabled(true);
+        movement1->SetLadderEnabled(true);
+        movement1->ResetDieState();
+    }
+    
+    if (CharacterMovement* movement2 = m_player2.GetMovement()) {
+        movement2->SetInputLocked(false);
+        movement2->SetNoClipNoGravity(false);
+        movement2->SetMoveSpeedMultiplier(1.0f);
+        movement2->SetLadderDoubleTapEnabled(true);
+        movement2->SetLadderEnabled(true);
+        movement2->ResetDieState();
+    }
+    
+    m_player.SetPosition(-2.16f, -1.312119f);
+    m_player2.SetPosition(2.311f, -0.54f);
+    
+    m_player1GunTexId = 40;
+    m_player2GunTexId = 40;
+    m_p1Ammo40 = 15; m_p1Ammo41 = 30; m_p1Ammo42 = 60; m_p1Ammo43 = 3;
+    m_p2Ammo40 = 15; m_p2Ammo41 = 30; m_p2Ammo42 = 60; m_p2Ammo43 = 3;
+    
+    m_p1Bombs = 3;
+    m_p2Bombs = 3;
+    
+    m_p1SpecialExpireTime = -1.0f;
+    m_p2SpecialExpireTime = -1.0f;
+    m_p1SpecialType = 0;
+    m_p2SpecialType = 0;
+    m_p1SpecialItemTexId = -1;
+    m_p2SpecialItemTexId = -1;
+    
+    // Reset respawn states
+    m_p1Respawned = false;
+    m_p2Respawned = false;
+    m_p1Invincible = false;
+    m_p2Invincible = false;
+    m_p1InvincibilityTimer = 0.0f;
+    m_p2InvincibilityTimer = 0.0f;
+    
+    // Reset character death states
+    m_player.ResetHealth();
+    m_player2.ResetHealth();
+    
+    m_itemBlinkTimer = 0.0f;
+    
+    m_gameStartBlinkActive = true;
+    m_gameStartBlinkTimer = 0.0f;
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    for (int id : m_candidateItemIds) {
+        for (int slot = 0; slot < 11; ++slot) {
+            int objectId = id * 100 + slot;
+            if (Object* existing = scene->GetObject(objectId)) {
+                scene->RemoveObject(objectId);
+            }
+        }
+    }
+    
+    InitializeRandomItemSpawns();
+    
+    InitializeRespawnSlots();
+    
+    HideEndScreen();
+    
+    UpdateScoreDisplay();
+    UpdateTimeDisplay();
+    UpdateHealthBars();
+    UpdateHudWeapons();
+    UpdateHudBombDigits();
+    UpdateHudSpecialIcon(true);
+    UpdateHudSpecialIcon(false);
+    
+    std::cout << "Game reset successfully!" << std::endl;
+}
+
+void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
+    if (!m_gameEnded || !isPressed) return;
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+    float worldX = (x / (float)Globals::screenWidth) * 2.0f * aspect - aspect;
+    float worldY = 1.0f - (y / (float)Globals::screenHeight) * 2.0f;
+    
+    Object* playAgainButton = scene->GetObject(974);
+    if (playAgainButton) {
+        const Vector3& buttonPos = playAgainButton->GetPosition();
+        const Vector3& buttonScale = playAgainButton->GetScale();
+        
+        float buttonLeft = buttonPos.x - buttonScale.x * 0.5f;
+        float buttonRight = buttonPos.x + buttonScale.x * 0.5f;
+        float buttonBottom = buttonPos.y - buttonScale.y * 0.5f;
+        float buttonTop = buttonPos.y + buttonScale.y * 0.5f;
+        
+        if (worldX >= buttonLeft && worldX <= buttonRight && 
+            worldY >= buttonBottom && worldY <= buttonTop) {
+            ResetGame();
+            return;
+        }
+    }
+    
+    Object* homeButton = scene->GetObject(975);
+    if (homeButton) {
+        const Vector3& buttonPos = homeButton->GetPosition();
+        const Vector3& buttonScale = homeButton->GetScale();
+        
+        float buttonLeft = buttonPos.x - buttonScale.x * 0.5f;
+        float buttonRight = buttonPos.x + buttonScale.x * 0.5f;
+        float buttonBottom = buttonPos.y - buttonScale.y * 0.5f;
+        float buttonTop = buttonPos.y + buttonScale.y * 0.5f;
+        
+        if (worldX >= buttonLeft && worldX <= buttonRight && 
+            worldY >= buttonBottom && worldY <= buttonTop) {
+            std::cout << "[Mouse] Home button clicked! Returning to menu..." << std::endl;
+            GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
+            return;
+        }
+    }
 }

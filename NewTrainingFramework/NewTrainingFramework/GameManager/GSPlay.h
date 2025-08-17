@@ -456,6 +456,19 @@ private:
     void UpdateTimeDigit(int digitPosition, int digitValue);
     void UpdateGameTimer(float deltaTime);
     
+    // Game end state management
+    bool m_gameEnded = false;
+    void UpdateEndScreenVisibility();
+    void ShowEndScreen();
+    void HideEndScreen();
+    void UpdateWinnerText();
+    void UpdateFinalScoreText();
+    void UpdatePlayerScoreLabels();
+    void UpdatePlayerLabels();
+    void UpdatePlayerScores();
+    void ResetGame();
+    void HandleEndScreenInput(int x, int y, bool isPressed);
+    
     void InitializeRespawnSlots();
     void UpdateCharacterRespawn(float deltaTime);
     void RespawnCharacter(Character& character);
