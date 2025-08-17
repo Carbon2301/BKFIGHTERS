@@ -726,6 +726,7 @@ void GSPlay::Init() {
     
     CreateAllScoreTextures();
     UpdateScoreDisplay();
+    UpdateTimeDisplay();
 }
 
 void GSPlay::UpdateHudAmmoDigits() {
@@ -1037,6 +1038,61 @@ void GSPlay::CreateAllScoreTextures() {
     
     TTF_CloseFont(font32);
     TTF_CloseFont(font64);
+    
+    CreateTimeDigitObjects();
+}
+
+void GSPlay::CreateTimeDigitObjects() {
+    if (TTF_WasInit() == 0) {
+        TTF_Init();
+    }
+    
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    if (!font) {
+        std::cout << "Failed to load font for time digits: " << TTF_GetError() << std::endl;
+        return;
+    }
+    
+    TTF_SetFontHinting(font, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    
+    SDL_Color color = {255, 255, 255, 255};
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "0", color);
+    if (surf) {
+        m_timeDigitTexture = std::make_shared<Texture2D>();
+        if (m_timeDigitTexture->LoadFromSDLSurface(surf)) {
+            m_timeDigitTexture->SetSharpFiltering();
+        }
+        SDL_FreeSurface(surf);
+    }
+    
+    m_timeDigitObjects.clear();
+    std::vector<Vector3> timePositions;
+    timePositions.push_back(Vector3(-0.105f, 0.678f, 0.0f));
+    timePositions.push_back(Vector3(-0.045f, 0.678f, 0.0f));
+    timePositions.push_back(Vector3(0.0f, 0.678f, 0.0f));
+    timePositions.push_back(Vector3(0.045f, 0.678f, 0.0f));
+    timePositions.push_back(Vector3(0.105f, 0.678f, 0.0f));
+    
+    for (int i = 0; i < 5; ++i) {
+        auto digitObj = std::make_shared<Object>();
+        digitObj->SetId(953 + i);
+        digitObj->SetModel(0);
+        digitObj->SetShader(0);
+        digitObj->SetDynamicTexture(m_timeDigitTexture);
+        digitObj->SetPosition(timePositions[i]);
+        digitObj->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
+        
+        if (i == 2) {
+            digitObj->SetScale(Vector3(0.024f, 0.06f, 1.0f));
+        } else {
+            digitObj->SetScale(Vector3(0.05f, 0.06f, 1.0f));
+        }
+        
+        m_timeDigitObjects.push_back(digitObj);
+    }
+    
+    TTF_CloseFont(font);
 }
 
 int GSPlay::AmmoCapacityFor(int texId) const {
@@ -1061,6 +1117,7 @@ void GSPlay::Update(float deltaTime) {
     UpdateCharacterRespawn(deltaTime);
     UpdateRespawnInvincibility(deltaTime);
     UpdateGameStartBlink(deltaTime);
+    UpdateGameTimer(deltaTime);
     
     if (m_inputManager) {
         HandleItemPickup();
@@ -1264,6 +1321,20 @@ void GSPlay::Draw() {
         }
         
         for (auto& digitObj : m_scoreDigitObjectsP2) {
+            if (digitObj) {
+                digitObj->Draw(uiView, uiProj);
+            }
+        }
+    }
+    
+    if (!m_timeDigitObjects.empty()) {
+        float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+        Matrix uiView;
+        Matrix uiProj;
+        uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+        uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+        
+        for (auto& digitObj : m_timeDigitObjects) {
             if (digitObj) {
                 digitObj->Draw(uiView, uiProj);
             }
@@ -4147,6 +4218,68 @@ void GSPlay::AddScore(int playerId, int points) {
     }
     
     UpdateScoreDisplay();
+}
+
+void GSPlay::UpdateGameTimer(float deltaTime) {
+    if (m_gameStartBlinkActive) {
+        return;
+    }
+    
+    m_gameTimer -= deltaTime;
+    if (m_gameTimer < 0.0f) {
+        m_gameTimer = 0.0f;
+    }
+    
+    UpdateTimeDisplay();
+}
+
+void GSPlay::UpdateTimeDisplay() {
+    int totalSeconds = (int)m_gameTimer;
+    int minutes = totalSeconds / 60;
+    int seconds = totalSeconds % 60;
+    
+    UpdateTimeDigit(0, minutes / 10);
+    UpdateTimeDigit(1, minutes % 10);
+    UpdateTimeDigit(2, -1); 
+    UpdateTimeDigit(3, seconds / 10);
+    UpdateTimeDigit(4, seconds % 10);
+}
+
+void GSPlay::UpdateTimeDigit(int digitPosition, int digitValue) {
+    if (digitPosition < 0 || digitPosition >= (int)m_timeDigitObjects.size()) {
+        return;
+    }
+    
+    auto& digitObj = m_timeDigitObjects[digitPosition];
+    if (!digitObj) {
+        return;
+    }
+    
+    if (digitValue == -1) {
+        if (TTF_WasInit() == 0) {
+            TTF_Init();
+        }
+        
+        TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+        if (font) {
+            SDL_Color color = {255, 255, 255, 255};
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(font, ":", color);
+            if (surf) {
+                auto colonTexture = std::make_shared<Texture2D>();
+                if (colonTexture->LoadFromSDLSurface(surf)) {
+                    colonTexture->SetSharpFiltering();
+                    digitObj->SetDynamicTexture(colonTexture);
+                }
+                SDL_FreeSurface(surf);
+            }
+            TTF_CloseFont(font);
+        }
+        return;
+    }
+    
+    if (digitValue >= 0 && digitValue <= 9 && digitValue < (int)m_digitTextures.size() && m_digitTextures[digitValue]) {
+        digitObj->SetDynamicTexture(m_digitTextures[digitValue]);
+    }
 }
 
 void GSPlay::UpdateScoreDisplay() {

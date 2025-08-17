@@ -444,6 +444,15 @@ private:
     const float GAME_START_BLINK_DURATION = 3.0f;
     const float GAME_START_BLINK_INTERVAL = 0.15f;
     
+    float m_gameTimer = 300.0f;
+    const float GAME_DURATION = 300.0f;
+    std::vector<std::shared_ptr<Object>> m_timeDigitObjects; 
+    std::shared_ptr<Texture2D> m_timeDigitTexture;
+    void CreateTimeDigitObjects();
+    void UpdateTimeDisplay();
+    void UpdateTimeDigit(int digitPosition, int digitValue);
+    void UpdateGameTimer(float deltaTime);
+    
     void InitializeRespawnSlots();
     void UpdateCharacterRespawn(float deltaTime);
     void RespawnCharacter(Character& character);
