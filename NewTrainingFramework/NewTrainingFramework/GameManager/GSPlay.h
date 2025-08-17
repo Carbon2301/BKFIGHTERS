@@ -388,6 +388,12 @@ private:
     std::shared_ptr<Texture2D> m_scoreTextTexture;
     void CreateScoreTextObjects();
 
+    // Score HUD Digits
+    std::vector<std::shared_ptr<Object>> m_scoreDigitObjectsP1; // IDs 941-945
+    std::vector<std::shared_ptr<Object>> m_scoreDigitObjectsP2; // IDs 947-951
+    std::shared_ptr<Texture2D> m_scoreDigitTexture;
+    void CreateScoreDigitsObjects();
+
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };
     std::vector<ItemLife> m_itemLives;
