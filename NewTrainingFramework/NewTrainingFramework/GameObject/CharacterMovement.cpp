@@ -416,7 +416,7 @@ bool CharacterMovement::CheckPlatformCollisionWithHurtbox(float& newY, float hur
     return collided;
 }
 
-void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
+void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY, bool allowPlatformFallThrough) {
     if (!keyStates) return;
     
     if (m_isDying || m_isDead) {
@@ -432,7 +432,7 @@ void CharacterMovement::UpdateWithHurtbox(float deltaTime, const bool* keyStates
     bool handledLadder = HandleLadderWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
     if (!handledLadder) {
         HandleMovement(deltaTime, keyStates);
-        HandleJumpWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
+        HandleJumpWithHurtbox(deltaTime, keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY, allowPlatformFallThrough);
     }
     HandleLandingWithHurtbox(keyStates, hurtboxWidth, hurtboxHeight, hurtboxOffsetX, hurtboxOffsetY);
     
@@ -663,7 +663,7 @@ bool CharacterMovement::HandleLadderWithHurtbox(float deltaTime, const bool* key
 }
 
 
-void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY) {
+void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keyStates, float hurtboxWidth, float hurtboxHeight, float hurtboxOffsetX, float hurtboxOffsetY, bool allowPlatformFallThrough) {
     const PlayerInputConfig& inputConfig = GetInputConfig();
     
     bool onGround = (m_posY <= m_groundY + 0.01f);
@@ -681,7 +681,7 @@ void CharacterMovement::HandleJumpWithHurtbox(float deltaTime, const bool* keySt
     
     if (isDownPressed && !m_prevDownKey) {
         if (currentTime - m_lastDownPressTime < DOUBLE_TAP_THRESHOLD) {
-            if (m_isOnPlatform && !m_isJumping) {
+            if (m_isOnPlatform && !m_isJumping && allowPlatformFallThrough) {
                 m_isOnPlatform = false;
                 m_isJumping = true;
                 m_jumpVelocity = 0.0f;

@@ -724,9 +724,7 @@ void GSPlay::Init() {
         }
     }
     
-    CreateScoreTextObjects();
-    CreateScoreDigitsObjects();
-    CreateDigitTextures();
+    CreateAllScoreTextures();
     UpdateScoreDisplay();
 }
 
@@ -922,36 +920,36 @@ void GSPlay::UpdateHudBombDigits() {
     TTF_CloseFont(font);
 }
 
-void GSPlay::CreateScoreTextObjects() {
+void GSPlay::CreateAllScoreTextures() {
     if (TTF_WasInit() == 0) {
         TTF_Init();
     }
-    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 32);
-    if (!font) {
-        std::cout << "Failed to load font for SCORE text: " << TTF_GetError() << std::endl;
+    
+    TTF_Font* font32 = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 32);
+    TTF_Font* font64 = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    
+    if (!font32 || !font64) {
+        std::cout << "Failed to load fonts for score textures: " << TTF_GetError() << std::endl;
+        if (font32) TTF_CloseFont(font32);
+        if (font64) TTF_CloseFont(font64);
         return;
     }
     
-    TTF_SetFontHinting(font, TTF_HINTING_NONE);
-    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    TTF_SetFontHinting(font32, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font32, TTF_STYLE_NORMAL);
+    TTF_SetFontHinting(font64, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font64, TTF_STYLE_NORMAL);
     
     SDL_Color color = {255, 255, 255, 255};
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "SCORE", color);
-    if (!surf) {
-        std::cout << "Failed to render SCORE text: " << TTF_GetError() << std::endl;
-        TTF_CloseFont(font);
-        return;
-    }
     
-    m_scoreTextTexture = std::make_shared<Texture2D>();
-    if (!m_scoreTextTexture->LoadFromSDLSurface(surf)) {
-        std::cout << "Failed to create texture from SCORE text surface" << std::endl;
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(font32, "SCORE", color);
+    if (surf) {
+        m_scoreTextTexture = std::make_shared<Texture2D>();
+        if (m_scoreTextTexture->LoadFromSDLSurface(surf)) {
+            m_scoreTextTexture->SetSharpFiltering();
+        }
         SDL_FreeSurface(surf);
-        TTF_CloseFont(font);
-        return;
     }
-    SDL_FreeSurface(surf);
-    m_scoreTextTexture->SetSharpFiltering();
     
     m_scoreTextP1 = std::make_shared<Object>();
     m_scoreTextP1->SetId(940);
@@ -971,7 +969,74 @@ void GSPlay::CreateScoreTextObjects() {
     m_scoreTextP2->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
     m_scoreTextP2->SetScale(Vector3(0.27f, 0.1f, 1.0f));
     
-    TTF_CloseFont(font);
+    m_digitTextures.clear();
+    m_digitTextures.resize(10);
+    
+    for (int i = 0; i < 10; ++i) {
+        std::string digitStr = std::to_string(i);
+        SDL_Surface* digitSurf = TTF_RenderUTF8_Blended(font64, digitStr.c_str(), color);
+        if (digitSurf) {
+            auto texture = std::make_shared<Texture2D>();
+            if (texture->LoadFromSDLSurface(digitSurf)) {
+                texture->SetSharpFiltering();
+                m_digitTextures[i] = texture;
+            }
+            SDL_FreeSurface(digitSurf);
+        }
+    }
+    
+    SDL_Surface* digitSurf = TTF_RenderUTF8_Blended(font64, "0", color);
+    if (digitSurf) {
+        m_scoreDigitTexture = std::make_shared<Texture2D>();
+        if (m_scoreDigitTexture->LoadFromSDLSurface(digitSurf)) {
+            m_scoreDigitTexture->SetSharpFiltering();
+        }
+        SDL_FreeSurface(digitSurf);
+    }
+    
+    m_scoreDigitObjectsP1.clear();
+    std::vector<Vector3> p1Positions;
+    p1Positions.push_back(Vector3(-0.96f, 0.788f, 0.0f));  // ID 941
+    p1Positions.push_back(Vector3(-0.905f, 0.788f, 0.0f)); // ID 942
+    p1Positions.push_back(Vector3(-0.85f, 0.788f, 0.0f));  // ID 943
+    p1Positions.push_back(Vector3(-0.795f, 0.788f, 0.0f)); // ID 944
+    p1Positions.push_back(Vector3(-0.74f, 0.788f, 0.0f));  // ID 945
+    
+    for (int i = 0; i < 5; ++i) {
+        auto digitObj = std::make_shared<Object>();
+        digitObj->SetId(941 + i);
+        digitObj->SetModel(0);
+        digitObj->SetShader(0);
+        digitObj->SetDynamicTexture(m_scoreDigitTexture);
+        digitObj->SetPosition(p1Positions[i]);
+        digitObj->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
+        digitObj->SetScale(Vector3(0.05f, 0.08f, 1.0f));
+        m_scoreDigitObjectsP1.push_back(digitObj);
+    }
+    
+    // Create score digit objects for Player 2
+    m_scoreDigitObjectsP2.clear();
+    std::vector<Vector3> p2Positions;
+    p2Positions.push_back(Vector3(0.74f, 0.788f, 0.0f));   // ID 947
+    p2Positions.push_back(Vector3(0.795f, 0.788f, 0.0f));  // ID 948
+    p2Positions.push_back(Vector3(0.85f, 0.788f, 0.0f));   // ID 949
+    p2Positions.push_back(Vector3(0.905f, 0.788f, 0.0f));  // ID 950
+    p2Positions.push_back(Vector3(0.96f, 0.788f, 0.0f));   // ID 951
+    
+    for (int i = 0; i < 5; ++i) {
+        auto digitObj = std::make_shared<Object>();
+        digitObj->SetId(947 + i);
+        digitObj->SetModel(0);
+        digitObj->SetShader(0);
+        digitObj->SetDynamicTexture(m_scoreDigitTexture);
+        digitObj->SetPosition(p2Positions[i]);
+        digitObj->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
+        digitObj->SetScale(Vector3(0.05f, 0.08f, 1.0f));
+        m_scoreDigitObjectsP2.push_back(digitObj);
+    }
+    
+    TTF_CloseFont(font32);
+    TTF_CloseFont(font64);
 }
 
 int GSPlay::AmmoCapacityFor(int texId) const {
@@ -4072,122 +4137,6 @@ bool GSPlay::IsCharacterInvincible(const Character& character) const {
            (&character == &m_player2 && m_p2Invincible);
 }
 
-void GSPlay::CreateScoreDigitsObjects() {
-    if (TTF_WasInit() == 0) {
-        TTF_Init();
-    }
-    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
-    if (!font) {
-        std::cout << "Failed to load font for score digits: " << TTF_GetError() << std::endl;
-        return;
-    }
-    
-    TTF_SetFontHinting(font, TTF_HINTING_NONE);
-    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
-    
-    SDL_Color color = {255, 255, 255, 255};
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "0", color);
-    if (!surf) {
-        std::cout << "Failed to render score digit text: " << TTF_GetError() << std::endl;
-        TTF_CloseFont(font);
-        return;
-    }
-    
-    m_scoreDigitTexture = std::make_shared<Texture2D>();
-    if (!m_scoreDigitTexture->LoadFromSDLSurface(surf)) {
-        std::cout << "Failed to create texture from score digit text surface" << std::endl;
-        SDL_FreeSurface(surf);
-        TTF_CloseFont(font);
-        return;
-    }
-    SDL_FreeSurface(surf);
-    m_scoreDigitTexture->SetSharpFiltering();
-    
-    m_scoreDigitObjectsP1.clear();
-    std::vector<Vector3> p1Positions;
-    p1Positions.push_back(Vector3(-0.96f, 0.788f, 0.0f));  // ID 941
-    p1Positions.push_back(Vector3(-0.905f, 0.788f, 0.0f)); // ID 942
-    p1Positions.push_back(Vector3(-0.85f, 0.788f, 0.0f));  // ID 943
-    p1Positions.push_back(Vector3(-0.795f, 0.788f, 0.0f)); // ID 944
-    p1Positions.push_back(Vector3(-0.74f, 0.788f, 0.0f));  // ID 945
-    
-    for (int i = 0; i < 5; ++i) {
-        auto digitObj = std::make_shared<Object>();
-        digitObj->SetId(941 + i);
-        digitObj->SetModel(0);
-        digitObj->SetShader(0);
-        digitObj->SetDynamicTexture(m_scoreDigitTexture);
-        digitObj->SetPosition(p1Positions[i]);
-        digitObj->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
-        digitObj->SetScale(Vector3(0.05f, 0.08f, 1.0f));
-        m_scoreDigitObjectsP1.push_back(digitObj);
-    }
-    
-    m_scoreDigitObjectsP2.clear();
-    std::vector<Vector3> p2Positions;
-    p2Positions.push_back(Vector3(0.74f, 0.788f, 0.0f));   // ID 947
-    p2Positions.push_back(Vector3(0.795f, 0.788f, 0.0f));  // ID 948
-    p2Positions.push_back(Vector3(0.85f, 0.788f, 0.0f));   // ID 949
-    p2Positions.push_back(Vector3(0.905f, 0.788f, 0.0f));  // ID 950
-    p2Positions.push_back(Vector3(0.96f, 0.788f, 0.0f));   // ID 951
-    
-    for (int i = 0; i < 5; ++i) {
-        auto digitObj = std::make_shared<Object>();
-        digitObj->SetId(947 + i);
-        digitObj->SetModel(0);
-        digitObj->SetShader(0);
-        digitObj->SetDynamicTexture(m_scoreDigitTexture);
-        digitObj->SetPosition(p2Positions[i]);
-        digitObj->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
-        digitObj->SetScale(Vector3(0.05f, 0.08f, 1.0f));
-        m_scoreDigitObjectsP2.push_back(digitObj);
-    }
-    
-    TTF_CloseFont(font);
-}
-
-void GSPlay::CreateDigitTextures() {
-    if (TTF_WasInit() == 0) {
-        TTF_Init();
-    }
-    
-    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
-    if (!font) {
-        std::cout << "Failed to load font for digit textures: " << TTF_GetError() << std::endl;
-        return;
-    }
-    
-    TTF_SetFontHinting(font, TTF_HINTING_NONE);
-    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
-    
-    m_digitTextures.clear();
-    m_digitTextures.resize(10);
-    
-    SDL_Color color = {255, 255, 255, 255};
-    
-    for (int i = 0; i < 10; ++i) {
-        std::string digitStr = std::to_string(i);
-        SDL_Surface* surf = TTF_RenderUTF8_Blended(font, digitStr.c_str(), color);
-        if (!surf) {
-            std::cout << "Failed to render digit " << i << ": " << TTF_GetError() << std::endl;
-            continue;
-        }
-        
-        auto texture = std::make_shared<Texture2D>();
-        if (!texture->LoadFromSDLSurface(surf)) {
-            std::cout << "Failed to create texture for digit " << i << std::endl;
-            SDL_FreeSurface(surf);
-            continue;
-        }
-        
-        SDL_FreeSurface(surf);
-        texture->SetSharpFiltering();
-        m_digitTextures[i] = texture;
-    }
-    
-    TTF_CloseFont(font);
-}
-
 void GSPlay::AddScore(int playerId, int points) {
     if (playerId == 1) {
         m_player1Score += points;
@@ -4288,5 +4237,6 @@ void GSPlay::ProcessSelfDeath(Character& character) {
         m_p2GrenadeExplodedInHand = false;
     }
     
+    character.TakeDamage(character.GetHealth(), false);
     character.TriggerDie();
 }

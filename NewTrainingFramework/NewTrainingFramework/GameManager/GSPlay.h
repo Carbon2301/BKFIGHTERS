@@ -389,19 +389,17 @@ private:
     std::shared_ptr<Object> m_scoreTextP1;
     std::shared_ptr<Object> m_scoreTextP2;
     std::shared_ptr<Texture2D> m_scoreTextTexture;
-    void CreateScoreTextObjects();
 
     // Score HUD Digits
     std::vector<std::shared_ptr<Object>> m_scoreDigitObjectsP1; // IDs 941-945
     std::vector<std::shared_ptr<Object>> m_scoreDigitObjectsP2; // IDs 947-951
     std::shared_ptr<Texture2D> m_scoreDigitTexture;
-    void CreateScoreDigitsObjects();
 
     // Score System
     int m_player1Score = 0;
     int m_player2Score = 0;
     std::vector<std::shared_ptr<Texture2D>> m_digitTextures;
-    void CreateDigitTextures();
+    void CreateAllScoreTextures();
     void AddScore(int playerId, int points);
     void UpdateScoreDisplay();
     void UpdateScoreDigit(int playerId, int digitPosition, int digitValue);

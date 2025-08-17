@@ -63,6 +63,15 @@ void Character::SetBatDemonMode(bool enabled) {
             m_movement->SetNoClipNoGravity(false);
             m_movement->SetMoveSpeedMultiplier(1.0f);
         }
+        
+        Vector3 pos = GetPosition();
+        if (pos.x < -3.7f || pos.x > 3.4f || pos.y < -1.2f || pos.y > 1.7f) {
+            if (m_selfDeathCallback) {
+                m_selfDeathCallback(*this);
+            } else {
+                TriggerDie();
+            }
+        }
     }
 }
 
@@ -272,9 +281,12 @@ void Character::ProcessInput(float deltaTime, InputManager* inputManager) {
 		m_movement->SetInputLocked(lock);
     }
     
+    bool allowPlatformFallThrough = !IsGunMode() && !IsGrenadeMode();
+    
     m_movement->UpdateWithHurtbox(deltaTime, keyStates, 
                                   GetHurtboxWidth(), GetHurtboxHeight(), 
-                                  GetHurtboxOffsetX(), GetHurtboxOffsetY());
+                                  GetHurtboxOffsetX(), GetHurtboxOffsetY(), 
+                                  allowPlatformFallThrough);
     
     if (IsSpecialForm() && m_movement) {
         (void)m_movement->ConsumePendingFallDamage();
