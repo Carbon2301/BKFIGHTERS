@@ -381,6 +381,9 @@ void SceneManager::Draw() {
                 }
                 obj->Draw(uiViewMatrix, uiProjectionMatrix);
             }
+            else if ((objId >= 976 && objId <= 979)) {
+                continue;
+            }
             else {
                 obj->Draw(viewMatrix, projectionMatrix);
             }
