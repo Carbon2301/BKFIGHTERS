@@ -382,6 +382,12 @@ private:
     Vector3 m_hudBombIcon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
     void UpdateHudBombDigits();
 
+    // Score HUD Text
+    std::shared_ptr<Object> m_scoreTextP1;
+    std::shared_ptr<Object> m_scoreTextP2;
+    std::shared_ptr<Texture2D> m_scoreTextTexture;
+    void CreateScoreTextObjects();
+
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };
     std::vector<ItemLife> m_itemLives;

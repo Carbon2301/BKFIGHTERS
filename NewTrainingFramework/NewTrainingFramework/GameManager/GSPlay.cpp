@@ -705,6 +705,8 @@ void GSPlay::Init() {
             TTF_CloseFont(font);
         }
     }
+    
+    CreateScoreTextObjects();
 }
 
 void GSPlay::UpdateHudAmmoDigits() {
@@ -896,6 +898,58 @@ void GSPlay::UpdateHudBombDigits() {
     }
     if (m_p1Bombs > 0) setTwoDigits(m_p1Bombs, 928, 929);
     if (m_p2Bombs > 0) setTwoDigits(m_p2Bombs, 930, 931);
+    TTF_CloseFont(font);
+}
+
+void GSPlay::CreateScoreTextObjects() {
+    if (TTF_WasInit() == 0) {
+        TTF_Init();
+    }
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 32);
+    if (!font) {
+        std::cout << "Failed to load font for SCORE text: " << TTF_GetError() << std::endl;
+        return;
+    }
+    
+    TTF_SetFontHinting(font, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    
+    SDL_Color color = {255, 255, 255, 255};
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "SCORE", color);
+    if (!surf) {
+        std::cout << "Failed to render SCORE text: " << TTF_GetError() << std::endl;
+        TTF_CloseFont(font);
+        return;
+    }
+    
+    m_scoreTextTexture = std::make_shared<Texture2D>();
+    if (!m_scoreTextTexture->LoadFromSDLSurface(surf)) {
+        std::cout << "Failed to create texture from SCORE text surface" << std::endl;
+        SDL_FreeSurface(surf);
+        TTF_CloseFont(font);
+        return;
+    }
+    SDL_FreeSurface(surf);
+    m_scoreTextTexture->SetSharpFiltering();
+    
+    m_scoreTextP1 = std::make_shared<Object>();
+    m_scoreTextP1->SetId(940);
+    m_scoreTextP1->SetModel(0);
+    m_scoreTextP1->SetShader(0);
+    m_scoreTextP1->SetDynamicTexture(m_scoreTextTexture);
+    m_scoreTextP1->SetPosition(Vector3(-0.838f, 0.925f, 0.0f));
+    m_scoreTextP1->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
+    m_scoreTextP1->SetScale(Vector3(0.235f, 0.1f, 1.0f));
+    
+    m_scoreTextP2 = std::make_shared<Object>();
+    m_scoreTextP2->SetId(941);
+    m_scoreTextP2->SetModel(0);
+    m_scoreTextP2->SetShader(0);
+    m_scoreTextP2->SetDynamicTexture(m_scoreTextTexture);
+    m_scoreTextP2->SetPosition(Vector3(0.838f, 0.925f, 0.0f));
+    m_scoreTextP2->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
+    m_scoreTextP2->SetScale(Vector3(0.235f, 0.1f, 1.0f));
+    
     TTF_CloseFont(font);
 }
 
@@ -1106,6 +1160,18 @@ void GSPlay::Draw() {
 
     // Draw HUD portraits with independent UVs
     DrawHudPortraits();
+    
+    if (m_scoreTextP1 && m_scoreTextP2) {
+        float aspect = (float)Globals::screenWidth / (float)Globals::screenHeight;
+        Matrix uiView;
+        Matrix uiProj;
+        uiView.SetLookAt(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+        uiProj.SetOrthographic(-aspect, aspect, -1.0f, 1.0f, 0.1f, 100.0f);
+        
+        m_scoreTextP1->Draw(uiView, uiProj);
+        m_scoreTextP2->Draw(uiView, uiProj);
+    }
+    
     if (cam) { DrawBullets(cam); }
     if (cam) { DrawEnergyOrbProjectiles(cam); }
     if (cam) { DrawLightningEffects(cam); }
