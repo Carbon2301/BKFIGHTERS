@@ -130,13 +130,14 @@ private:
          bool damagedP1 = false;
          bool damagedP2 = false;
          float damageRadiusMul = 1.0f;
+         int attackerId = 0;
      };
      std::vector<Explosion> m_explosions;
      std::vector<std::unique_ptr<Object>> m_explosionObjs;
      std::vector<int> m_freeExplosionSlots;
      int m_explosionObjectId = 1501;
      int CreateOrAcquireExplosionObjectFromProto(int protoObjectId);
-     void SpawnExplosionAt(float x, float y, float radiusMul = EXPLOSION_DAMAGE_RADIUS_MUL);
+     void SpawnExplosionAt(float x, float y, float radiusMul = EXPLOSION_DAMAGE_RADIUS_MUL, int attackerId = 0);
      void UpdateExplosions(float dt);
      void DrawExplosions(class Camera* cam);
      void SetSpriteUV(Object* obj, int cols, int rows, int frameIndex);
@@ -393,6 +394,16 @@ private:
     std::vector<std::shared_ptr<Object>> m_scoreDigitObjectsP2; // IDs 947-951
     std::shared_ptr<Texture2D> m_scoreDigitTexture;
     void CreateScoreDigitsObjects();
+
+    // Score System
+    int m_player1Score = 0;
+    int m_player2Score = 0;
+    std::vector<std::shared_ptr<Texture2D>> m_digitTextures;
+    void CreateDigitTextures();
+    void AddScore(int playerId, int points);
+    void UpdateScoreDisplay();
+    void UpdateScoreDigit(int playerId, int digitPosition, int digitValue);
+    void ProcessDamageAndScore(Character& attacker, Character& target, float damage);
 
     // Item lifetime tracking
     struct ItemLife { int id; float timer; };

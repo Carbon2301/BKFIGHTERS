@@ -431,6 +431,17 @@ void GSPlay::Init() {
     m_player2.SetHurtboxFacingLeft(P2_HURTBOX_FACE_LEFT.w,  P2_HURTBOX_FACE_LEFT.h,  P2_HURTBOX_FACE_LEFT.ox,  P2_HURTBOX_FACE_LEFT.oy);
     m_player2.SetHurtboxFacingRight(P2_HURTBOX_FACE_RIGHT.w, P2_HURTBOX_FACE_RIGHT.h, P2_HURTBOX_FACE_RIGHT.ox, P2_HURTBOX_FACE_RIGHT.oy);
     m_player2.SetHurtboxCrouchRoll(P2_HURTBOX_CROUCH.w,     P2_HURTBOX_CROUCH.h,     P2_HURTBOX_CROUCH.ox,     P2_HURTBOX_CROUCH.oy);
+    
+    if (CharacterCombat* combat1 = m_player.GetCombat()) {
+        combat1->SetDamageCallback([this](Character& attacker, Character& target, float damage) {
+            ProcessDamageAndScore(attacker, target, damage);
+        });
+    }
+    if (CharacterCombat* combat2 = m_player2.GetCombat()) {
+        combat2->SetDamageCallback([this](Character& attacker, Character& target, float damage) {
+            ProcessDamageAndScore(attacker, target, damage);
+        });
+    }
 
     // Player 1 werewolf
     m_player.SetWerewolfHurtboxIdle   (0.19f, 0.19f,  0.015f, -0.1f);
@@ -708,6 +719,8 @@ void GSPlay::Init() {
     
     CreateScoreTextObjects();
     CreateScoreDigitsObjects();
+    CreateDigitTextures();
+    UpdateScoreDisplay();
 }
 
 void GSPlay::UpdateHudAmmoDigits() {
@@ -1014,11 +1027,10 @@ void GSPlay::Update(float deltaTime) {
                 return;
             }
             
-            float prev = target.GetHealth();
-            target.TakeDamage(100.0f);
+            ProcessDamageAndScore(source, target, 100.0f);
             target.CancelAllCombos();
             if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
-            if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+            if (target.GetHealth() <= 0.0f) {
                 target.TriggerDie();
             }
         }
@@ -1041,11 +1053,10 @@ void GSPlay::Update(float deltaTime) {
         bool overlapX = (r >= tl) && (l <= tr);
         bool overlapY = (t >= tb) && (b <= tt);
         if (overlapX && overlapY) {
-            float prev = target.GetHealth();
-            target.TakeDamage(100.0f);
+            ProcessDamageAndScore(source, target, 100.0f);
             target.CancelAllCombos();
             if (CharacterMovement* mv = target.GetMovement()) { mv->SetInputLocked(false); }
-            if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+            if (target.GetHealth() <= 0.0f) {
                 target.TriggerDie();
             }
             anim->MarkBatWindDealtDamage();
@@ -1098,10 +1109,10 @@ void GSPlay::Update(float deltaTime) {
             if (m_player.CheckHitboxCollision(m_player2)) {
             if (!IsCharacterInvincible(m_player2)) {
                 if (m_player.IsWerewolf() && m_player.GetAnimation() && (((m_player.GetAnimation()->GetCurrentAnimation() == 1) && m_player.IsAnimationPlaying()) || m_player.GetAnimation()->IsWerewolfComboHitWindowActive())) {
-                    m_player2.TakeDamage(100.0f);
+                    ProcessDamageAndScore(m_player, m_player2, 100.0f);
                     m_player2.TriggerGetHit(m_player);
                 } else if (m_player.IsWerewolf() && m_player.GetAnimation() && ((m_player.GetAnimation()->GetCurrentAnimation() == 3 && m_player.IsAnimationPlaying()))) {
-                    m_player2.TakeDamage(100.0f);
+                    ProcessDamageAndScore(m_player, m_player2, 100.0f);
                     m_player2.TriggerGetHit(m_player);
                 } else {
                     m_player2.TriggerGetHit(m_player);
@@ -1112,10 +1123,10 @@ void GSPlay::Update(float deltaTime) {
     if (m_player2.CheckHitboxCollision(m_player)) {
         if (!IsCharacterInvincible(m_player)) {
             if (m_player2.IsWerewolf() && m_player2.GetAnimation() && (((m_player2.GetAnimation()->GetCurrentAnimation() == 1) && m_player2.IsAnimationPlaying()) || m_player2.GetAnimation()->IsWerewolfComboHitWindowActive())) {
-                m_player.TakeDamage(100.0f);
+                ProcessDamageAndScore(m_player2, m_player, 100.0f);
                 m_player.TriggerGetHit(m_player2);
             } else if (m_player2.IsWerewolf() && m_player2.GetAnimation() && ((m_player2.GetAnimation()->GetCurrentAnimation() == 3 && m_player2.IsAnimationPlaying()))) {
-                m_player.TakeDamage(100.0f);
+                ProcessDamageAndScore(m_player2, m_player, 100.0f);
                 m_player.TriggerGetHit(m_player2);
             } else {
                 m_player.TriggerGetHit(m_player2);
@@ -1660,9 +1671,9 @@ int GSPlay::CreateOrAcquireExplosionObjectFromProto(int protoObjectId) {
     return (int)m_explosionObjs.size() - 1;
 }
 
-void GSPlay::SpawnExplosionAt(float x, float y, float radiusMul) {
+void GSPlay::SpawnExplosionAt(float x, float y, float radiusMul, int attackerId) {
     int idx = CreateOrAcquireExplosionObjectFromProto(m_explosionObjectId);
-    Explosion e{}; e.x = x; e.y = y; e.objIdx = idx; e.cols = 11; e.rows = 1; e.frameIndex = 0; e.frameCount = 11; e.frameTimer = 0.0f; e.frameDuration = EXPLOSION_FRAME_DURATION; e.damageRadiusMul = radiusMul;
+    Explosion e{}; e.x = x; e.y = y; e.objIdx = idx; e.cols = 11; e.rows = 1; e.frameIndex = 0; e.frameCount = 11; e.frameTimer = 0.0f; e.frameDuration = EXPLOSION_FRAME_DURATION; e.damageRadiusMul = radiusMul; e.attackerId = attackerId;
     if (idx >= 0 && idx < (int)m_explosionObjs.size() && m_explosionObjs[idx]) {
         m_explosionObjs[idx]->SetPosition(x, y, 0.0f);
         SetSpriteUV(m_explosionObjs[idx].get(), e.cols, e.rows, 0);
@@ -1705,11 +1716,19 @@ void GSPlay::UpdateExplosions(float dt) {
                     return;
                 }
                 
-                float prev = target.GetHealth();
-                target.TakeDamage(damage);
+                if (e.attackerId > 0) {
+                    Character& attacker = (e.attackerId == 1) ? m_player : m_player2;
+                    if (&target != &attacker) {
+                        ProcessDamageAndScore(attacker, target, damage);
+                    } else {
+                        target.TakeDamage(damage);
+                    }
+                } else {
+                    target.TakeDamage(damage);
+                }
                 target.CancelAllCombos();
                 if (CharacterMovement* mv = target.GetMovement()) mv->SetInputLocked(false);
-                if (prev > 0.0f && target.GetHealth() <= 0.0f) {
+                if (target.GetHealth() <= 0.0f) {
                     target.TriggerDie();
                 }
             };
@@ -2162,7 +2181,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         } else if (m_player.IsWerewolf()) {
             m_player.TriggerWerewolfCombo();
             if (m_player.CheckHitboxCollision(m_player2)) {
-                m_player2.TakeDamage(100.0f);
+                ProcessDamageAndScore(m_player, m_player2, 100.0f);
                 m_player2.TriggerGetHit(m_player);
             }
         } else if (m_player.IsGunMode() || m_player.IsGrenadeMode()) {
@@ -2184,7 +2203,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         } else if (m_player2.IsWerewolf()) {
             m_player2.TriggerWerewolfCombo();
             if (m_player2.CheckHitboxCollision(m_player)) {
-                m_player.TakeDamage(100.0f);
+                ProcessDamageAndScore(m_player2, m_player, 100.0f);
                 m_player.TriggerGetHit(m_player2);
             }
         } else if (m_player2.IsGunMode() || m_player2.IsGrenadeMode()) {
@@ -2510,7 +2529,7 @@ void GSPlay::UpdateBullets(float dt) {
             Vector3 pos(it->x, it->y, 0.0f);
             if (m_wallCollision->CheckWallCollision(pos, BULLET_COLLISION_WIDTH, BULLET_COLLISION_HEIGHT, 0.0f, 0.0f)) {
                 if (it->isBazoka) {
-                    SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
+                    SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL, it->ownerId);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
                     }
@@ -2545,19 +2564,22 @@ void GSPlay::UpdateBullets(float dt) {
                     removeBullet(it); continue;
                 }
                 
-                float prev = target->GetHealth();
                 float dmg = it->damage > 0.0f ? it->damage : 10.0f;
-                target->TakeDamage(dmg);
+                if (attacker) {
+                    ProcessDamageAndScore(*attacker, *target, dmg);
+                } else {
+                    target->TakeDamage(dmg);
+                }
                 target->CancelAllCombos();
                 if (CharacterMovement* mv = target->GetMovement()) {
                     mv->SetInputLocked(false);
                 }
-                if (prev > 0.0f && target->GetHealth() <= 0.0f && attacker) {
+                if (target->GetHealth() <= 0.0f && attacker) {
                     target->TriggerDieFromAttack(*attacker);
                 }
                 SpawnBloodAt(it->x, it->y, it->angleRad);
                 if (it->isBazoka) {
-                    SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL);
+                    SpawnExplosionAt(it->x, it->y, BAZOKA_EXPLOSION_RADIUS_MUL, it->ownerId);
                     if (Camera* cam = SceneManager::GetInstance()->GetActiveCamera()) {
                         cam->AddShake(0.03f, 0.35f, 18.0f);
                     }
@@ -4094,4 +4116,106 @@ void GSPlay::CreateScoreDigitsObjects() {
     }
     
     TTF_CloseFont(font);
+}
+
+void GSPlay::CreateDigitTextures() {
+    if (TTF_WasInit() == 0) {
+        TTF_Init();
+    }
+    
+    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
+    if (!font) {
+        std::cout << "Failed to load font for digit textures: " << TTF_GetError() << std::endl;
+        return;
+    }
+    
+    TTF_SetFontHinting(font, TTF_HINTING_NONE);
+    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    
+    m_digitTextures.clear();
+    m_digitTextures.resize(10);
+    
+    SDL_Color color = {255, 255, 255, 255};
+    
+    for (int i = 0; i < 10; ++i) {
+        std::string digitStr = std::to_string(i);
+        SDL_Surface* surf = TTF_RenderUTF8_Blended(font, digitStr.c_str(), color);
+        if (!surf) {
+            std::cout << "Failed to render digit " << i << ": " << TTF_GetError() << std::endl;
+            continue;
+        }
+        
+        auto texture = std::make_shared<Texture2D>();
+        if (!texture->LoadFromSDLSurface(surf)) {
+            std::cout << "Failed to create texture for digit " << i << std::endl;
+            SDL_FreeSurface(surf);
+            continue;
+        }
+        
+        SDL_FreeSurface(surf);
+        texture->SetSharpFiltering();
+        m_digitTextures[i] = texture;
+    }
+    
+    TTF_CloseFont(font);
+}
+
+void GSPlay::AddScore(int playerId, int points) {
+    if (playerId == 1) {
+        m_player1Score += points;
+        if (m_player1Score < 0) m_player1Score = 0;
+    } else if (playerId == 2) {
+        m_player2Score += points;
+        if (m_player2Score < 0) m_player2Score = 0;
+    }
+    
+    UpdateScoreDisplay();
+}
+
+void GSPlay::UpdateScoreDisplay() {
+    int score1 = m_player1Score;
+    for (int i = 4; i >= 0; --i) { 
+        UpdateScoreDigit(1, i, digit);
+        score1 /= 10;
+    }
+    
+    int score2 = m_player2Score;
+    for (int i = 4; i >= 0; --i) {
+        UpdateScoreDigit(2, i, digit);
+        score2 /= 10;
+    }
+}
+
+void GSPlay::UpdateScoreDigit(int playerId, int digitPosition, int digitValue) {
+    if (digitValue < 0 || digitValue > 9) return;
+    if (digitPosition < 0 || digitPosition > 4) return;
+    
+    std::vector<std::shared_ptr<Object>>* digitObjects = nullptr;
+    if (playerId == 1) {
+        digitObjects = &m_scoreDigitObjectsP1;
+    } else if (playerId == 2) {
+        digitObjects = &m_scoreDigitObjectsP2;
+    } else {
+        return;
+    }
+    
+    if (digitPosition >= (int)digitObjects->size()) return;
+    
+    auto& digitObj = (*digitObjects)[digitPosition];
+    if (digitObj && digitValue < (int)m_digitTextures.size() && m_digitTextures[digitValue]) {
+        digitObj->SetDynamicTexture(m_digitTextures[digitValue]);
+    }
+}
+
+void GSPlay::ProcessDamageAndScore(Character& attacker, Character& target, float damage) {
+    if (target.GetHealth() <= 0.0f) {
+        return;
+    }
+    
+    float prevHealth = target.GetHealth();
+    target.TakeDamage(damage);
+    
+    int attackerId = (&attacker == &m_player) ? 1 : 2;
+    
+    AddScore(attackerId, (int)damage);
 }

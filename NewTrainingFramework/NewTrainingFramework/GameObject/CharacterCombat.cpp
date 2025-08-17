@@ -406,7 +406,12 @@ void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Charact
     // Apply damage to target
     if (target) {
         float currentHealth = target->GetHealth();
-        target->TakeDamage(10.0f);
+        
+        if (m_damageCallback) {
+            m_damageCallback(const_cast<Character&>(attacker), *target, 10.0f);
+        } else {
+            target->TakeDamage(10.0f);
+        }
         
         if (currentHealth > 0.0f && target->GetHealth() <= 0.0f) {
             target->TriggerDieFromAttack(attacker);

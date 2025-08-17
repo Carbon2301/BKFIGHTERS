@@ -196,6 +196,7 @@ public:
 
      void SuppressNextPunch() { m_suppressNextPunch = true; }
      CharacterAnimation* GetAnimation() const { return m_animation.get(); }
+     CharacterCombat* GetCombat() const { return m_combat.get(); }
 
      // Werewolf action state queries for hurtbox selection
      bool IsWerewolfComboActive() const;
