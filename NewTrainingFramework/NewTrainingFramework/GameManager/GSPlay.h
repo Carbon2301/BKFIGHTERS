@@ -446,8 +446,11 @@ private:
     
     float m_gameTimer = 300.0f;
     const float GAME_DURATION = 300.0f;
+    const float WARNING_TIME = 60.0f;
     std::vector<std::shared_ptr<Object>> m_timeDigitObjects; 
     std::shared_ptr<Texture2D> m_timeDigitTexture;
+    std::vector<std::shared_ptr<Texture2D>> m_redDigitTextures;
+    std::shared_ptr<Texture2D> m_redTimeDigitTexture;
     void CreateTimeDigitObjects();
     void UpdateTimeDisplay();
     void UpdateTimeDigit(int digitPosition, int digitValue);

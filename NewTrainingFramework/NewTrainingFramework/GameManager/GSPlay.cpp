@@ -1056,14 +1056,40 @@ void GSPlay::CreateTimeDigitObjects() {
     TTF_SetFontHinting(font, TTF_HINTING_NONE);
     TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     
-    SDL_Color color = {255, 255, 255, 255};
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "0", color);
+    SDL_Color whiteColor = {255, 255, 255, 255};
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "0", whiteColor);
     if (surf) {
         m_timeDigitTexture = std::make_shared<Texture2D>();
         if (m_timeDigitTexture->LoadFromSDLSurface(surf)) {
             m_timeDigitTexture->SetSharpFiltering();
         }
         SDL_FreeSurface(surf);
+    }
+    
+    SDL_Color redColor = {255, 0, 0, 255};
+    SDL_Surface* redSurf = TTF_RenderUTF8_Blended(font, "0", redColor);
+    if (redSurf) {
+        m_redTimeDigitTexture = std::make_shared<Texture2D>();
+        if (m_redTimeDigitTexture->LoadFromSDLSurface(redSurf)) {
+            m_redTimeDigitTexture->SetSharpFiltering();
+        }
+        SDL_FreeSurface(redSurf);
+    }
+    
+    m_redDigitTextures.clear();
+    m_redDigitTextures.resize(10);
+    
+    for (int i = 0; i < 10; ++i) {
+        std::string digitStr = std::to_string(i);
+        SDL_Surface* digitSurf = TTF_RenderUTF8_Blended(font, digitStr.c_str(), redColor);
+        if (digitSurf) {
+            auto texture = std::make_shared<Texture2D>();
+            if (texture->LoadFromSDLSurface(digitSurf)) {
+                texture->SetSharpFiltering();
+                m_redDigitTextures[i] = texture;
+            }
+            SDL_FreeSurface(digitSurf);
+        }
     }
     
     m_timeDigitObjects.clear();
@@ -4255,6 +4281,8 @@ void GSPlay::UpdateTimeDigit(int digitPosition, int digitValue) {
         return;
     }
     
+    bool isWarningTime = (m_gameTimer <= WARNING_TIME);
+    
     if (digitValue == -1) {
         if (TTF_WasInit() == 0) {
             TTF_Init();
@@ -4262,7 +4290,7 @@ void GSPlay::UpdateTimeDigit(int digitPosition, int digitValue) {
         
         TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
         if (font) {
-            SDL_Color color = {255, 255, 255, 255};
+            SDL_Color color = isWarningTime ? SDL_Color{255, 0, 0, 255} : SDL_Color{255, 255, 255, 255};
             SDL_Surface* surf = TTF_RenderUTF8_Blended(font, ":", color);
             if (surf) {
                 auto colonTexture = std::make_shared<Texture2D>();
@@ -4277,8 +4305,16 @@ void GSPlay::UpdateTimeDigit(int digitPosition, int digitValue) {
         return;
     }
     
-    if (digitValue >= 0 && digitValue <= 9 && digitValue < (int)m_digitTextures.size() && m_digitTextures[digitValue]) {
-        digitObj->SetDynamicTexture(m_digitTextures[digitValue]);
+    if (digitValue >= 0 && digitValue <= 9) {
+        if (isWarningTime) {
+            if (digitValue < (int)m_redDigitTextures.size() && m_redDigitTextures[digitValue]) {
+                digitObj->SetDynamicTexture(m_redDigitTextures[digitValue]);
+            }
+        } else {
+            if (digitValue < (int)m_digitTextures.size() && m_digitTextures[digitValue]) {
+                digitObj->SetDynamicTexture(m_digitTextures[digitValue]);
+            }
+        }
     }
 }
 
