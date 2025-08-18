@@ -8,6 +8,7 @@ class GSMenu : public GameStateBase {
 private:
     float m_buttonTimer;
     bool m_isSettingsVisible;
+    bool m_isCreditsVisible;
     
     // Music slider
     bool m_isDraggingMusicSlider;
@@ -31,6 +32,7 @@ private:
     
     static const int BUTTON_ID_PLAY = 201;
     static const int BUTTON_ID_SETTINGS = 203;
+    static const int BUTTON_ID_CREDITS = 204;
     static const int BUTTON_ID_EXIT = 205;
     
     static const int SETTINGS_UI_ID = 206;
@@ -39,6 +41,8 @@ private:
     static const int SETTINGS_APPLY_ID = 209;
     static const int SETTINGS_MUSIC_SLIDER_ID = 210;
     static const int SETTINGS_SFX_SLIDER_ID = 211;
+    static const int CREDITS_UI_ID = 212;
+    static const int CREDITS_BACK_ID = 213;
 
 public:
     GSMenu();
@@ -60,6 +64,8 @@ private:
     void ShowSettingsUI();
     void HideSettingsUI();
     void ToggleSettingsUI();
+    void ShowCreditsUI();
+    void HideCreditsUI();
     
     void HandleMusicSliderDrag(int x, int y, bool bIsPressed);
     void UpdateMusicSliderPosition();

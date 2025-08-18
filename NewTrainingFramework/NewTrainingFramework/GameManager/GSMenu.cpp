@@ -22,7 +22,7 @@ float GSMenu::s_savedMusicVolume = 0.5f;
 float GSMenu::s_savedSFXVolume = 0.5f;
 
 GSMenu::GSMenu() 
-    : GameStateBase(StateType::MENU), m_buttonTimer(0.0f), m_isSettingsVisible(false), 
+    : GameStateBase(StateType::MENU), m_buttonTimer(0.0f), m_isSettingsVisible(false), m_isCreditsVisible(false), 
       m_isDraggingMusicSlider(false), m_musicVolume(s_savedMusicVolume),
       m_isDraggingSFXSlider(false), m_sfxVolume(s_savedSFXVolume) {
 }
@@ -47,6 +47,7 @@ void GSMenu::Init() {
     SoundManager::Instance().PlayMusicByID(0, -1);
     
     HideSettingsUI();
+    HideCreditsUI();
     
     SceneManager* scene = SceneManager::GetInstance();
     if (Object* musicSlider = scene->GetObject(SETTINGS_MUSIC_SLIDER_ID)) {
@@ -151,11 +152,33 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
         }
         return;
     }
+    
+    if (m_isCreditsVisible) {
+        const auto& objects = sceneManager->GetObjects();
+        for (const auto& objPtr : objects) {
+            if (objPtr->GetId() == CREDITS_BACK_ID) {
+                const Vector3& pos = objPtr->GetPosition();
+                const Vector3& scale = objPtr->GetScale();
+                float width = scale.x;
+                float height = scale.y;
+                float leftBtn = pos.x - width / 2.0f;
+                float rightBtn = pos.x + width / 2.0f;
+                float bottomBtn = pos.y - height / 2.0f;
+                float topBtn = pos.y + height / 2.0f;
+                if (bottomBtn > topBtn) std::swap(bottomBtn, topBtn);
+                if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+                    HideCreditsUI();
+                }
+                return;
+            }
+        }
+        return;
+    }
 
     const auto& objects = sceneManager->GetObjects();
     for (const auto& objPtr : objects) {
         int id = objPtr->GetId();
-        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_SETTINGS || id == BUTTON_ID_EXIT) {
+        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_SETTINGS || id == BUTTON_ID_CREDITS || id == BUTTON_ID_EXIT) {
             const Vector3& pos = objPtr->GetPosition();
             const Vector3& scale = objPtr->GetScale();
             float width = scale.x;
@@ -179,6 +202,8 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                 } else if (id == BUTTON_ID_SETTINGS) {
                     std::cout << "[Mouse] Settings button clicked!" << std::endl;
                     ToggleSettingsUI();
+                } else if (id == BUTTON_ID_CREDITS) {
+                    ShowCreditsUI();
                 } else if (id == BUTTON_ID_EXIT) {
                     Cleanup();
                     HWND hwnd = GetActiveWindow();
@@ -206,8 +231,6 @@ void GSMenu::HandleMouseMove(int x, int y) {
 }
 
 void GSMenu::Resume() {
-    std::cout << "GSMenu: Resume (Back to Main Menu)" << std::endl;
-    std::cout << "Welcome back to the main menu!" << std::endl;
     
     m_musicVolume = s_savedMusicVolume;
     m_sfxVolume = s_savedSFXVolume;
@@ -282,6 +305,28 @@ void GSMenu::HideSettingsUI() {
 
 void GSMenu::ToggleSettingsUI() {
     ShowSettingsUI();
+}
+
+void GSMenu::ShowCreditsUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    if (Object* credits = scene->GetObject(CREDITS_UI_ID)) {
+        credits->SetVisible(true);
+    }
+    if (Object* back = scene->GetObject(CREDITS_BACK_ID)) {
+        back->SetVisible(true);
+    }
+    m_isCreditsVisible = true;
+}
+
+void GSMenu::HideCreditsUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    if (Object* credits = scene->GetObject(CREDITS_UI_ID)) {
+        credits->SetVisible(false);
+    }
+    if (Object* back = scene->GetObject(CREDITS_BACK_ID)) {
+        back->SetVisible(false);
+    }
+    m_isCreditsVisible = false;
 }
 
 void GSMenu::HandleMusicSliderDrag(int x, int y, bool bIsPressed) {
