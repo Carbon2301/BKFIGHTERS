@@ -176,8 +176,8 @@ private:
     // HUD gun display
     int m_player1GunTexId = 40;
     int m_player2GunTexId = 40;
-    Vector3 m_hudGun1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
-    Vector3 m_hudGun2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudGun1BaseScale = Vector3(0.0525f, -0.0375f, 1.0f);
+    Vector3 m_hudGun2BaseScale = Vector3(0.0525f, -0.0375f, 1.0f);
 
     static constexpr int   M4A1_BURST_COUNT = 5;
     static constexpr float M4A1_BURST_INTERVAL = 0.08f;
