@@ -93,12 +93,6 @@ void WallCollision::LoadWallsFromScene() {
     if (inWallBlock && objectId != -1) {
         AddWall(posX, posY, scaleX, scaleY, objectId);
     }
-    
-    // Log danh sách tường sau khi load
-    std::cout << "[WallCollision] Loaded walls: " << m_walls.size() << std::endl;
-    for (const auto& wall : m_walls) {
-        std::cout << "  Wall ID: " << wall.objectId << ", Pos: (" << wall.x << ", " << wall.y << ") Size: (" << wall.width << ", " << wall.height << ")" << std::endl;
-    }
 }
 
 bool WallCollision::CheckAABBCollision(float aLeft, float aRight, float aBottom, float aTop,

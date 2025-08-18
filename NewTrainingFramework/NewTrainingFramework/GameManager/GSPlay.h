@@ -176,8 +176,8 @@ private:
     // HUD gun display
     int m_player1GunTexId = 40;
     int m_player2GunTexId = 40;
-    Vector3 m_hudGun1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
-    Vector3 m_hudGun2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudGun1BaseScale = Vector3(0.0525f, -0.0375f, 1.0f);
+    Vector3 m_hudGun2BaseScale = Vector3(0.0525f, -0.0375f, 1.0f);
 
     static constexpr int   M4A1_BURST_COUNT = 5;
     static constexpr float M4A1_BURST_INTERVAL = 0.08f;
@@ -361,8 +361,8 @@ private:
     
     // HUD weapons
     void UpdateHudWeapons();
-    Vector3 m_hudWeapon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
-    Vector3 m_hudWeapon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudWeapon1BaseScale = Vector3(0.07875f, -0.035f, 1.0f);
+    Vector3 m_hudWeapon2BaseScale = Vector3(0.07875f, -0.035f, 1.0f);
     Vector3 m_hudAmmo1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
     Vector3 m_hudAmmo2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
 
@@ -372,8 +372,8 @@ private:
     // HUD Special Character icons
     int m_p1SpecialItemTexId = -1;
     int m_p2SpecialItemTexId = -1;
-    Vector3 m_hudSpecial1BaseScale = Vector3(0.07f, 0.07f, 1.0f);
-    Vector3 m_hudSpecial2BaseScale = Vector3(0.07f, 0.07f, 1.0f);
+    Vector3 m_hudSpecial1BaseScale = Vector3(0.08f, -0.08f, 1.0f);
+    Vector3 m_hudSpecial2BaseScale = Vector3(0.08f, -0.08f, 1.0f);
     void UpdateHudSpecialIcon(bool isPlayer1);
 
     // Bomb HUD
@@ -444,9 +444,9 @@ private:
     const float GAME_START_BLINK_DURATION = 3.0f;
     const float GAME_START_BLINK_INTERVAL = 0.15f;
     
-    float m_gameTimer = 30.0f;
-    const float GAME_DURATION = 30.0f;
-    const float WARNING_TIME = 10.0f;
+    float m_gameTimer = 300.0f;
+    const float GAME_DURATION = 300.0f;
+    const float WARNING_TIME = 60.0f;
     std::vector<std::shared_ptr<Object>> m_timeDigitObjects; 
     std::shared_ptr<Texture2D> m_timeDigitTexture;
     std::vector<std::shared_ptr<Texture2D>> m_redDigitTextures;

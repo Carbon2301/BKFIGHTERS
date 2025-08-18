@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 65
+# 2DTexture 85
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/NewBackground.tga"
 TILING GL_REPEAT
@@ -606,8 +606,80 @@ ID 88
 FILE "../Resources/Button/Credits_button.tga"
 TILING GL_CLAMP_TO_EDGE
 
-ID 88
+ID 89
 FILE "../Resources/Button/Settings_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 90
+FILE "../Resources/Textures/Settings.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 91
+FILE "../Resources/Textures/Credit.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 92
+FILE "../Resources/Textures/background_menu.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 93
+FILE "../Resources/Textures/BKFIGHTERS.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 94
+FILE "../Resources/Textures/Volumn_bar.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 95
+FILE "../Resources/Textures/Volumn_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 96
+FILE "../Resources/Button/Back_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 97
+FILE "../Resources/Textures/Credit_Menu.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 98
+FILE "../Resources/Textures/Tutorial_frame.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 99
+FILE "../Resources/Button/Next_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 100
+FILE "../Resources/Button/Prev_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 101
+FILE "../Resources/Tutorial/Tutorial1.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 102
+FILE "../Resources/Tutorial/Tutorial2.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 103
+FILE "../Resources/Tutorial/Tutorial3.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 104
+FILE "../Resources/Tutorial/Tutorial4.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 105
+FILE "../Resources/Tutorial/Tutorial5.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 106
+FILE "../Resources/Tutorial/Tutorial6.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 107
+FILE "../Resources/Tutorial/Tutorial7.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1
@@ -752,4 +824,8 @@ FILE "../Resources/Music/Wereworf_breathing.mp3"
 ID 32
 NAME "Wing_flap"
 FILE "../Resources/Music/Wing_flap.mp3"
+
+ID 33
+NAME "Button Click"
+FILE "../Resources/Music/Button_click.mp3"
 

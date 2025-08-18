@@ -27,13 +27,8 @@ GameStateMachine* g_gameStateMachine = nullptr;
 int Init(ESContext* esContext)
 {
     glClearColor(0.380f, 0.643f, 0.871f, 1.0f);
-
-	std::cout << "\n=== 2D Game Engine with State Machine ===" << std::endl;
-	std::cout << "Initializing New Training Framework Engine..." << std::endl;
-	
 	g_resourceManager = ResourceManager::GetInstance();
 	if (!g_resourceManager->LoadFromFile("../Resources/RM.txt")) {
-		std::cout << "Failed to load resources!" << std::endl;
 		return -1;
 	}
 	
@@ -166,9 +161,7 @@ void CleanUp()
 	if (g_resourceManager) {
 		ResourceManager::DestroyInstance();
 		g_resourceManager = nullptr;
-	}
-	
-	std::cout << "2D Game Engine cleanup completed" << std::endl;
+	}	
 }
 
 int _tmain(int argc, _TCHAR* argv[])

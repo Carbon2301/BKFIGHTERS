@@ -53,7 +53,6 @@ void SoundManager::PlayMusic(const std::string& name, int loop) {
             std::cout << "Failed to play music: " << Mix_GetError() << std::endl;
         }
     } else {
-        std::cout << "Music not found: " << name << std::endl;
     }
 }
 
@@ -94,7 +93,6 @@ void SoundManager::PlayMusicByID(int id, int loop) {
             std::cout << "Failed to play music: " << Mix_GetError() << std::endl;
         }
     } else {
-        std::cout << "Music not found with ID: " << id << std::endl;
     }
 }
 
@@ -276,7 +274,6 @@ std::vector<int> SoundManager::GetAllAudioIDs() const {
     std::sort(ids.begin(), ids.end());
     return ids;
 }
-
 void SoundManager::PreloadAllAudio(bool includeMusic, bool includeSfx) {
     for (const auto& kv : m_audioPathByID) {
         int id = kv.first;

@@ -47,7 +47,6 @@ std::string SceneManager::GetSceneFileForState(StateType stateType) {
         case StateType::PLAY:
             return "../Resources/GSPlay.txt";
         default:
-            std::cout << "Unknown state type for scene loading: " << (int)stateType << std::endl;
             return "";
     }
 }
@@ -58,7 +57,6 @@ bool SceneManager::LoadSceneForState(StateType stateType) {
         return false;
     }
     
-    std::cout << "Loading scene for state: " << (int)stateType << std::endl;
     return LoadFromFile(filepath);
 }
 
@@ -126,8 +124,6 @@ void SceneManager::SetupCameraFromConfig() {
             m_cameraConfig.bottom, m_cameraConfig.top,
             m_cameraConfig.nearPlane, m_cameraConfig.farPlane
         );
-        
-        std::cout << "Camera configured: 2D Orthographic" << std::endl;
     }
 }
 
@@ -137,8 +133,6 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
         std::cout << "Cannot open SceneManager file: " << filepath << std::endl;
         return false;
     }
-    
-    std::cout << "Loading scene from: " << filepath << std::endl;
 
     RemoveAllObjects();
     
@@ -164,20 +158,15 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
                 try {
                     if (!countStr.empty()) {
                         objectCount = std::stoi(countStr);
-                        std::cout << "Loading " << objectCount << " objects..." << std::endl;
                     } else {
-                        std::cout << "Error: No object count specified after #ObjectCount" << std::endl;
                         objectCount = 0;
                     }
                 } catch (const std::invalid_argument& e) {
-                    std::cout << "Error: Invalid object count format: '" << countStr << "'" << std::endl;
                     objectCount = 0;
                 } catch (const std::out_of_range& e) {
-                    std::cout << "Error: Object count out of range: '" << countStr << "'" << std::endl;
                     objectCount = 0;
                 }
             } else {
-                std::cout << "Error: Invalid #ObjectCount format, expected: #ObjectCount <number>" << std::endl;
                 objectCount = 0;
             }
             break;
@@ -243,13 +232,11 @@ bool SceneManager::LoadFromFile(const std::string& filepath) {
             if (shaderId >= 0) {
                 obj->SetShader(shaderId);
             }
-            
-            std::cout << "Created object ID " << id << std::endl;
         }
+
     }
     
     file.close();
-    PrintSceneInfo();
     return true;
 }
 
@@ -277,13 +264,11 @@ void SceneManager::RemoveObject(int id) {
     
     if (it != m_objects.end()) {
         m_objects.erase(it, m_objects.end());
-        std::cout << "Removed object ID " << id << std::endl;
     }
 }
 
 void SceneManager::RemoveAllObjects() {
     m_objects.clear();
-    std::cout << "Removed all objects" << std::endl;
 }
 
 Camera* SceneManager::CreateCamera() {
@@ -315,7 +300,6 @@ Camera* SceneManager::GetCamera(int index) {
 void SceneManager::SetActiveCamera(int index) {
     if (index >= 0 && index < (int)m_cameras.size()) {
         m_activeCameraIndex = index;
-        std::cout << "Switched to camera " << index << std::endl;
     }
 }
 
@@ -401,11 +385,6 @@ void SceneManager::HandleInput(unsigned char key, bool isPressed) {
     switch(key) {
         case 'R':
         case 'r':
-            std::cout << "=== Scene Info ===" << std::endl;
-            std::cout << "Camera Position: (" << activeCamera->GetPosition().x << ", " << activeCamera->GetPosition().y << ", " << activeCamera->GetPosition().z << ")" << std::endl;
-            std::cout << "Objects: " << m_objects.size() << std::endl;
-            std::cout << "\n=== 2D Controls ===" << std::endl;
-            std::cout << "R - Show scene info" << std::endl;
             break;
     }
 }
@@ -416,20 +395,3 @@ void SceneManager::Clear() {
     m_activeCameraIndex = -1;
 }
 
-void SceneManager::PrintSceneInfo() {
-    std::cout << "\n=== Scene Manager Status ===" << std::endl;
-    std::cout << "Objects: " << m_objects.size() << std::endl;
-    for (const auto& obj : m_objects) {
-        std::cout << "  - Object ID " << obj->GetId() << ": Model=" << obj->GetModelId() 
-                  << ", Textures=" << obj->GetTextureIds().size() 
-                  << ", Shader=" << obj->GetShaderId() << std::endl;
-    }
-    
-    std::cout << "Cameras: " << m_cameras.size() << " (Active: " << m_activeCameraIndex << ")" << std::endl;
-    
-    if (Camera* cam = GetActiveCamera()) {
-        std::cout << "  - Position: (" << cam->GetPosition().x << ", " << cam->GetPosition().y << ", " << cam->GetPosition().z << ")" << std::endl;
-        std::cout << "  - Target: (" << cam->GetTarget().x << ", " << cam->GetTarget().y << ", " << cam->GetTarget().z << ")" << std::endl;
-    }
-    
-} 

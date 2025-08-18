@@ -12,59 +12,52 @@
 #include <SDL_mixer.h>
 #include "SoundManager.h"
 #include <algorithm>
+#include <windows.h>
+
+#ifndef MIX_MAX_VOLUME
+#define MIX_MAX_VOLUME 128
+#endif
+
+float GSMenu::s_savedMusicVolume = 0.5f;
+float GSMenu::s_savedSFXVolume = 0.5f;
 
 GSMenu::GSMenu() 
-    : GameStateBase(StateType::MENU), m_buttonTimer(0.0f) {
+    : GameStateBase(StateType::MENU), m_buttonTimer(0.0f), m_isSettingsVisible(false), m_isCreditsVisible(false), 
+      m_isTutorialVisible(false), m_currentTutorialPage(0),
+      m_isDraggingMusicSlider(false), m_musicVolume(s_savedMusicVolume),
+      m_isDraggingSFXSlider(false), m_sfxVolume(s_savedSFXVolume) {
 }
 
 GSMenu::~GSMenu() {
 }
 
 void GSMenu::Init() {
-    std::cout << "=== MAIN MENU ===" << std::endl;
-    std::cout << "Welcome to the Game!" << std::endl;
-    
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     SceneManager* sceneManager = SceneManager::GetInstance();
     sceneManager->LoadSceneForState(StateType::MENU);
-    
-    std::cout << "Use mouse to click buttons" << std::endl;
-    std::cout << "ESC to exit game" << std::endl;
 
-    //Tạo texture text động bằng SDL_ttf
-    if (TTF_WasInit() == 0) TTF_Init();
-    TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 32);
-    if (!font) {
-        std::cout << "Failed to load font! TTF_Error: " << TTF_GetError() << std::endl;
-        return;
-    }
-    SDL_Color color = {255, 255, 255, 255};
-    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "Welcome to BK Fighters - Made by Carbon x Gialinx", color);
-    if (!textSurface) {
-        std::cout << "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
-        TTF_CloseFont(font);
-        return;
-    }
-    m_textTexture = std::make_shared<Texture2D>();
-    m_textTexture->LoadFromSDLSurface(textSurface);
-    SDL_FreeSurface(textSurface);
-    TTF_CloseFont(font);
-
-    //Phát nhạc nền
     SoundManager::Instance().PlayMusicByID(0, -1);
-
-    //Tạo object vẽ text
-    m_textObject = std::make_shared<Object>();
-    m_textObject->SetId(-100); // ID đặc biệt cho text động
-    m_textObject->SetModel(0);
-    m_textObject->SetShader(0);
-    m_textObject->SetDynamicTexture(m_textTexture);
-    float x = 0.00556242f;
-    float y = 0.791667f;
-    m_textObject->Set2DPosition(x, y);
-    m_textObject->SetSize(1.8f, 0.1f);
+    
+    HideSettingsUI();
+    HideCreditsUI();
+    HideTutorialUI();
+    
+    SceneManager* scene = SceneManager::GetInstance();
+    if (Object* musicSlider = scene->GetObject(SETTINGS_MUSIC_SLIDER_ID)) {
+        m_musicSliderOriginalPos = musicSlider->GetPosition();
+    }
+    
+    if (Object* sfxSlider = scene->GetObject(SETTINGS_SFX_SLIDER_ID)) {
+        m_sfxSliderOriginalPos = sfxSlider->GetPosition();
+    }
+    
+    UpdateMusicSliderPosition();
+    UpdateSFXSliderPosition();
+    
+    ApplyMusicVolume();
+    ApplySFXVolume();
  
 }
 
@@ -77,17 +70,28 @@ void GSMenu::Update(float deltaTime) {
 
 void GSMenu::Draw() {
     SceneManager::GetInstance()->Draw();
-    // --- Vẽ text động ---
-    if (m_textObject) {
-        Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
-        if (cam) {
-            m_textObject->Draw(cam->GetViewMatrix(), cam->GetProjectionMatrix());
-        }
-    }
 }
 
 void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (!bIsPressed) return;
+    
+    if (m_isTutorialVisible) {
+        switch (key) {
+            case 37:
+                if (m_currentTutorialPage > 0) {
+                    m_currentTutorialPage--;
+                    UpdateTutorialPage();
+                }
+                break;
+            case 39:
+                if (m_currentTutorialPage < TUTORIAL_PAGE_COUNT - 1) {
+                    m_currentTutorialPage++;
+                    UpdateTutorialPage();
+                }
+                break;
+        }
+        return;
+    }
     
     switch (key) {
     }
@@ -105,6 +109,15 @@ static float MousePixelToWorldY(int y, Camera* cam) {
 }
 
 void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
+    if (!bIsPressed && m_isDraggingMusicSlider) {
+        m_isDraggingMusicSlider = false;
+        return;
+    }
+    if (!bIsPressed && m_isDraggingSFXSlider) {
+        m_isDraggingSFXSlider = false;
+        return;
+    }
+    
     if (!bIsPressed) return;
 
     SceneManager* sceneManager = SceneManager::GetInstance();
@@ -114,18 +127,134 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
     float worldX = MousePixelToWorldX(x, camera);
     float worldY = MousePixelToWorldY(y, camera);
 
-    std::cout << "Mouse pixel: (" << x << ", " << y << "), world: (" << worldX << ", " << worldY << ")\n";
-    std::cout << "Camera: left=" << camera->GetLeft() << ", right=" << camera->GetRight()
-              << ", top=" << camera->GetTop() << ", bottom=" << camera->GetBottom() << std::endl;
+    if (m_isSettingsVisible) {
+        HandleMusicSliderDrag(x, y, bIsPressed);
+        HandleSFXSliderDrag(x, y, bIsPressed);
+        
+        if (m_isDraggingMusicSlider || m_isDraggingSFXSlider) {
+            return;
+        }
+        if (bIsPressed) {
+            const auto& objects = sceneManager->GetObjects();
+            for (const auto& objPtr : objects) {
+                int id = objPtr->GetId();
+                if (id == SETTINGS_APPLY_ID) {
+                    const Vector3& pos = objPtr->GetPosition();
+                    const Vector3& scale = objPtr->GetScale();
+                    float width = abs(scale.x);
+                    float height = abs(scale.y);
+                    float leftBtn = pos.x - width / 2.0f;
+                    float rightBtn = pos.x + width / 2.0f;
+                    float bottomBtn = pos.y - height / 2.0f;
+                    float topBtn = pos.y + height / 2.0f;
+                    
+                    if (bottomBtn > topBtn) {
+                        std::swap(bottomBtn, topBtn);
+                    }
+                    
+                    if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+                         SoundManager::Instance().PlaySFXByID(33, 0);
+                         HideSettingsUI();
+                         return;
+                     }
+                }
+            }
+        }
+        return;
+    }
+    
+    if (m_isCreditsVisible) {
+        const auto& objects = sceneManager->GetObjects();
+        for (const auto& objPtr : objects) {
+            if (objPtr->GetId() == CREDITS_BACK_ID) {
+                const Vector3& pos = objPtr->GetPosition();
+                const Vector3& scale = objPtr->GetScale();
+                float width = abs(scale.x);
+                float height = abs(scale.y);
+                float leftBtn = pos.x - width / 2.0f;
+                float rightBtn = pos.x + width / 2.0f;
+                float bottomBtn = pos.y - height / 2.0f;
+                float topBtn = pos.y + height / 2.0f;
+                if (bottomBtn > topBtn) std::swap(bottomBtn, topBtn);
+                if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+                     SoundManager::Instance().PlaySFXByID(33, 0);
+                     HideCreditsUI();
+                 }
+                return;
+            }
+        }
+        return;
+    }
+    
+    if (m_isTutorialVisible) {
+        const auto& objects = sceneManager->GetObjects();
+        bool buttonClicked = false;
+        
+        for (const auto& objPtr : objects) {
+            if (objPtr->GetId() == TUTORIAL_BACK_BUTTON_ID) {
+                const Vector3& pos = objPtr->GetPosition();
+                const Vector3& scale = objPtr->GetScale();
+                float width = abs(scale.x);
+                float height = abs(scale.y);
+                float leftBtn = pos.x - width / 2.0f;
+                float rightBtn = pos.x + width / 2.0f;
+                float bottomBtn = pos.y - height / 2.0f;
+                float topBtn = pos.y + height / 2.0f;
+                if (bottomBtn > topBtn) std::swap(bottomBtn, topBtn);
+                
+                if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+                     SoundManager::Instance().PlaySFXByID(33, 0);
+                     HideTutorialUI();
+                     buttonClicked = true;
+                     break;
+                 }
+            }
+        }
+        
+        if (!buttonClicked) {
+            for (const auto& objPtr : objects) {
+                int id = objPtr->GetId();
+                if (id == TUTORIAL_PREV_BUTTON_ID || id == TUTORIAL_NEXT_BUTTON_ID) {
+                    const Vector3& pos = objPtr->GetPosition();
+                    const Vector3& scale = objPtr->GetScale();
+                    float width = abs(scale.x);
+                    float height = abs(scale.y);
+                    float leftBtn = pos.x - width / 2.0f;
+                    float rightBtn = pos.x + width / 2.0f;
+                    float bottomBtn = pos.y - height / 2.0f;
+                    float topBtn = pos.y + height / 2.0f;
+                    
+                    if (bottomBtn > topBtn) {
+                        std::swap(bottomBtn, topBtn);
+                    }
+                    
+                    if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+                         SoundManager::Instance().PlaySFXByID(33, 0);
+                         if (id == TUTORIAL_PREV_BUTTON_ID && m_currentTutorialPage > 0) {
+                             m_currentTutorialPage--;
+                             UpdateTutorialPage();
+                         } else if (id == TUTORIAL_NEXT_BUTTON_ID && m_currentTutorialPage < TUTORIAL_PAGE_COUNT - 1) {
+                             m_currentTutorialPage++;
+                             UpdateTutorialPage();
+                         }
+                         buttonClicked = true;
+                         break;
+                     }
+                }
+            }
+        }
+        
+        return;
+    }
 
     const auto& objects = sceneManager->GetObjects();
     for (const auto& objPtr : objects) {
         int id = objPtr->GetId();
-        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_HELP || id == BUTTON_ID_CLOSE) {
+        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_HELP || id == BUTTON_ID_SETTINGS || id == BUTTON_ID_CREDITS || id == BUTTON_ID_EXIT) {
             const Vector3& pos = objPtr->GetPosition();
             const Vector3& scale = objPtr->GetScale();
-            float width = scale.x;
-            float height = scale.y;
+            float width = abs(scale.x);
+            float height = abs(scale.y);
             float leftBtn = pos.x - width / 2.0f;
             float rightBtn = pos.x + width / 2.0f;
             float bottomBtn = pos.y - height / 2.0f;
@@ -135,21 +264,28 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                 std::swap(bottomBtn, topBtn);
             }
             
-            std::cout << "Button ID " << id << " region: left=" << leftBtn << ", right=" << rightBtn
-                      << ", top=" << topBtn << ", bottom=" << bottomBtn << std::endl;
-            if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
-                std::cout << "HIT button ID " << id << std::endl;
+            if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {                
                 if (id == BUTTON_ID_PLAY) {
-                    std::cout << "[Mouse] Play button clicked!" << std::endl;
+                    SoundManager::Instance().PlaySFXByID(33, 0);
                     GameStateMachine::GetInstance()->PushState(StateType::PLAY);
                 } else if (id == BUTTON_ID_HELP) {
-                    std::cout << "[Mouse] Help button clicked!" << std::endl;
-                    std::cout << "Game Controls:" << std::endl;
-                    std::cout << "Use mouse to click buttons" << std::endl;
-                } else if (id == BUTTON_ID_CLOSE) {
-                    std::cout << "[Mouse] Close button clicked!" << std::endl;
-                    std::cout << "Thanks for playing!" << std::endl;
-                    exit(0);
+                    SoundManager::Instance().PlaySFXByID(33, 0);
+                    ShowTutorialUI();
+                } else if (id == BUTTON_ID_SETTINGS) {
+                    SoundManager::Instance().PlaySFXByID(33, 0);
+                    ToggleSettingsUI();
+                } else if (id == BUTTON_ID_CREDITS) {
+                    SoundManager::Instance().PlaySFXByID(33, 0);
+                    ShowCreditsUI();
+                } else if (id == BUTTON_ID_EXIT) {
+                    SoundManager::Instance().PlaySFXByID(33, 0);
+                    Cleanup();
+                    HWND hwnd = GetActiveWindow();
+                    if (hwnd) {
+                        PostMessage(hwnd, WM_CLOSE, 0, 0);
+                    } else {
+                        exit(0);
+                    }
                 }
                 break;
             }
@@ -158,23 +294,405 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
 }
 
 void GSMenu::HandleMouseMove(int x, int y) {
-    // std::cout << "Mouse moved to (" << x << ", " << y << ")" << std::endl;
+    if (m_isSettingsVisible) {
+        if (m_isDraggingMusicSlider) {
+            HandleMusicSliderDrag(x, y, false);
+        }
+        if (m_isDraggingSFXSlider) {
+            HandleSFXSliderDrag(x, y, false);
+        }
+    }
 }
 
 void GSMenu::Resume() {
-    std::cout << "GSMenu: Resume (Back to Main Menu)" << std::endl;
-    std::cout << "Welcome back to the main menu!" << std::endl;
+    
+    m_musicVolume = s_savedMusicVolume;
+    m_sfxVolume = s_savedSFXVolume;
+    
+    UpdateMusicSliderPosition();
+    UpdateSFXSliderPosition();
+    ApplyMusicVolume();
+    ApplySFXVolume();
 }
 
 void GSMenu::Pause() {
-    std::cout << "GSMenu: Pause" << std::endl;
     SoundManager::Instance().StopMusic();
 }
 
 void GSMenu::Exit() {
-    std::cout << "GSMenu: Exit" << std::endl;
 }
 
 void GSMenu::Cleanup() {
-    std::cout << "GSMenu: Cleanup" << std::endl;
+}
+
+void GSMenu::ShowSettingsUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    if (Object* settingsUI = scene->GetObject(SETTINGS_UI_ID)) {
+        settingsUI->SetVisible(true);
+    }
+    if (Object* settingsMusic = scene->GetObject(SETTINGS_MUSIC_ID)) {
+        settingsMusic->SetVisible(true);
+    }
+    if (Object* settingsSFX = scene->GetObject(SETTINGS_SFX_ID)) {
+        settingsSFX->SetVisible(true);
+    }
+    if (Object* settingsApply = scene->GetObject(SETTINGS_APPLY_ID)) {
+        settingsApply->SetVisible(false);
+    }
+    if (Object* settingsMusicSlider = scene->GetObject(SETTINGS_MUSIC_SLIDER_ID)) {
+        settingsMusicSlider->SetVisible(true);
+    }
+    if (Object* settingsSFXSlider = scene->GetObject(SETTINGS_SFX_SLIDER_ID)) {
+        settingsSFXSlider->SetVisible(true);
+    }
+    m_isSettingsVisible = true;
+    
+}
+
+void GSMenu::HideSettingsUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    if (Object* settingsUI = scene->GetObject(SETTINGS_UI_ID)) {
+        settingsUI->SetVisible(false);
+    }
+    if (Object* settingsMusic = scene->GetObject(SETTINGS_MUSIC_ID)) {
+        settingsMusic->SetVisible(false);
+    }
+    if (Object* settingsSFX = scene->GetObject(SETTINGS_SFX_ID)) {
+        settingsSFX->SetVisible(false);
+    }
+    if (Object* settingsApply = scene->GetObject(SETTINGS_APPLY_ID)) {
+        settingsApply->SetVisible(false);
+    }
+    if (Object* settingsMusicSlider = scene->GetObject(SETTINGS_MUSIC_SLIDER_ID)) {
+        settingsMusicSlider->SetVisible(false);
+    }
+    if (Object* settingsSFXSlider = scene->GetObject(SETTINGS_SFX_SLIDER_ID)) {
+        settingsSFXSlider->SetVisible(false);
+    }
+    m_isSettingsVisible = false;
+}
+
+void GSMenu::ToggleSettingsUI() {
+    ShowSettingsUI();
+}
+
+void GSMenu::ShowCreditsUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    if (Object* credits = scene->GetObject(CREDITS_UI_ID)) {
+        credits->SetVisible(true);
+    }
+    if (Object* back = scene->GetObject(CREDITS_BACK_ID)) {
+        back->SetVisible(true);
+    }
+    m_isCreditsVisible = true;
+}
+
+void GSMenu::HideCreditsUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    if (Object* credits = scene->GetObject(CREDITS_UI_ID)) {
+        credits->SetVisible(false);
+    }
+    if (Object* back = scene->GetObject(CREDITS_BACK_ID)) {
+        back->SetVisible(false);
+    }
+    m_isCreditsVisible = false;
+}
+
+void GSMenu::HandleMusicSliderDrag(int x, int y, bool bIsPressed) {
+    SceneManager* scene = SceneManager::GetInstance();
+    Camera* camera = scene->GetActiveCamera();
+    if (!camera) return;
+
+    float worldX = MousePixelToWorldX(x, camera);
+    float worldY = MousePixelToWorldY(y, camera);
+
+    Object* sliderTrack = scene->GetObject(SETTINGS_MUSIC_ID);
+    Object* sliderThumb = scene->GetObject(SETTINGS_MUSIC_SLIDER_ID);
+    
+    if (!sliderTrack || !sliderThumb) return;
+
+    const Vector3& trackPos = sliderTrack->GetPosition();
+    const Vector3& trackScale = sliderTrack->GetScale();
+    const Vector3& thumbPos = sliderThumb->GetPosition();
+    const Vector3& thumbScale = sliderThumb->GetScale();
+    
+    float trackWidth = trackScale.x;
+    float trackHeight = trackScale.y;
+    float leftTrack = trackPos.x - trackWidth / 2.0f;
+    float rightTrack = trackPos.x + trackWidth / 2.0f;
+    float bottomTrack = trackPos.y - trackHeight / 2.0f;
+    float topTrack = trackPos.y + trackHeight / 2.0f;
+    
+    if (bottomTrack > topTrack) {
+        std::swap(bottomTrack, topTrack);
+    }
+
+    float thumbWidth = thumbScale.x;
+    float thumbHeight = thumbScale.y;
+    float leftThumb = thumbPos.x - thumbWidth / 2.0f;
+    float rightThumb = thumbPos.x + thumbWidth / 2.0f;
+    float bottomThumb = thumbPos.y - thumbHeight / 2.0f;
+    float topThumb = thumbPos.y + thumbHeight / 2.0f;
+    
+    if (bottomThumb > topThumb) {
+        std::swap(bottomThumb, topThumb);
+    }
+
+    if (bIsPressed) {
+        if (worldX >= leftThumb && worldX <= rightThumb && 
+            worldY >= bottomThumb && worldY <= topThumb) {
+            m_isDraggingMusicSlider = true;
+            
+            float trackRange = rightTrack - leftTrack;
+            float relativeX = worldX - leftTrack;
+            m_musicVolume = relativeX / trackRange;
+            
+            if (m_musicVolume < 0.0f) m_musicVolume = 0.0f;
+            if (m_musicVolume > 1.0f) m_musicVolume = 1.0f;
+            
+            UpdateMusicSliderPosition();
+            ApplyMusicVolume();
+            
+        }
+        else if (worldX >= leftTrack && worldX <= rightTrack && 
+                 worldY >= bottomTrack && worldY <= topTrack) {
+            float trackRange = rightTrack - leftTrack;
+            float relativeX = worldX - leftTrack;
+            m_musicVolume = relativeX / trackRange;
+            
+            if (m_musicVolume < 0.0f) m_musicVolume = 0.0f;
+            if (m_musicVolume > 1.0f) m_musicVolume = 1.0f;
+            
+            UpdateMusicSliderPosition();
+            ApplyMusicVolume();
+        }
+    }
+
+    if (m_isDraggingMusicSlider) {
+        float trackRange = rightTrack - leftTrack;
+        float relativeX = worldX - leftTrack;
+        m_musicVolume = relativeX / trackRange;
+        
+        if (m_musicVolume < 0.0f) m_musicVolume = 0.0f;
+        if (m_musicVolume > 1.0f) m_musicVolume = 1.0f;
+        
+        UpdateMusicSliderPosition();
+        ApplyMusicVolume();
+    }
+}
+
+void GSMenu::UpdateMusicSliderPosition() {
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* sliderTrack = scene->GetObject(SETTINGS_MUSIC_ID);
+    Object* sliderThumb = scene->GetObject(SETTINGS_MUSIC_SLIDER_ID);
+    
+    if (!sliderTrack || !sliderThumb) return;
+
+    const Vector3& trackPos = sliderTrack->GetPosition();
+    const Vector3& trackScale = sliderTrack->GetScale();
+    
+    float trackWidth = trackScale.x;
+    float leftTrack = trackPos.x - trackWidth / 2.0f;
+    float rightTrack = trackPos.x + trackWidth / 2.0f;
+    float trackRange = rightTrack - leftTrack;
+    
+    float newX = leftTrack + (trackRange * m_musicVolume);
+    
+    const Vector3& currentPos = sliderThumb->GetPosition();
+    Vector3 newPos(currentPos.x, currentPos.y, currentPos.z);
+    newPos.x = newX;
+    sliderThumb->SetPosition(newPos);
+}
+
+void GSMenu::ApplyMusicVolume() {
+    int volume = static_cast<int>(m_musicVolume * MIX_MAX_VOLUME);
+    Mix_VolumeMusic(volume);
+    
+    s_savedMusicVolume = m_musicVolume;
+}
+
+void GSMenu::HandleSFXSliderDrag(int x, int y, bool bIsPressed) {
+    SceneManager* scene = SceneManager::GetInstance();
+    Camera* camera = scene->GetActiveCamera();
+    if (!camera) return;
+
+    float worldX = MousePixelToWorldX(x, camera);
+    float worldY = MousePixelToWorldY(y, camera);
+
+    Object* sliderTrack = scene->GetObject(SETTINGS_SFX_ID);
+    Object* sliderThumb = scene->GetObject(SETTINGS_SFX_SLIDER_ID);
+    
+    if (!sliderTrack || !sliderThumb) return;
+
+    const Vector3& trackPos = sliderTrack->GetPosition();
+    const Vector3& trackScale = sliderTrack->GetScale();
+    const Vector3& thumbPos = sliderThumb->GetPosition();
+    const Vector3& thumbScale = sliderThumb->GetScale();
+    
+    float trackWidth = trackScale.x;
+    float trackHeight = trackScale.y;
+    float leftTrack = trackPos.x - trackWidth / 2.0f;
+    float rightTrack = trackPos.x + trackWidth / 2.0f;
+    float bottomTrack = trackPos.y - trackHeight / 2.0f;
+    float topTrack = trackPos.y + trackHeight / 2.0f;
+    
+    if (bottomTrack > topTrack) {
+        std::swap(bottomTrack, topTrack);
+    }
+
+    float thumbWidth = thumbScale.x;
+    float thumbHeight = thumbScale.y;
+    float leftThumb = thumbPos.x - thumbWidth / 2.0f;
+    float rightThumb = thumbPos.x + thumbWidth / 2.0f;
+    float bottomThumb = thumbPos.y - thumbHeight / 2.0f;
+    float topThumb = thumbPos.y + thumbHeight / 2.0f;
+    
+    if (bottomThumb > topThumb) {
+        std::swap(bottomThumb, topThumb);
+    }
+
+    if (bIsPressed) {
+        if (worldX >= leftThumb && worldX <= rightThumb && 
+            worldY >= bottomThumb && worldY <= topThumb) {
+            m_isDraggingSFXSlider = true;
+            
+            float trackRange = rightTrack - leftTrack;
+            float relativeX = worldX - leftTrack;
+            m_sfxVolume = relativeX / trackRange;
+            
+            if (m_sfxVolume < 0.0f) m_sfxVolume = 0.0f;
+            if (m_sfxVolume > 1.0f) m_sfxVolume = 1.0f;
+            
+            UpdateSFXSliderPosition();
+            ApplySFXVolume();
+        }
+        else if (worldX >= leftTrack && worldX <= rightTrack && 
+                 worldY >= bottomTrack && worldY <= topTrack) {
+            float trackRange = rightTrack - leftTrack;
+            float relativeX = worldX - leftTrack;
+            m_sfxVolume = relativeX / trackRange;
+            
+            if (m_sfxVolume < 0.0f) m_sfxVolume = 0.0f;
+            if (m_sfxVolume > 1.0f) m_sfxVolume = 1.0f;
+            UpdateSFXSliderPosition();
+            ApplySFXVolume();
+            }
+    }
+
+    if (m_isDraggingSFXSlider) {
+        float trackRange = rightTrack - leftTrack;
+        float relativeX = worldX - leftTrack;
+        m_sfxVolume = relativeX / trackRange;
+        
+        if (m_sfxVolume < 0.0f) m_sfxVolume = 0.0f;
+        if (m_sfxVolume > 1.0f) m_sfxVolume = 1.0f;
+        
+        UpdateSFXSliderPosition();
+        ApplySFXVolume();
+    }
+}
+
+void GSMenu::UpdateSFXSliderPosition() {
+    SceneManager* scene = SceneManager::GetInstance();
+    Object* sliderTrack = scene->GetObject(SETTINGS_SFX_ID);
+    Object* sliderThumb = scene->GetObject(SETTINGS_SFX_SLIDER_ID);
+    
+    if (!sliderTrack || !sliderThumb) return;
+
+    const Vector3& trackPos = sliderTrack->GetPosition();
+    const Vector3& trackScale = sliderTrack->GetScale();
+    
+    float trackWidth = trackScale.x;
+    float leftTrack = trackPos.x - trackWidth / 2.0f;
+    float rightTrack = trackPos.x + trackWidth / 2.0f;
+    float trackRange = rightTrack - leftTrack;
+    
+    float newX = leftTrack + (trackRange * m_sfxVolume);
+    
+    const Vector3& currentPos = sliderThumb->GetPosition();
+    Vector3 newPos(currentPos.x, currentPos.y, currentPos.z);
+    newPos.x = newX;
+    sliderThumb->SetPosition(newPos);
+}
+
+void GSMenu::ApplySFXVolume() {
+    int volume = static_cast<int>(m_sfxVolume * MIX_MAX_VOLUME);
+    for (int channel = 0; channel < 8; channel++) {
+        Mix_Volume(channel, volume);
+    }
+    
+    s_savedSFXVolume = m_sfxVolume;
+}
+
+void GSMenu::ShowTutorialUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    if (Object* tutorialFrame = scene->GetObject(TUTORIAL_FRAME_ID)) {
+        tutorialFrame->SetVisible(true);
+    }
+    
+    if (Object* prevButton = scene->GetObject(TUTORIAL_PREV_BUTTON_ID)) {
+        prevButton->SetVisible(true);
+    }
+    
+    if (Object* nextButton = scene->GetObject(TUTORIAL_NEXT_BUTTON_ID)) {
+        nextButton->SetVisible(true);
+    }
+    
+    if (Object* backButton = scene->GetObject(TUTORIAL_BACK_BUTTON_ID)) {
+        backButton->SetVisible(true);
+    }
+    
+    m_currentTutorialPage = 0;
+    UpdateTutorialPage();
+    m_isTutorialVisible = true;
+}
+
+void GSMenu::HideTutorialUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    if (Object* tutorialFrame = scene->GetObject(TUTORIAL_FRAME_ID)) {
+        tutorialFrame->SetVisible(false);
+    }
+    if (Object* prevButton = scene->GetObject(TUTORIAL_PREV_BUTTON_ID)) {
+        prevButton->SetVisible(false);
+    }
+    if (Object* nextButton = scene->GetObject(TUTORIAL_NEXT_BUTTON_ID)) {
+        nextButton->SetVisible(false);
+    }
+    if (Object* backButton = scene->GetObject(TUTORIAL_BACK_BUTTON_ID)) {
+        backButton->SetVisible(false);
+    }
+    
+    for (int i = TUTORIAL_PAGE_START_ID; i <= TUTORIAL_PAGE_END_ID; i++) {
+        if (Object* page = scene->GetObject(i)) {
+            page->SetVisible(false);
+        }
+    }
+    
+    m_isTutorialVisible = false;
+}
+
+void GSMenu::UpdateTutorialPage() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    for (int i = TUTORIAL_PAGE_START_ID; i <= TUTORIAL_PAGE_END_ID; i++) {
+        if (Object* page = scene->GetObject(i)) {
+            page->SetVisible(false);
+        }
+    }
+    
+    int currentPageId = TUTORIAL_PAGE_START_ID + m_currentTutorialPage;
+    if (Object* currentPage = scene->GetObject(currentPageId)) {
+        currentPage->SetVisible(true);
+    }
+    
+    if (Object* prevButton = scene->GetObject(TUTORIAL_PREV_BUTTON_ID)) {
+        prevButton->SetVisible(m_currentTutorialPage > 0);
+    }
+    if (Object* nextButton = scene->GetObject(TUTORIAL_NEXT_BUTTON_ID)) {
+        nextButton->SetVisible(m_currentTutorialPage < TUTORIAL_PAGE_COUNT - 1);
+    }
 } 

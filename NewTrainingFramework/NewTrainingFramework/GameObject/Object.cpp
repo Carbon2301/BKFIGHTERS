@@ -180,13 +180,9 @@ void Object::Draw(const Matrix& viewMatrix, const Matrix& projectionMatrix) {
         return;
     }
     if (!m_model || !m_shader) {
-        std::cout << "Object ID " << m_id << " missing resources: model=" << (m_model ? "OK" : "NULL") 
-                  << ", shader=" << (m_shader ? "OK" : "NULL") << std::endl;
         return;
     }
-    
-    // Skip debug spam - render silently without texture
-    
+        
     // Use shader
     glUseProgram(m_shader->program);
     
@@ -324,14 +320,11 @@ void Object::Update(float deltaTime) {
 // Auto-rotation methods
 void Object::ToggleAutoRotation() {
     m_autoRotate = !m_autoRotate;
-    std::cout << "Object ID " << m_id << " auto-rotation " << (m_autoRotate ? "ON" : "OFF") << std::endl;
 }
 
 void Object::SetAutoRotation(bool enabled, float speed) {
     m_autoRotate = enabled;
     m_rotationSpeed = speed;
-    std::cout << "Object ID " << m_id << " auto-rotation set to " << (enabled ? "ON" : "OFF") 
-              << " at " << speed << " degrees/sec" << std::endl;
 } 
 
 // Thêm hàm cập nhật UV động cho Sprite2D
@@ -372,15 +365,9 @@ void Object::SetLiftPlatform(bool enabled, const Vector3& startPos, const Vector
         m_liftGoingUp = true;
         m_liftPauseTimer = 0.0f;
         
-        // Set initial position to start position
         m_position = startPos;
         m_matrixNeedsUpdate = true;
-        
-        std::cout << "Object ID " << m_id << " lift platform enabled: " 
-                  << "(" << startPos.x << ", " << startPos.y << ", " << startPos.z << ") to "
-                  << "(" << endPos.x << ", " << endPos.y << ", " << endPos.z << ")" << std::endl;
-    } else {
-        std::cout << "Object ID " << m_id << " lift platform disabled" << std::endl;
+
     }
 }
 

@@ -8,7 +8,6 @@ PlatformCollision::~PlatformCollision() {}
 
 void PlatformCollision::AddPlatform(float x, float y, float width, float height) {
     m_platforms.emplace_back(x, y, width, height);
-    std::cout << "[PlatformCollision] Add platform: Pos:(" << x << ", " << y << ") Size:(" << width << ", " << height << ")" << std::endl;
 }
 
 void PlatformCollision::ClearPlatforms() {
