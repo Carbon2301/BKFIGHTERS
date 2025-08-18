@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 71
+# 2DTexture 85
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/NewBackground.tga"
 TILING GL_REPEAT
@@ -632,6 +632,54 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 95
 FILE "../Resources/Textures/Volumn_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 96
+FILE "../Resources/Button/Back_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 97
+FILE "../Resources/Textures/Credit_Menu.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 98
+FILE "../Resources/Textures/Tutorial_frame.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 99
+FILE "../Resources/Button/Next_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 100
+FILE "../Resources/Button/Prev_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 101
+FILE "../Resources/Tutorial/Tutorial1.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 102
+FILE "../Resources/Tutorial/Tutorial2.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 103
+FILE "../Resources/Tutorial/Tutorial3.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 104
+FILE "../Resources/Tutorial/Tutorial4.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 105
+FILE "../Resources/Tutorial/Tutorial5.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 106
+FILE "../Resources/Tutorial/Tutorial6.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 107
+FILE "../Resources/Tutorial/Tutorial7.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1

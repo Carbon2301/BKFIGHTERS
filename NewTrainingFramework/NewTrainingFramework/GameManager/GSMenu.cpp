@@ -23,6 +23,7 @@ float GSMenu::s_savedSFXVolume = 0.5f;
 
 GSMenu::GSMenu() 
     : GameStateBase(StateType::MENU), m_buttonTimer(0.0f), m_isSettingsVisible(false), m_isCreditsVisible(false), 
+      m_isTutorialVisible(false), m_currentTutorialPage(0),
       m_isDraggingMusicSlider(false), m_musicVolume(s_savedMusicVolume),
       m_isDraggingSFXSlider(false), m_sfxVolume(s_savedSFXVolume) {
 }
@@ -41,6 +42,7 @@ void GSMenu::Init() {
     
     HideSettingsUI();
     HideCreditsUI();
+    HideTutorialUI();
     
     SceneManager* scene = SceneManager::GetInstance();
     if (Object* musicSlider = scene->GetObject(SETTINGS_MUSIC_SLIDER_ID)) {
@@ -72,6 +74,24 @@ void GSMenu::Draw() {
 
 void GSMenu::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (!bIsPressed) return;
+    
+    if (m_isTutorialVisible) {
+        switch (key) {
+            case 37:
+                if (m_currentTutorialPage > 0) {
+                    m_currentTutorialPage--;
+                    UpdateTutorialPage();
+                }
+                break;
+            case 39:
+                if (m_currentTutorialPage < TUTORIAL_PAGE_COUNT - 1) {
+                    m_currentTutorialPage++;
+                    UpdateTutorialPage();
+                }
+                break;
+        }
+        return;
+    }
     
     switch (key) {
     }
@@ -121,8 +141,8 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                 if (id == SETTINGS_APPLY_ID) {
                     const Vector3& pos = objPtr->GetPosition();
                     const Vector3& scale = objPtr->GetScale();
-                    float width = scale.x;
-                    float height = scale.y;
+                    float width = abs(scale.x);
+                    float height = abs(scale.y);
                     float leftBtn = pos.x - width / 2.0f;
                     float rightBtn = pos.x + width / 2.0f;
                     float bottomBtn = pos.y - height / 2.0f;
@@ -148,8 +168,8 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
             if (objPtr->GetId() == CREDITS_BACK_ID) {
                 const Vector3& pos = objPtr->GetPosition();
                 const Vector3& scale = objPtr->GetScale();
-                float width = scale.x;
-                float height = scale.y;
+                float width = abs(scale.x);
+                float height = abs(scale.y);
                 float leftBtn = pos.x - width / 2.0f;
                 float rightBtn = pos.x + width / 2.0f;
                 float bottomBtn = pos.y - height / 2.0f;
@@ -163,15 +183,74 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
         }
         return;
     }
+    
+    if (m_isTutorialVisible) {
+        const auto& objects = sceneManager->GetObjects();
+        bool buttonClicked = false;
+        
+        for (const auto& objPtr : objects) {
+            if (objPtr->GetId() == TUTORIAL_BACK_BUTTON_ID) {
+                const Vector3& pos = objPtr->GetPosition();
+                const Vector3& scale = objPtr->GetScale();
+                float width = abs(scale.x);
+                float height = abs(scale.y);
+                float leftBtn = pos.x - width / 2.0f;
+                float rightBtn = pos.x + width / 2.0f;
+                float bottomBtn = pos.y - height / 2.0f;
+                float topBtn = pos.y + height / 2.0f;
+                if (bottomBtn > topBtn) std::swap(bottomBtn, topBtn);
+                
+                if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+                    HideTutorialUI();
+                    buttonClicked = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!buttonClicked) {
+            for (const auto& objPtr : objects) {
+                int id = objPtr->GetId();
+                if (id == TUTORIAL_PREV_BUTTON_ID || id == TUTORIAL_NEXT_BUTTON_ID) {
+                    const Vector3& pos = objPtr->GetPosition();
+                    const Vector3& scale = objPtr->GetScale();
+                    float width = abs(scale.x);
+                    float height = abs(scale.y);
+                    float leftBtn = pos.x - width / 2.0f;
+                    float rightBtn = pos.x + width / 2.0f;
+                    float bottomBtn = pos.y - height / 2.0f;
+                    float topBtn = pos.y + height / 2.0f;
+                    
+                    if (bottomBtn > topBtn) {
+                        std::swap(bottomBtn, topBtn);
+                    }
+                    
+                    if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
+                        if (id == TUTORIAL_PREV_BUTTON_ID && m_currentTutorialPage > 0) {
+                            m_currentTutorialPage--;
+                            UpdateTutorialPage();
+                        } else if (id == TUTORIAL_NEXT_BUTTON_ID && m_currentTutorialPage < TUTORIAL_PAGE_COUNT - 1) {
+                            m_currentTutorialPage++;
+                            UpdateTutorialPage();
+                        }
+                        buttonClicked = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return;
+    }
 
     const auto& objects = sceneManager->GetObjects();
     for (const auto& objPtr : objects) {
         int id = objPtr->GetId();
-        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_SETTINGS || id == BUTTON_ID_CREDITS || id == BUTTON_ID_EXIT) {
+        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_HELP || id == BUTTON_ID_SETTINGS || id == BUTTON_ID_CREDITS || id == BUTTON_ID_EXIT) {
             const Vector3& pos = objPtr->GetPosition();
             const Vector3& scale = objPtr->GetScale();
-            float width = scale.x;
-            float height = scale.y;
+            float width = abs(scale.x);
+            float height = abs(scale.y);
             float leftBtn = pos.x - width / 2.0f;
             float rightBtn = pos.x + width / 2.0f;
             float bottomBtn = pos.y - height / 2.0f;
@@ -184,6 +263,8 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
             if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {                
                 if (id == BUTTON_ID_PLAY) {
                     GameStateMachine::GetInstance()->PushState(StateType::PLAY);
+                } else if (id == BUTTON_ID_HELP) {
+                    ShowTutorialUI();
                 } else if (id == BUTTON_ID_SETTINGS) {
                     ToggleSettingsUI();
                 } else if (id == BUTTON_ID_CREDITS) {
@@ -534,4 +615,75 @@ void GSMenu::ApplySFXVolume() {
     }
     
     s_savedSFXVolume = m_sfxVolume;
+}
+
+void GSMenu::ShowTutorialUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    if (Object* tutorialFrame = scene->GetObject(TUTORIAL_FRAME_ID)) {
+        tutorialFrame->SetVisible(true);
+    }
+    
+    if (Object* prevButton = scene->GetObject(TUTORIAL_PREV_BUTTON_ID)) {
+        prevButton->SetVisible(true);
+    }
+    
+    if (Object* nextButton = scene->GetObject(TUTORIAL_NEXT_BUTTON_ID)) {
+        nextButton->SetVisible(true);
+    }
+    
+    if (Object* backButton = scene->GetObject(TUTORIAL_BACK_BUTTON_ID)) {
+        backButton->SetVisible(true);
+    }
+    
+    m_currentTutorialPage = 0;
+    UpdateTutorialPage();
+    m_isTutorialVisible = true;
+}
+
+void GSMenu::HideTutorialUI() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    if (Object* tutorialFrame = scene->GetObject(TUTORIAL_FRAME_ID)) {
+        tutorialFrame->SetVisible(false);
+    }
+    if (Object* prevButton = scene->GetObject(TUTORIAL_PREV_BUTTON_ID)) {
+        prevButton->SetVisible(false);
+    }
+    if (Object* nextButton = scene->GetObject(TUTORIAL_NEXT_BUTTON_ID)) {
+        nextButton->SetVisible(false);
+    }
+    if (Object* backButton = scene->GetObject(TUTORIAL_BACK_BUTTON_ID)) {
+        backButton->SetVisible(false);
+    }
+    
+    for (int i = TUTORIAL_PAGE_START_ID; i <= TUTORIAL_PAGE_END_ID; i++) {
+        if (Object* page = scene->GetObject(i)) {
+            page->SetVisible(false);
+        }
+    }
+    
+    m_isTutorialVisible = false;
+}
+
+void GSMenu::UpdateTutorialPage() {
+    SceneManager* scene = SceneManager::GetInstance();
+    
+    for (int i = TUTORIAL_PAGE_START_ID; i <= TUTORIAL_PAGE_END_ID; i++) {
+        if (Object* page = scene->GetObject(i)) {
+            page->SetVisible(false);
+        }
+    }
+    
+    int currentPageId = TUTORIAL_PAGE_START_ID + m_currentTutorialPage;
+    if (Object* currentPage = scene->GetObject(currentPageId)) {
+        currentPage->SetVisible(true);
+    }
+    
+    if (Object* prevButton = scene->GetObject(TUTORIAL_PREV_BUTTON_ID)) {
+        prevButton->SetVisible(m_currentTutorialPage > 0);
+    }
+    if (Object* nextButton = scene->GetObject(TUTORIAL_NEXT_BUTTON_ID)) {
+        nextButton->SetVisible(m_currentTutorialPage < TUTORIAL_PAGE_COUNT - 1);
+    }
 } 
