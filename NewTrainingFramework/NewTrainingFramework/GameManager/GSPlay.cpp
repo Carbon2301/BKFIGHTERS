@@ -1620,7 +1620,10 @@ void GSPlay::UpdateFireRains(float deltaTime) {
                     float prev = target.GetHealth();
                     if (fr.attackerId > 0) {
                         Character& attacker = (fr.attackerId == 1) ? m_player : m_player2;
-                        ProcessDamageAndScore(attacker, target, 100.0f);
+                        if (&target != &attacker) {
+                            ProcessDamageAndScore(attacker, target, 100.0f);
+                        } else {
+                        }
                     } else {
                         target.TakeDamage(100.0f);
                         if (prev > 0.0f && target.GetHealth() <= 0.0f) {
