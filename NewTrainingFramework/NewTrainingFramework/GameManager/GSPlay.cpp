@@ -54,6 +54,15 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
     if (specialTexId < 0) return;
     character.SetGunMode(false);
     character.SetGrenadeMode(false);
+    float prevHealth = character.GetHealth();
+    auto preserveHealthIfDropped = [&](float before){
+        float now = character.GetHealth();
+        if (now <= 0.0f && before > 0.0f) {
+            character.Heal(before - now);
+        } else if (now < before) {
+            character.Heal(before - now);
+        }
+    };
 
     if (specialTexId == 75) { // Werewolf
         bool toWerewolf = !character.IsWerewolf();
@@ -63,6 +72,7 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
             character.SetOrcMode(false); 
         }
         character.SetWerewolfMode(toWerewolf);
+        if (toWerewolf) preserveHealthIfDropped(prevHealth);
     } else if (specialTexId == 76) { // BatDemon
         bool toBat = !character.IsBatDemon();
         if (toBat) { 
@@ -71,6 +81,7 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
             character.SetOrcMode(false); 
         }
         character.SetBatDemonMode(toBat);
+        if (toBat) preserveHealthIfDropped(prevHealth);
     } else if (specialTexId == 77) { // Kitsune
         bool toKitsune = !character.IsKitsune();
         if (toKitsune) { 
@@ -80,6 +91,7 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
             SoundManager::Instance().PlaySFXByID(26, 0);
         }
         character.SetKitsuneMode(toKitsune);
+        if (toKitsune) preserveHealthIfDropped(prevHealth);
     } else if (specialTexId == 78) { // Orc
         bool toOrc = !character.IsOrc();
         if (toOrc) { 
@@ -89,6 +101,7 @@ static void ToggleSpecialForm_Internal(Character& character, int specialTexId) {
             SoundManager::Instance().PlaySFXByID(26, 0);
         }
         character.SetOrcMode(toOrc);
+        if (toOrc) preserveHealthIfDropped(prevHealth);
     }
 
     if (auto mv = character.GetMovement()) mv->SetInputLocked(false);
@@ -145,6 +158,12 @@ void GSPlay::InitializeRandomItemSpawns() {
         if (scene->GetObject(id)) {
             scene->RemoveObject(id);
         }
+        for (int slot = 0; slot < 11; ++slot) {
+            int instanceId = id * 100 + slot;
+            if (scene->GetObject(instanceId)) {
+                scene->RemoveObject(instanceId);
+            }
+        }
     }
 
     for (int i = 0; i < (int)m_spawnSlots.size(); ++i) {
@@ -164,7 +183,7 @@ int GSPlay::ChooseRandomAvailableItemId() {
     pool.reserve(m_candidateItemIds.size());
     auto isActiveId = [&](int id){
         for (const auto& s : m_spawnSlots) {
-            if (s.active && s.currentId == id) return true;
+            if (s.active && s.typeId == id) return true;
         }
         return false;
     };
@@ -194,7 +213,12 @@ bool GSPlay::SpawnItemIntoSlot(int slotIndex, int itemId) {
     auto it = m_itemTemplates.find(itemId);
     if (it == m_itemTemplates.end()) return false;
     int objectId = itemId * 100 + slotIndex;
-    if (Object* existing = scene->GetObject(objectId)) { scene->RemoveObject(objectId); }
+    for (int id : m_candidateItemIds) {
+        int otherId = id * 100 + slotIndex;
+        if (Object* existingOther = scene->GetObject(otherId)) {
+            scene->RemoveObject(otherId);
+        }
+    }
     Object* obj = scene->CreateObject(objectId);
     if (!obj) return false;
 
@@ -451,6 +475,8 @@ void GSPlay::Init() {
     m_player2.SetHurtboxFacingLeft(P2_HURTBOX_FACE_LEFT.w,  P2_HURTBOX_FACE_LEFT.h,  P2_HURTBOX_FACE_LEFT.ox,  P2_HURTBOX_FACE_LEFT.oy);
     m_player2.SetHurtboxFacingRight(P2_HURTBOX_FACE_RIGHT.w, P2_HURTBOX_FACE_RIGHT.h, P2_HURTBOX_FACE_RIGHT.ox, P2_HURTBOX_FACE_RIGHT.oy);
     m_player2.SetHurtboxCrouchRoll(P2_HURTBOX_CROUCH.w,     P2_HURTBOX_CROUCH.h,     P2_HURTBOX_CROUCH.ox,     P2_HURTBOX_CROUCH.oy);
+
+    ResetGame();
     
     if (CharacterCombat* combat1 = m_player.GetCombat()) {
         combat1->SetDamageCallback([this](Character& attacker, Character& target, float damage) {
