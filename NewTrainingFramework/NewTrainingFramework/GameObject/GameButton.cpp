@@ -30,13 +30,11 @@ bool GameButton::HandleTouchEvents(float x, float y, bool isPressed) {
         if (IsPointInside(x, y)) {
             m_isHolding = true;
             isHandled = true;
-            // std::cout << "Button ID " << GetId() << " pressed down at (" << x << ", " << y << ")" << std::endl;
         }
     } else {
         if (IsPointInside(x, y) && m_isHolding) {
             if (m_onClick != nullptr) {
                 m_onClick();
-                // std::cout << "Button ID " << GetId() << " clicked!" << std::endl;
             }
             isHandled = true;
         }

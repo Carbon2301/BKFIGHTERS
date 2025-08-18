@@ -16,15 +16,11 @@ GSIntro::~GSIntro() {
 }
 
 void GSIntro::Init() {
-    std::cout << "=== LOADING SCREEN ===" << std::endl;
-    std::cout << "Initializing resources..." << std::endl;
-    
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     SceneManager* sceneManager = SceneManager::GetInstance();
     if (!sceneManager->LoadSceneForState(StateType::INTRO)) {
-        std::cout << "Failed to load intro scene!" << std::endl;
         sceneManager->Clear();
         
         Camera* camera = sceneManager->CreateCamera();
@@ -71,7 +67,6 @@ void GSIntro::Init() {
     }
 
     m_loadingTimer = 0.0f;
-    std::cout << "Loading screen initialized" << std::endl;
 
     m_tasks.clear();
     auto allIds = SoundManager::Instance().GetAllAudioIDs();
@@ -107,7 +102,6 @@ void GSIntro::Update(float deltaTime) {
     }
     
     if (t >= 1.0f && m_loadingTimer >= m_minShowTime) {
-        std::cout << "Loading complete! Transitioning to main menu..." << std::endl;
         GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
     }
 }
@@ -134,17 +128,13 @@ void GSIntro::HandleMouseMove(int x, int y) {
 }
 
 void GSIntro::Resume() {
-    std::cout << "GSIntro: Resume" << std::endl;
 }
 
 void GSIntro::Pause() {
-    std::cout << "GSIntro: Pause" << std::endl;
 }
 
 void GSIntro::Exit() {
-    std::cout << "GSIntro: Exit" << std::endl;
 }
 
 void GSIntro::Cleanup() {
-    std::cout << "GSIntro: Cleanup" << std::endl;
 } 

@@ -114,9 +114,6 @@ void CharacterCombat::HandlePunchCombo(CharacterAnimation* animation, CharacterM
         float hitboxOffsetY = -0.02f;
         ShowHitbox(hitboxWidth, hitboxHeight, hitboxOffsetX, hitboxOffsetY);
         
-        std::cout << "=== COMBO START ===" << std::endl;
-        std::cout << "Combo " << m_comboCount << ": Punch1!" << std::endl;
-        std::cout << "Press J again within " << COMBO_WINDOW << " seconds for next punch!" << std::endl;
     } else if (m_comboTimer > 0.0f) {
         if (!m_attackPressed) {
             return;
@@ -417,10 +414,4 @@ void CharacterCombat::TriggerGetHit(CharacterAnimation* animation, const Charact
             target->TriggerDieFromAttack(attacker);
         }
     }
-    
-    std::cout << "=== HIT DETECTED ===" << std::endl;
-    std::cout << "Character hit! Playing GetHit animation " << playedAnim << std::endl;
-    std::cout << "Attacker facing: " << (attackerFacingLeft ? "LEFT" : "RIGHT") << std::endl;
-    std::cout << "Damage applied: 10 HP" << std::endl;
-    std::cout << "===================" << std::endl;
 } 

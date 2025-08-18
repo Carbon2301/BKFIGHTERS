@@ -68,8 +68,6 @@ public:
     void HandleInput(unsigned char key, bool isPressed);
 
     void Clear();
-    void PrintSceneInfo();
-
     const std::vector<std::unique_ptr<Object>>& GetObjects() const { return m_objects; }
 
 private:

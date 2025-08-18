@@ -35,7 +35,6 @@ void AnimationManager::Play(int animationIndex, bool loop) {
     m_isLooping = loop;
     m_isPlaying = true;
     
-    std::cout << "Playing animation " << animationIndex << " (loop: " << (loop ? "true" : "false") << ")" << std::endl;
 }
 
 void AnimationManager::Stop() {

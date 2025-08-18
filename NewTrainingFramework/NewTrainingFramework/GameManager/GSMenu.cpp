@@ -31,19 +31,12 @@ GSMenu::~GSMenu() {
 }
 
 void GSMenu::Init() {
-    std::cout << "=== MAIN MENU ===" << std::endl;
-    std::cout << "Welcome to the Game!" << std::endl;
-    
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     SceneManager* sceneManager = SceneManager::GetInstance();
     sceneManager->LoadSceneForState(StateType::MENU);
-    
-    std::cout << "Use mouse to click buttons" << std::endl;
-    std::cout << "ESC to exit game" << std::endl;
 
-    //Phát nhạc nền
     SoundManager::Instance().PlayMusicByID(0, -1);
     
     HideSettingsUI();
@@ -113,10 +106,6 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
 
     float worldX = MousePixelToWorldX(x, camera);
     float worldY = MousePixelToWorldY(y, camera);
-
-    std::cout << "Mouse pixel: (" << x << ", " << y << "), world: (" << worldX << ", " << worldY << ")\n";
-    std::cout << "Camera: left=" << camera->GetLeft() << ", right=" << camera->GetRight()
-              << ", top=" << camera->GetTop() << ", bottom=" << camera->GetBottom() << std::endl;
 
     if (m_isSettingsVisible) {
         HandleMusicSliderDrag(x, y, bIsPressed);
@@ -192,15 +181,10 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                 std::swap(bottomBtn, topBtn);
             }
             
-            std::cout << "Button ID " << id << " region: left=" << leftBtn << ", right=" << rightBtn
-                      << ", top=" << topBtn << ", bottom=" << bottomBtn << std::endl;
-            if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
-                std::cout << "HIT button ID " << id << std::endl;
-                
+            if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {                
                 if (id == BUTTON_ID_PLAY) {
                     GameStateMachine::GetInstance()->PushState(StateType::PLAY);
                 } else if (id == BUTTON_ID_SETTINGS) {
-                    std::cout << "[Mouse] Settings button clicked!" << std::endl;
                     ToggleSettingsUI();
                 } else if (id == BUTTON_ID_CREDITS) {
                     ShowCreditsUI();
@@ -242,16 +226,13 @@ void GSMenu::Resume() {
 }
 
 void GSMenu::Pause() {
-    std::cout << "GSMenu: Pause" << std::endl;
     SoundManager::Instance().StopMusic();
 }
 
 void GSMenu::Exit() {
-    std::cout << "GSMenu: Exit" << std::endl;
 }
 
 void GSMenu::Cleanup() {
-    std::cout << "GSMenu: Cleanup" << std::endl;
 }
 
 void GSMenu::ShowSettingsUI() {
@@ -373,7 +354,6 @@ void GSMenu::HandleMusicSliderDrag(int x, int y, bool bIsPressed) {
         if (worldX >= leftThumb && worldX <= rightThumb && 
             worldY >= bottomThumb && worldY <= topThumb) {
             m_isDraggingMusicSlider = true;
-            std::cout << "Started dragging music slider" << std::endl;
             
             float trackRange = rightTrack - leftTrack;
             float relativeX = worldX - leftTrack;

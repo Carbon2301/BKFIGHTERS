@@ -372,13 +372,6 @@ GSPlay::~GSPlay() {
 }
 
 void GSPlay::Init() {
-    std::cout << "=== GAMEPLAY MODE ===" << std::endl;
-    std::cout << "Game started!" << std::endl;
-    std::cout << "Press ESC to pause/unpause game" << std::endl;
-    std::cout << "Press C to toggle hitbox/hurtbox display" << std::endl;
-    std::cout << "Press V to toggle platform boxes display" << std::endl;
-    std::cout << "Press Z to toggle camera auto-zoom" << std::endl;
-    
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     SoundManager::Instance().PlayMusicByID(22, -1);
@@ -575,15 +568,12 @@ void GSPlay::Init() {
             1.375005f, -1.301985f, 0.0f,  // Start position
             1.375005f, 0.217009f, 0.0f,   // End position
             0.2f, 1.0f);          // Speed: 0.2 units/sec, Pause time: 1.0 second
-        std::cout << "Lift platform (ID 30) configured successfully" << std::endl;
 
         m_player.GetMovement()->AddMovingPlatformById(30);
         m_player2.GetMovement()->AddMovingPlatformById(30);
     } else {
-        std::cout << "Warning: Lift platform (ID 30) not found in scene" << std::endl;
     }
     
-    // Mark weapon availability if present in scene
     m_isAxeAvailable   = (sceneManager->GetObject(AXE_OBJECT_ID)   != nullptr);
     m_isSwordAvailable = (sceneManager->GetObject(SWORD_OBJECT_ID) != nullptr);
     m_isPipeAvailable  = (sceneManager->GetObject(PIPE_OBJECT_ID)  != nullptr);
@@ -650,54 +640,7 @@ void GSPlay::Init() {
     if (Object* bB = sceneManager->GetObject(m_bloodProtoIdB)) { bB->SetVisible(false); }
     if (Object* bC = sceneManager->GetObject(m_bloodProtoIdC)) { bC->SetVisible(false); }
 
-    std::cout << "Gameplay initialized" << std::endl;
-    std::cout << "Controls:" << std::endl;
-    std::cout << "- Z: Toggle camera auto zoom" << std::endl;
-    std::cout << "- R: Reset health for both players" << std::endl;
-    std::cout << "=== PLAYER 1 MOVEMENT CONTROLS ===" << std::endl;
-    std::cout << "- A: Walk left (Animation 1: Walk)" << std::endl;
-    std::cout << "- D: Walk right (Animation 1: Walk)" << std::endl;
-    std::cout << "- Double-tap A: Run left (Animation 2: Run)" << std::endl;
-    std::cout << "- Double-tap D: Run right (Animation 2: Run)" << std::endl;
-    std::cout << "- S: Sit down (Animation 3: Sit)" << std::endl;
-    std::cout << "- W: Jump (Animation 16: Jump)" << std::endl;
-
-    std::cout << "- A + S: Roll left (Animation 4: Roll)" << std::endl;
-    std::cout << "- S + D: Roll right (Animation 4: Roll)" << std::endl;
-    std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
-    std::cout << "=== PLAYER 1 COMBO SYSTEM ===" << std::endl;
-    std::cout << "- J: Combo (Punch by default; Axe after pickup)" << std::endl;
-    std::cout << "  * Combo window: 0.5 seconds" << std::endl;
-    std::cout << "- K: Kick (Animation 19: Kick)" << std::endl;
-    std::cout << "=== PLAYER 2 MOVEMENT CONTROLS ===" << std::endl;
-    std::cout << "- Left Arrow: Walk left (Animation 1: Walk)" << std::endl;
-    std::cout << "- Right Arrow: Walk right (Animation 1: Walk)" << std::endl;
-    std::cout << "- Double-tap Left Arrow: Run left (Animation 2: Run)" << std::endl;
-    std::cout << "- Double-tap Right Arrow: Run right (Animation 2: Run)" << std::endl;
-    std::cout << "- Down Arrow: Sit down (Animation 3: Sit)" << std::endl;
-    std::cout << "- Up Arrow: Jump (Animation 16: Jump)" << std::endl;
-
-    std::cout << "- Down Arrow + Left Arrow: Roll left (Animation 4: Roll)" << std::endl;
-    std::cout << "- Down Arrow + Right Arrow: Roll right (Animation 4: Roll)" << std::endl;
-    std::cout << "- Release keys: Idle (Animation 0: Idle)" << std::endl;
-    std::cout << "=== PLAYER 2 COMBO SYSTEM ===" << std::endl;
-    std::cout << "- 1: Combo (Punch by default; Axe after pickup)" << std::endl;
-    std::cout << "  * Combo window: 0.5 seconds" << std::endl;
-    std::cout << "- 2: Kick (Animation 19: Kick)" << std::endl;
-    std::cout << "=== PLATFORM SYSTEM ===" << std::endl;
-    std::cout << "- White box acts as a platform" << std::endl;
-    std::cout << "- Jump onto the box to land on it" << std::endl;
-    std::cout << "- Move off the platform to fall down" << std::endl;
-    std::cout << "=== COMBAT SYSTEM ===" << std::endl;
-    std::cout << "- Each hit deals 10 damage" << std::endl;
-    std::cout << "- Characters die when health reaches 0" << std::endl;
-    std::cout << "- Use R to reset health" << std::endl;
-
-    
     Camera* cam = SceneManager::GetInstance()->GetActiveCamera();
-    std::cout << "Camera actual: left=" << cam->GetLeft() << ", right=" << cam->GetRight()
-              << ", bottom=" << cam->GetBottom() << ", top=" << cam->GetTop() << std::endl;
-    
 
     UpdateHealthBars();
     if (Object* bombProto = SceneManager::GetInstance()->GetObject(m_bombObjectId)) {
@@ -1489,26 +1432,17 @@ void GSPlay::Draw() {
             
         if (m_player.IsInCombo()) {
             if (m_player.GetComboCount() > 0) {
-                std::cout << "Combo: " << m_player.GetComboCount() << "/3 (Timer: " << m_player.GetComboTimer() << "s)";
                 if (m_player.IsComboCompleted()) {
-                    std::cout << " [COMPLETED]";
                 }
                 if (isMoving) {
-                    std::cout << " [MOVING DURING COMBO]";
                 }
-                std::cout << std::endl;
             } else if (m_player.GetAxeComboCount() > 0) {
-                std::cout << "Axe Combo: " << m_player.GetAxeComboCount() << "/3 (Timer: " << m_player.GetAxeComboTimer() << "s)";
                 if (m_player.IsAxeComboCompleted()) {
-                    std::cout << " [COMPLETED]";
                 }
                 if (isMoving) {
-                    std::cout << " [MOVING DURING COMBO]";
                 }
-                std::cout << std::endl;
             }
         } else if (m_player.GetCurrentAnimation() == 19) {
-            std::cout << "Action: KICK [Animation 19]" << std::endl;
         }            
         lastPosX = m_player.GetPosition().x;
         lastAnim = m_player.GetCurrentAnimation();
@@ -1521,26 +1455,17 @@ void GSPlay::Draw() {
             
         if (m_player2.IsInCombo()) {
             if (m_player2.GetComboCount() > 0) {
-                std::cout << "Combo: " << m_player2.GetComboCount() << "/3 (Timer: " << m_player2.GetComboTimer() << "s)";
                 if (m_player2.IsComboCompleted()) {
-                    std::cout << " [COMPLETED]";
                 }
                 if (isMoving2) {
-                    std::cout << " [MOVING DURING COMBO]";
                 }
-                std::cout << std::endl;
             } else if (m_player2.GetAxeComboCount() > 0) {
-                std::cout << "Axe Combo: " << m_player2.GetAxeComboCount() << "/3 (Timer: " << m_player2.GetAxeComboTimer() << "s)";
                 if (m_player2.IsAxeComboCompleted()) {
-                    std::cout << " [COMPLETED]";
                 }
                 if (isMoving2) {
-                    std::cout << " [MOVING DURING COMBO]";
                 }
-                std::cout << std::endl;
             }
         } else if (m_player2.GetCurrentAnimation() == 19) {
-            std::cout << "Action: KICK [Animation 19]" << std::endl;
         }
             
         lastPosX2 = m_player2.GetPosition().x;
@@ -3344,11 +3269,6 @@ void GSPlay::HandleMouseEvent(int x, int y, bool bIsPressed) {
 
     float worldX = MousePixelToWorldX(x, camera);
     float worldY = MousePixelToWorldY(y, camera);
-
-    std::cout << "Mouse pixel: (" << x << ", " << y << "), world: (" << worldX << ", " << worldY << ")\n";
-    std::cout << "Camera: left=" << camera->GetLeft() << ", right=" << camera->GetRight()
-              << ", top=" << camera->GetTop() << ", bottom=" << camera->GetBottom() << std::endl;
-
 }
 
 void GSPlay::HandleMouseMove(int x, int y) {
@@ -3617,7 +3537,6 @@ void GSPlay::HandleItemPickup() {
             player.CancelAllCombos();
             player.SetWeapon(weaponType);
             player.SuppressNextPunch();
-            std::cout << "Picked up weapon ID " << removedId << " (type=" << (int)weaponType << ")" << std::endl;
             SoundManager::Instance().PlaySFXByID(1, 0);
             return true;
         }
@@ -3649,7 +3568,6 @@ void GSPlay::HandleItemPickup() {
             UpdateHudAmmoDigits();
             RefreshHudAmmoInstant(isPlayer1);
             player.SuppressNextPunch();
-            std::cout << "Picked up gun ID " << removedId << " (tex=" << texId << ")" << std::endl;
             if (texId == 43 || texId == 44) {
                 SoundManager::Instance().PlaySFXByID(23, 0);
             } else {
@@ -3768,7 +3686,6 @@ void GSPlay::HandleItemPickup() {
             bombObj = nullptr;
             if (isPlayer1) { m_p1Bombs = 3; } else { m_p2Bombs = 3; }
             UpdateHudBombDigits();
-            std::cout << "Picked up bomb ID " << removedId << " -> refill to 3\n";
             SoundManager::Instance().PlaySFXByID(7, 0);
             return true;
         }
@@ -3790,7 +3707,6 @@ void GSPlay::HandleItemPickup() {
             MarkSlotPickedByObjectId(removedId);
             healObj = nullptr;
             player.ResetHealth();
-            std::cout << "Picked up heal box ID " << removedId << " -> health restored to max\n";
             SoundManager::Instance().PlaySFXByID(17, 0);
             return true;
         }
@@ -4164,9 +4080,6 @@ void GSPlay::RespawnCharacter(Character& character) {
             m_p2Invincible = true;
             m_p2InvincibilityTimer = 0.0f;
         }
-        
-        std::cout << "Character respawned at position " << respawnIndex 
-                  << " (" << respawnPos.x << ", " << respawnPos.y << ")" << std::endl;
     }
 }
 
@@ -5051,7 +4964,6 @@ void GSPlay::ResetGame() {
     HidePauseScreen();
     m_isPaused = false;
     
-    std::cout << "Game reset successfully!" << std::endl;
 }
 
 void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
@@ -5100,7 +5012,6 @@ void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
         
         if (worldX >= buttonLeft && worldX <= buttonRight && 
             worldY >= buttonBottom && worldY <= buttonTop) {
-            std::cout << "[Mouse] Home button clicked! Returning to menu..." << std::endl;
             GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
             return;
         }
@@ -5124,7 +5035,6 @@ void GSPlay::CreatePauseTextTexture() {
     SDL_Color color = { 0, 0, 0, 255 };
     SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "PAUSED", color);
     if (!textSurface) {
-        std::cout << "Unable to render pause text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
         TTF_CloseFont(font);
         return;
     }
@@ -5143,10 +5053,8 @@ void GSPlay::TogglePause() {
     
     if (m_isPaused) {
         ShowPauseScreen();
-        std::cout << "Game Paused" << std::endl;
     } else {
         HidePauseScreen();
-        std::cout << "Game Resumed" << std::endl;
     }
 }
 
@@ -5219,7 +5127,6 @@ void GSPlay::HandlePauseScreenInput(int x, int y, bool isPressed) {
         }
         
         if (uiX >= leftBtn && uiX <= rightBtn && uiY >= bottomBtn && uiY <= topBtn) {
-            std::cout << "[Mouse] Resume button clicked!" << std::endl;
             TogglePause();
             return;
         }
@@ -5241,7 +5148,6 @@ void GSPlay::HandlePauseScreenInput(int x, int y, bool isPressed) {
         }
         
         if (uiX >= leftBtn && uiX <= rightBtn && uiY >= bottomBtn && uiY <= topBtn) {
-            std::cout << "[Mouse] Quit button clicked! Returning to menu..." << std::endl;
             GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
             return;
         }
