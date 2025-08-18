@@ -444,8 +444,8 @@ private:
     const float GAME_START_BLINK_DURATION = 3.0f;
     const float GAME_START_BLINK_INTERVAL = 0.15f;
     
-    float m_gameTimer = 360.0f;
-    const float GAME_DURATION = 360.0f;
+    float m_gameTimer = 300.0f;
+    const float GAME_DURATION = 300.0f;
     const float WARNING_TIME = 60.0f;
     std::vector<std::shared_ptr<Object>> m_timeDigitObjects; 
     std::shared_ptr<Texture2D> m_timeDigitTexture;

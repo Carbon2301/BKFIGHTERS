@@ -153,9 +153,10 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                     }
                     
                     if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
-                        HideSettingsUI();
-                        return;
-                    }
+                         SoundManager::Instance().PlaySFXByID(33, 0);
+                         HideSettingsUI();
+                         return;
+                     }
                 }
             }
         }
@@ -176,8 +177,9 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                 float topBtn = pos.y + height / 2.0f;
                 if (bottomBtn > topBtn) std::swap(bottomBtn, topBtn);
                 if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
-                    HideCreditsUI();
-                }
+                     SoundManager::Instance().PlaySFXByID(33, 0);
+                     HideCreditsUI();
+                 }
                 return;
             }
         }
@@ -201,10 +203,11 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                 if (bottomBtn > topBtn) std::swap(bottomBtn, topBtn);
                 
                 if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
-                    HideTutorialUI();
-                    buttonClicked = true;
-                    break;
-                }
+                     SoundManager::Instance().PlaySFXByID(33, 0);
+                     HideTutorialUI();
+                     buttonClicked = true;
+                     break;
+                 }
             }
         }
         
@@ -226,16 +229,17 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
                     }
                     
                     if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
-                        if (id == TUTORIAL_PREV_BUTTON_ID && m_currentTutorialPage > 0) {
-                            m_currentTutorialPage--;
-                            UpdateTutorialPage();
-                        } else if (id == TUTORIAL_NEXT_BUTTON_ID && m_currentTutorialPage < TUTORIAL_PAGE_COUNT - 1) {
-                            m_currentTutorialPage++;
-                            UpdateTutorialPage();
-                        }
-                        buttonClicked = true;
-                        break;
-                    }
+                         SoundManager::Instance().PlaySFXByID(33, 0);
+                         if (id == TUTORIAL_PREV_BUTTON_ID && m_currentTutorialPage > 0) {
+                             m_currentTutorialPage--;
+                             UpdateTutorialPage();
+                         } else if (id == TUTORIAL_NEXT_BUTTON_ID && m_currentTutorialPage < TUTORIAL_PAGE_COUNT - 1) {
+                             m_currentTutorialPage++;
+                             UpdateTutorialPage();
+                         }
+                         buttonClicked = true;
+                         break;
+                     }
                 }
             }
         }
@@ -262,14 +266,19 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
             
             if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {                
                 if (id == BUTTON_ID_PLAY) {
+                    SoundManager::Instance().PlaySFXByID(33, 0);
                     GameStateMachine::GetInstance()->PushState(StateType::PLAY);
                 } else if (id == BUTTON_ID_HELP) {
+                    SoundManager::Instance().PlaySFXByID(33, 0);
                     ShowTutorialUI();
                 } else if (id == BUTTON_ID_SETTINGS) {
+                    SoundManager::Instance().PlaySFXByID(33, 0);
                     ToggleSettingsUI();
                 } else if (id == BUTTON_ID_CREDITS) {
+                    SoundManager::Instance().PlaySFXByID(33, 0);
                     ShowCreditsUI();
                 } else if (id == BUTTON_ID_EXIT) {
+                    SoundManager::Instance().PlaySFXByID(33, 0);
                     Cleanup();
                     HWND hwnd = GetActiveWindow();
                     if (hwnd) {

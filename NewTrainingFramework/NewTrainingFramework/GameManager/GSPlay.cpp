@@ -4994,6 +4994,7 @@ void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
         
         if (worldX >= buttonLeft && worldX <= buttonRight && 
             worldY >= buttonBottom && worldY <= buttonTop) {
+            SoundManager::Instance().PlaySFXByID(33, 0);
             ResetGame();
             return;
         }
@@ -5015,6 +5016,7 @@ void GSPlay::HandleEndScreenInput(int x, int y, bool isPressed) {
         
         if (worldX >= buttonLeft && worldX <= buttonRight && 
             worldY >= buttonBottom && worldY <= buttonTop) {
+            SoundManager::Instance().PlaySFXByID(33, 0);
             GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
             return;
         }
@@ -5130,6 +5132,7 @@ void GSPlay::HandlePauseScreenInput(int x, int y, bool isPressed) {
         }
         
         if (uiX >= leftBtn && uiX <= rightBtn && uiY >= bottomBtn && uiY <= topBtn) {
+            SoundManager::Instance().PlaySFXByID(33, 0);
             TogglePause();
             return;
         }
@@ -5151,6 +5154,7 @@ void GSPlay::HandlePauseScreenInput(int x, int y, bool isPressed) {
         }
         
         if (uiX >= leftBtn && uiX <= rightBtn && uiY >= bottomBtn && uiY <= topBtn) {
+            SoundManager::Instance().PlaySFXByID(33, 0);
             GameStateMachine::GetInstance()->ChangeState(StateType::MENU);
             return;
         }
