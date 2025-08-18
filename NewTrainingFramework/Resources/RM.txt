@@ -606,7 +606,7 @@ ID 88
 FILE "../Resources/Button/Credits_button.tga"
 TILING GL_CLAMP_TO_EDGE
 
-ID 88
+ID 89
 FILE "../Resources/Button/Settings_button.tga"
 TILING GL_CLAMP_TO_EDGE
 

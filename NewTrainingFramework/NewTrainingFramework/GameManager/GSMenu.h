@@ -10,14 +10,12 @@ private:
     
     enum ButtonType {
         BUTTON_PLAY = 0,
-        BUTTON_HELP = 1,
-        BUTTON_CLOSE = 2,
-        BUTTON_COUNT = 3
+        BUTTON_EXIT = 1,
+        BUTTON_COUNT = 2
     };
     
     static const int BUTTON_ID_PLAY = 201;
-    static const int BUTTON_ID_HELP = 202;
-    static const int BUTTON_ID_CLOSE = 203;
+    static const int BUTTON_ID_EXIT = 205;
     
 public:
     GSMenu();

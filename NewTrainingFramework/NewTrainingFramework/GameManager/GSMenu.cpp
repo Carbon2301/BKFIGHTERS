@@ -12,6 +12,7 @@
 #include <SDL_mixer.h>
 #include "SoundManager.h"
 #include <algorithm>
+#include <windows.h>
 
 GSMenu::GSMenu() 
     : GameStateBase(StateType::MENU), m_buttonTimer(0.0f) {
@@ -121,7 +122,7 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
     const auto& objects = sceneManager->GetObjects();
     for (const auto& objPtr : objects) {
         int id = objPtr->GetId();
-        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_HELP || id == BUTTON_ID_CLOSE) {
+        if (id == BUTTON_ID_PLAY || id == BUTTON_ID_EXIT) {
             const Vector3& pos = objPtr->GetPosition();
             const Vector3& scale = objPtr->GetScale();
             float width = scale.x;
@@ -140,16 +141,15 @@ void GSMenu::HandleMouseEvent(int x, int y, bool bIsPressed) {
             if (worldX >= leftBtn && worldX <= rightBtn && worldY >= bottomBtn && worldY <= topBtn) {
                 std::cout << "HIT button ID " << id << std::endl;
                 if (id == BUTTON_ID_PLAY) {
-                    std::cout << "[Mouse] Play button clicked!" << std::endl;
                     GameStateMachine::GetInstance()->PushState(StateType::PLAY);
-                } else if (id == BUTTON_ID_HELP) {
-                    std::cout << "[Mouse] Help button clicked!" << std::endl;
-                    std::cout << "Game Controls:" << std::endl;
-                    std::cout << "Use mouse to click buttons" << std::endl;
-                } else if (id == BUTTON_ID_CLOSE) {
-                    std::cout << "[Mouse] Close button clicked!" << std::endl;
-                    std::cout << "Thanks for playing!" << std::endl;
-                    exit(0);
+                } else if (id == BUTTON_ID_EXIT) {
+                    Cleanup();
+                    HWND hwnd = GetActiveWindow();
+                    if (hwnd) {
+                        PostMessage(hwnd, WM_CLOSE, 0, 0);
+                    } else {
+                        exit(0);
+                    }
                 }
                 break;
             }
