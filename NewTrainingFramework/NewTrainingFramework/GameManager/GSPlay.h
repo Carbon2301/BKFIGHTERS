@@ -361,8 +361,8 @@ private:
     
     // HUD weapons
     void UpdateHudWeapons();
-    Vector3 m_hudWeapon1BaseScale = Vector3(0.0f, 0.0f, 1.0f);
-    Vector3 m_hudWeapon2BaseScale = Vector3(0.0f, 0.0f, 1.0f);
+    Vector3 m_hudWeapon1BaseScale = Vector3(0.07875f, -0.035f, 1.0f);
+    Vector3 m_hudWeapon2BaseScale = Vector3(0.07875f, -0.035f, 1.0f);
     Vector3 m_hudAmmo1BaseScale = Vector3(0.042f, 0.055f, 1.0f);
     Vector3 m_hudAmmo2BaseScale = Vector3(0.042f, 0.055f, 1.0f);
 
@@ -372,8 +372,8 @@ private:
     // HUD Special Character icons
     int m_p1SpecialItemTexId = -1;
     int m_p2SpecialItemTexId = -1;
-    Vector3 m_hudSpecial1BaseScale = Vector3(0.07f, 0.07f, 1.0f);
-    Vector3 m_hudSpecial2BaseScale = Vector3(0.07f, 0.07f, 1.0f);
+    Vector3 m_hudSpecial1BaseScale = Vector3(0.08f, -0.08f, 1.0f);
+    Vector3 m_hudSpecial2BaseScale = Vector3(0.08f, -0.08f, 1.0f);
     void UpdateHudSpecialIcon(bool isPlayer1);
 
     // Bomb HUD

@@ -584,22 +584,21 @@ void GSPlay::Init() {
     m_gameStartBlinkActive = true;
     m_gameStartBlinkTimer = 0.0f;
 
-    // Initialize HUD weapons: cache base scales and hide by default
     if (Object* hudWeapon1 = sceneManager->GetObject(918)) {
-        m_hudWeapon1BaseScale = hudWeapon1->GetScale();
+        m_hudWeapon1BaseScale = Vector3(0.07875f, -0.035f, 1.0f);
         hudWeapon1->SetScale(0.0f, 0.0f, m_hudWeapon1BaseScale.z);
     }
     if (Object* hudWeapon2 = sceneManager->GetObject(919)) {
-        m_hudWeapon2BaseScale = hudWeapon2->GetScale();
+        m_hudWeapon2BaseScale = Vector3(0.07875f, -0.035f, 1.0f);
         hudWeapon2->SetScale(0.0f, 0.0f, m_hudWeapon2BaseScale.z);
     }
 
     if (Object* hudSpec1 = sceneManager->GetObject(934)) {
-        m_hudSpecial1BaseScale = hudSpec1->GetScale();
+        m_hudSpecial1BaseScale = Vector3(0.08f, -0.08f, 1.0f);
         hudSpec1->SetScale(0.0f, 0.0f, m_hudSpecial1BaseScale.z);
     }
     if (Object* hudSpec2 = sceneManager->GetObject(935)) {
-        m_hudSpecial2BaseScale = hudSpec2->GetScale();
+        m_hudSpecial2BaseScale = Vector3(0.08f, -0.08f, 1.0f);
         hudSpec2->SetScale(0.0f, 0.0f, m_hudSpecial2BaseScale.z);
     }
 
@@ -3616,6 +3615,7 @@ void GSPlay::HandleItemPickup() {
                 player.CancelAllCombos();
                 player.SetWeapon(wt);
                 player.SuppressNextPunch();
+                UpdateHudWeapons();
                 SoundManager::Instance().PlaySFXByID(1, 0);
                 return true;
             }
