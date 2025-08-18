@@ -4674,7 +4674,7 @@ void GSPlay::UpdateFinalScoreText() {
     
     TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
     if (font) {
-        SDL_Color color = {255, 255, 0, 255}; 
+        SDL_Color color = {0, 0, 255, 255}; 
         SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "FINAL SCORE", color);
         if (surf) {
             auto textTexture = std::make_shared<Texture2D>();
@@ -4701,7 +4701,7 @@ void GSPlay::UpdatePlayerScoreLabels() {
         
         TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
         if (font) {
-            SDL_Color color = {255, 255, 255, 255};
+            SDL_Color color = {0, 0, 0, 255};
             SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "PLAYER", color);
             if (surf) {
                 auto textTexture = std::make_shared<Texture2D>();
@@ -4723,7 +4723,7 @@ void GSPlay::UpdatePlayerScoreLabels() {
         
         TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
         if (font) {
-            SDL_Color color = {255, 255, 255, 255}; // White color
+            SDL_Color color = {0, 0, 0, 255};
             SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "SCORE", color);
             if (surf) {
                 auto textTexture = std::make_shared<Texture2D>();
@@ -4751,7 +4751,7 @@ void GSPlay::UpdatePlayerLabels() {
         
         TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
         if (font) {
-            SDL_Color color = {255, 255, 255, 255}; 
+            SDL_Color color = {0, 0, 0, 255};
             SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "P1", color);
             if (surf) {
                 auto textTexture = std::make_shared<Texture2D>();
@@ -4773,7 +4773,7 @@ void GSPlay::UpdatePlayerLabels() {
         
         TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
         if (font) {
-            SDL_Color color = {255, 255, 255, 255}; 
+            SDL_Color color = {0, 0, 0, 255};
             SDL_Surface* surf = TTF_RenderUTF8_Blended(font, "P2", color);
             if (surf) {
                 auto textTexture = std::make_shared<Texture2D>();
@@ -4801,7 +4801,7 @@ void GSPlay::UpdatePlayerScores() {
         
         TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
         if (font) {
-            SDL_Color color = {255, 255, 255, 255}; 
+            SDL_Color color = {0, 0, 0, 255};
             char scoreText[6];
             snprintf(scoreText, sizeof(scoreText), "%05d", m_player1Score);
             SDL_Surface* surf = TTF_RenderUTF8_Blended(font, scoreText, color);
@@ -4825,7 +4825,7 @@ void GSPlay::UpdatePlayerScores() {
         
         TTF_Font* font = TTF_OpenFont("../Resources/Font/PressStart2P-Regular.ttf", 64);
         if (font) {
-            SDL_Color color = {255, 255, 255, 255}; 
+            SDL_Color color = {0, 0, 0, 255};
             char scoreText[6];
             snprintf(scoreText, sizeof(scoreText), "%05d", m_player2Score);
             SDL_Surface* surf = TTF_RenderUTF8_Blended(font, scoreText, color);
@@ -5095,7 +5095,7 @@ void GSPlay::CreatePauseTextTexture() {
     TTF_SetFontHinting(font, TTF_HINTING_NONE);
     TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     
-    SDL_Color color = {255, 255, 255, 255};
+    SDL_Color color = { 0, 0, 0, 255 };
     SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, "PAUSED", color);
     if (!textSurface) {
         std::cout << "Unable to render pause text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;

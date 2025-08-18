@@ -7,7 +7,7 @@ FILE "../Resources/Models/Sprite2D.nfg"
 ID 1
 FILE "../Resources/Models/Sprite2D.nfg"
 
-# 2DTexture 65
+# 2DTexture 71
 ID 0
 FILE "../Resources/Fighter/Stages/Stage_1/NewBackground.tga"
 TILING GL_REPEAT
@@ -608,6 +608,30 @@ TILING GL_CLAMP_TO_EDGE
 
 ID 89
 FILE "../Resources/Button/Settings_button.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 90
+FILE "../Resources/Textures/Settings.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 91
+FILE "../Resources/Textures/Credit.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 92
+FILE "../Resources/Textures/background_menu.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 93
+FILE "../Resources/Textures/BKFIGHTERS.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 94
+FILE "../Resources/Textures/Volumn_bar.tga"
+TILING GL_CLAMP_TO_EDGE
+
+ID 95
+FILE "../Resources/Textures/Volumn_button.tga"
 TILING GL_CLAMP_TO_EDGE
 
 # Shader 1
