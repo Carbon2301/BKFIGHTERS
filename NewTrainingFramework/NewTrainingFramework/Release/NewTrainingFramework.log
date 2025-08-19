@@ -1,0 +1,112 @@
+﻿  stdafx.cpp
+  SoundManager.cpp
+  Camera.cpp
+  GameButton.cpp
+  Model.cpp
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameObject\Model.cpp(28,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameObject/Model.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameObject\Model.cpp(39,22): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameObject/Model.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameObject\Model.cpp(59,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameObject/Model.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameObject\Model.cpp(66,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameObject/Model.cpp')
+  
+  NewTrainingFramework.cpp
+  Object.cpp
+  ResourceManager.cpp
+  SceneManager.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(76,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(80,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(88,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(91,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(94,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(97,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(100,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(103,13): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(192,17): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(196,17): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(200,17): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(204,17): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(207,17): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(210,17): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(213,17): warning C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(164,55): warning C4101: 'e': unreferenced local variable
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\SceneManager.cpp(166,51): warning C4101: 'e': unreferenced local variable
+  (compiling source file '/GameManager/SceneManager.cpp')
+  
+  GameStateBase.cpp
+  GameStateMachine.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+  GSIntro.cpp
+  GSMenu.cpp
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\GSMenu.cpp(97,5): warning C4060: switch statement contains no 'case' or 'default' labels
+  (compiling source file '/GameManager/GSMenu.cpp')
+  
+  GSPlay.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\NewTrainingFramework\GameManager\GSPlay.cpp(1529,54): warning C4244: '=': conversion from 'const int' to 'float', possible loss of data
+  (compiling source file '/GameManager/GSPlay.cpp')
+  
+  AnimationManager.cpp
+  Character.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+  CharacterAnimation.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+  CharacterCombat.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+  CharacterHitbox.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+  CharacterMovement.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+  WallCollision.cpp
+  Compiling...
+  InputManager.cpp
+  EnergyOrbProjectile.cpp
+  Shaders.cpp
+  TeleportCollision.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\optional(11): warning STL4038: The contents of <optional> are available only with C++17 or later.
+  Texture2D.cpp
+  PlatformCollision.cpp
+  LadderCollision.cpp
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 4329 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  NewTrainingFramework.vcxproj -> C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\BIN\NewTrainingFramework.exe

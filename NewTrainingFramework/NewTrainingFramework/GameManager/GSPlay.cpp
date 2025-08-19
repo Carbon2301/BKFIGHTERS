@@ -2268,7 +2268,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         return;
     }
     
-    if (key == 'M' || key == 'm') {
+    if (key == 'b') {
         if (bIsPressed) {
             DetonatePlayerProjectiles(2);
         }
@@ -2312,7 +2312,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             if (was) { m_p2ShotPending = true; }
         }
     }
-    if (key == '2') {
+    if (key == 'K') {
         if (bIsPressed) {
             DetonatePlayerProjectiles(1);
         }
@@ -2357,7 +2357,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
 
-    if (bIsPressed && key == '4') {
+    if (bIsPressed && key == 'U') {
         if (!(m_player.IsWerewolf() || m_player.IsBatDemon() || m_player.IsKitsune() || m_player.IsOrc())) {
             if (m_p1SpecialItemTexId >= 0) {
                 ToggleSpecialForm_Internal(m_player, m_p1SpecialItemTexId);
@@ -2367,7 +2367,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             }
         }
     }
-    if (bIsPressed && (key == '.' || key == 0xBE)) { 
+    if (bIsPressed && (key == 'd')) { 
         if (!(m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc())) {
             if (m_p2SpecialItemTexId >= 0) {
                 ToggleSpecialForm_Internal(m_player2, m_p2SpecialItemTexId);
@@ -2378,7 +2378,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     
-    if (bIsPressed && key == '1') { 
+    if (bIsPressed && key == 'J') { 
         if (m_player.IsOrc()) {
             m_player.TriggerOrcMeteorStrike();
             QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f, 1);
@@ -2400,7 +2400,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     
-    if (bIsPressed && (key == 'N' || key == 'n')) {
+    if (bIsPressed && (key == 'a')) {
         if (m_player2.IsOrc()) {
             m_player2.TriggerOrcMeteorStrike();
             QueueFireRainWave(-3.8f, 3.4f, 0.1f, 1.2f, 5.0f, 2);
@@ -2422,7 +2422,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
         }
     }
     
-    if (key == '3') {
+    if (key == 'L') {
         if (m_player.IsKitsune()) {
             return;
         }
@@ -2461,7 +2461,7 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             }
         }
     }
-    if (key == ',' || key == 0xBC) { 
+    if (key == 'c') { 
         if (m_player2.IsOrc()) {
             return;
         }
@@ -2504,26 +2504,26 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
     if (!bIsPressed) return;
     
     switch (key) {
-        case 'C':
-        case 'c':
-            s_showHitboxHurtbox = !s_showHitboxHurtbox;
-            break;
+        // case 'C':
+        // case 'c':
+        //     s_showHitboxHurtbox = !s_showHitboxHurtbox;
+        //     break;
             
-        case 'Z':
-        case 'z':
-            {
-                Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
-                if (camera) {
-                    bool currentState = camera->IsAutoZoomEnabled();
-                    camera->EnableAutoZoom(!currentState);
-                    
-                    if (!currentState) {
-                    } else {
-                        camera->ResetToInitialState();
-                    }
-                }
-            }
-            break;
+        // case 'Z':
+        // case 'z':
+        //     {
+        //         Camera* camera = SceneManager::GetInstance()->GetActiveCamera();
+        //         if (camera) {
+        //             bool currentState = camera->IsAutoZoomEnabled();
+        //             camera->EnableAutoZoom(!currentState);
+        //             
+        //             if (!currentState) {
+        //             } else {
+        //                 camera->ResetToInitialState();
+        //             }
+        //         }
+        //     }
+        //     break;
             
         case 'R':
         case 'r':
@@ -2534,13 +2534,13 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
             UpdateHealthBars();
             break;
             
-        case 'V':
-        case 'v':
-            s_showPlatformBoxes = !s_showPlatformBoxes;
-            s_showWallBoxes = !s_showWallBoxes;
-            s_showLadderBoxes = !s_showLadderBoxes;
-            s_showTeleportBoxes = !s_showTeleportBoxes;
-            break;
+        // case 'V':
+        // case 'v':
+        //     s_showPlatformBoxes = !s_showPlatformBoxes;
+        //     s_showWallBoxes = !s_showWallBoxes;
+        //     s_showLadderBoxes = !s_showLadderBoxes;
+        //     s_showTeleportBoxes = !s_showTeleportBoxes;
+        //     break;
     }
 }
 
@@ -3500,11 +3500,11 @@ void GSPlay::HandleItemPickup() {
 
     const PlayerInputConfig& cfg1 = m_player.GetMovement()->GetInputConfig();
     bool p1Sit = keys[cfg1.sitKey];
-    bool p1PickupJust = m_inputManager->IsKeyJustPressed('1');
+    bool p1PickupJust = m_inputManager->IsKeyJustPressed('J');
 
     const PlayerInputConfig& cfg2 = m_player2.GetMovement()->GetInputConfig();
     bool p2Sit = keys[cfg2.sitKey];
-    bool p2PickupJust = m_inputManager->IsKeyJustPressed('N') || m_inputManager->IsKeyJustPressed('n');
+    bool p2PickupJust = m_inputManager->IsKeyJustPressed('a') || m_inputManager->IsKeyJustPressed('A');
     bool p1CanPickup = !(m_player.IsWerewolf() || m_player.IsBatDemon() || m_player.IsKitsune() || m_player.IsOrc());
     bool p2CanPickup = !(m_player2.IsWerewolf() || m_player2.IsBatDemon() || m_player2.IsKitsune() || m_player2.IsOrc());
 

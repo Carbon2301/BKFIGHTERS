@@ -60,7 +60,7 @@ void Character::SetBatDemonMode(bool enabled) {
         SetGrenadeMode(false);
         if (m_movement) {
             m_movement->SetNoClipNoGravity(true);
-            m_movement->SetMoveSpeedMultiplier(1.5f);
+            m_movement->SetMoveSpeedMultiplier(1.0f);
         }
     }
     else {
@@ -103,8 +103,8 @@ void Character::SetWerewolfMode(bool enabled) {
         SetGunMode(false);
         SetGrenadeMode(false);
         if (m_movement) {
-            m_movement->SetMoveSpeedMultiplier(1.5f);
-            m_movement->SetRunSpeedMultiplier(2.0f);
+            m_movement->SetMoveSpeedMultiplier(2.0f);
+            m_movement->SetRunSpeedMultiplier(2.5f);
             m_movement->SetJumpForceMultiplier(1.5f);
             m_movement->SetLadderDoubleTapEnabled(false);
             m_movement->SetLadderEnabled(false);

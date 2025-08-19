@@ -19,8 +19,8 @@ const float CharacterMovement::DIE_KNOCKBACK_SPEED = 0.8f;
 const float CharacterMovement::DIE_SLOWMO_DURATION = 0.6f;
 const float CharacterMovement::DIE_SLOWMO_SCALE = 0.15f;
 
-const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', '1', 'L', 'K', 0, 'A', 'S', 'S', 'D');
-const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', 'N', '3', '2', 0, 0x25, 0x28, 0x27, 0x28);
+const PlayerInputConfig CharacterMovement::PLAYER1_INPUT('A', 'D', 'W', 'S', ' ', 'J', 'K', 'L', 0, 'A', 'S', 'S', 'D');
+const PlayerInputConfig CharacterMovement::PLAYER2_INPUT(0x25, 0x27, 0x26, 0x28, '0', 'a', 'b', 'c', 0, 0x25, 0x28, 0x27, 0x28);
 
 CharacterMovement::CharacterMovement() 
     : m_posX(0.0f), m_posY(0.0f), m_facingLeft(false), m_state(CharState::Idle),

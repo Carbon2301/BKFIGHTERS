@@ -188,8 +188,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	CleanUp();
 
 	MemoryManager::GetInstance()->SanityCheck();
-
-	printf("Press any key...\n");
 	_getch();
 
 	return 0;
