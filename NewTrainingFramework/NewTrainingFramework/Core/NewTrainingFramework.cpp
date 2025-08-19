@@ -148,6 +148,7 @@ void OnMouseMove(ESContext *esContext, int x, int y)
 
 void CleanUp()
 {
+	SoundManager::Instance().Shutdown();
 	if (g_gameStateMachine) {
 		GameStateMachine::DestroyInstance();
 		g_gameStateMachine = nullptr;

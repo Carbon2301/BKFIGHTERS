@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "SoundManager.h"
 #include <SDL_mixer.h>
+#include <SDL.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -9,9 +10,15 @@ SoundManager::SoundManager() {
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
         std::cout << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
     }
+
+    int numChannels = Mix_AllocateChannels(32);
+    ReserveChannels(4);
 }
 
 SoundManager::~SoundManager() {
+    StopAllChannels();
+    StopMusic();
+    SDL_Delay(100);
     Clear();
     Mix_CloseAudio();
 }
@@ -135,9 +142,7 @@ void SoundManager::PlaySFX(const std::string& name, int loops) {
         }
     }
     if (chunk) {
-        if (Mix_PlayChannel(-1, chunk, loops) == -1) {
-            std::cout << "Failed to play SFX: " << Mix_GetError() << std::endl;
-        }
+        int channel = Mix_PlayChannel(-1, chunk, loops);
     } else {
         std::cout << "SFX not found: " << name << std::endl;
     }
@@ -158,9 +163,7 @@ void SoundManager::PlaySFXByID(int id, int loops) {
         }
     }
     if (chunk) {
-        if (Mix_PlayChannel(-1, chunk, loops) == -1) {
-            std::cout << "Failed to play SFX: " << Mix_GetError() << std::endl;
-        }
+        int channel = Mix_PlayChannel(-1, chunk, loops);
     } else {
         std::cout << "SFX not found with ID: " << id << std::endl;
     }
@@ -281,3 +284,67 @@ void SoundManager::PreloadAllAudio(bool includeMusic, bool includeSfx) {
         if (includeSfx) PreloadSFXByID(id);
     }
 }
+
+void SoundManager::StopAllChannels() {
+    Mix_HaltChannel(-1);
+    SDL_Delay(50);
+
+    int activeChannels = Mix_Playing(-1);
+    if (activeChannels > 0) {
+        Mix_HaltChannel(-1);
+        SDL_Delay(50);
+    }
+}
+
+int SoundManager::GetActiveChannelCount() const {
+    return Mix_Playing(-1);
+}
+
+int SoundManager::GetTotalChannelCount() const {
+    return Mix_AllocateChannels(-1);
+}
+
+void SoundManager::ReserveChannels(int numChannels) {
+    Mix_ReserveChannels(numChannels);
+}
+
+void SoundManager::PlaySFXOnChannel(int channel, const std::string& name, int loops) {
+    Mix_Chunk* chunk = nullptr;
+    auto it = m_sfxMap.find(name);
+    if (it != m_sfxMap.end()) {
+        chunk = it->second;
+    } else {
+        auto itPath = m_audioPathByName.find(name);
+        if (itPath != m_audioPathByName.end()) {
+            chunk = Mix_LoadWAV(itPath->second.c_str());
+            if (chunk) {
+                m_sfxMap[name] = chunk;
+            }
+        }
+    }
+}
+
+void SoundManager::PlaySFXByIDOnChannel(int channel, int id, int loops) {
+    Mix_Chunk* chunk = nullptr;
+    auto it = m_sfxMapByID.find(id);
+    if (it != m_sfxMapByID.end()) {
+        chunk = it->second;
+    } else {
+        auto itPath = m_audioPathByID.find(id);
+        if (itPath != m_audioPathByID.end()) {
+            chunk = Mix_LoadWAV(itPath->second.c_str());
+            if (chunk) {
+                m_sfxMapByID[id] = chunk;
+            }
+        }
+    }
+}
+
+void SoundManager::Shutdown() {
+    StopAllChannels();
+    StopMusic();
+    SDL_Delay(200);
+    Clear();
+    Mix_CloseAudio();
+}
+

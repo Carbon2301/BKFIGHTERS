@@ -1,9 +1,1 @@
-﻿  stdafx.cpp
-  esShader.cpp
-  esUtil.cpp
-  esUtil_win.cpp
-  Math.cpp
-  MemoryManager.cpp
-  MemoryOperators.cpp
-  TGA.cpp
-  Utilities.vcxproj -> C:\Users\GLSchool01\TrinhHuuAn\NewTrainingFramework\BIN\Utilities.lib
+﻿

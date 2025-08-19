@@ -22,11 +22,20 @@ public:
     void LoadSFXByID(int id, const std::string& path);
     void PlaySFX(const std::string& name, int loops = 0);
     void PlaySFXByID(int id, int loops = 0);
+    void PlaySFXOnChannel(int channel, const std::string& name, int loops = 0);
+    void PlaySFXByIDOnChannel(int channel, int id, int loops = 0);
 
     void PreloadMusicByID(int id);
     void PreloadSFXByID(int id);
     void PreloadAllAudio(bool includeMusic = true, bool includeSfx = true);
     std::vector<int> GetAllAudioIDs() const;
+    
+    void StopAllChannels();
+    int GetActiveChannelCount() const;
+    int GetTotalChannelCount() const;
+    void ReserveChannels(int numChannels);
+    
+    void Shutdown();
 
 private:
     SoundManager();
