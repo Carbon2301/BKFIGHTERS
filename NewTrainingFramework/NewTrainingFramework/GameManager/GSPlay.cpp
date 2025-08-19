@@ -191,7 +191,7 @@ int GSPlay::ChooseRandomAvailableItemId() {
         if (m_itemTemplates.find(id) == m_itemTemplates.end()) continue;
         if (isActiveId(id)) continue;
         bool isSpecial = (id == 1506 || id == 1507 || id == 1508 || id == 1509);
-        int weight = isSpecial ? 1 : 8;
+        int weight = isSpecial ? 1 : 6;
         pool.push_back({id, weight});
     }
     if (pool.empty()) return -1;
@@ -1486,7 +1486,7 @@ int GSPlay::CreateOrAcquireFireRainObject() {
     obj->SetModel(0);
     obj->SetTexture(66, 0);
     obj->SetShader(0);
-    obj->SetScale(0.3f, 0.3f, 1.0f);
+    obj->SetScale(0.6f, 0.6f, 1.0f);
     obj->SetVisible(true);
     obj->MakeModelInstanceCopy();
     m_fireRainObjects.push_back(std::move(obj));
@@ -2296,7 +2296,8 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 int have = AmmoRefFor(m_player2GunTexId, false);
                 ammoOk = (have >= need);
             }
-            if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping() && hasGun && ammoOk) {
+            if (m_gameTime < m_p2NextShotAllowed) {
+            } else if (!m_player2.IsGrenadeMode() && !m_player2.IsJumping() && hasGun && ammoOk) {
                 m_player2.SetGunMode(true);
                 m_player2.GetMovement()->SetInputLocked(true);
                 if (!was) {
@@ -2340,7 +2341,8 @@ void GSPlay::HandleKeyEvent(unsigned char key, bool bIsPressed) {
                 int have = AmmoRefFor(m_player1GunTexId, true);
                 ammoOk = (have >= need);
             }
-            if (!m_player.IsGrenadeMode() && !m_player.IsJumping() && hasGun && ammoOk) {
+            if (m_gameTime < m_p1NextShotAllowed) {
+            } else if (!m_player.IsGrenadeMode() && !m_player.IsJumping() && hasGun && ammoOk) {
                 m_player.SetGunMode(true);
                 m_player.GetMovement()->SetInputLocked(true);
                 if (!was) {
@@ -3067,6 +3069,8 @@ void GSPlay::TryCompletePendingShots() {
         float elapsed = m_gameTime - startTime;
         if (elapsed < GetGunRequiredTime()) return;
         const bool isP1 = (&ch == &m_player);
+        if ((isP1 && m_p1BurstActive) || (!isP1 && m_p2BurstActive)) { pendingFlag = false; return; }
+        if (m_gameTime < (isP1 ? m_p1NextShotAllowed : m_p2NextShotAllowed)) return;
         int currentGunTex = isP1 ? m_player1GunTexId : m_player2GunTexId;
         if (currentGunTex == 41 || currentGunTex == 47) { // M4A1 or Uzi
             if (isP1) {
@@ -3079,6 +3083,8 @@ void GSPlay::TryCompletePendingShots() {
                 m_p2NextBurstTime = m_gameTime;
             }
             ch.MarkGunShotFired();
+            if (isP1) { m_p1NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
+            else { m_p2NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
             pendingFlag = false;
         } else if (currentGunTex == 42) {
             int& ammoShot = isP1 ? m_p1Ammo42 : m_p2Ammo42;
@@ -3107,6 +3113,8 @@ void GSPlay::TryCompletePendingShots() {
                 if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false);
             }
             if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(true);
+            if (isP1) { m_p1NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
+            else { m_p2NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
         } else if (currentGunTex == 43) { // Bazoka
             int& ammoBaz = isP1 ? m_p1Ammo43 : m_p2Ammo43;
             if (ammoBaz < 1) { pendingFlag = false; ch.SetGunMode(false); if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false); return; }
@@ -3143,6 +3151,8 @@ void GSPlay::TryCompletePendingShots() {
             pendingFlag = false;
             ch.SetGunMode(false);
             ch.GetMovement()->SetInputLocked(false);
+            if (isP1) { m_p1NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
+            else { m_p2NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
         } else {
             int& ammoGeneric = AmmoRefFor(currentGunTex, isP1);
             int need = AmmoCostFor(currentGunTex);
@@ -3160,6 +3170,8 @@ void GSPlay::TryCompletePendingShots() {
             } else if (currentGunTex == 40) {
                 SoundManager::Instance().PlaySFXByID(13, 0);
             }
+            if (isP1) { m_p1NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
+            else { m_p2NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
         }
     };
     tryFinish(m_player,  m_p1ShotPending, m_p1GunStartTime);
@@ -3212,6 +3224,8 @@ void GSPlay::UpdateGunBursts() {
             active = false;
             ch.SetGunMode(false);
             if (ch.GetMovement()) ch.GetMovement()->SetInputLocked(false);
+            if ((&ch) == &m_player) { m_p1NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
+            else { m_p2NextShotAllowed = m_gameTime + GUN_SHOT_COOLDOWN; }
         }
     };
     stepBurst(m_player,  m_p1BurstActive, m_p1BurstRemaining, m_p1NextBurstTime);
@@ -4791,6 +4805,21 @@ void GSPlay::ResetGame() {
     
     m_player1Score = 0;
     m_player2Score = 0;
+
+    m_p1ShotPending = false;
+    m_p2ShotPending = false;
+    m_p1BurstActive = false;
+    m_p2BurstActive = false;
+    m_p1ReloadPending = false;
+    m_p2ReloadPending = false;
+    m_p1GunStartTime = -1.0f;
+    m_p2GunStartTime = -1.0f;
+    m_p1NextShotAllowed = 0.0f;
+    m_p2NextShotAllowed = 0.0f;
+    m_p1GrenadePressTime = -1.0f;
+    m_p2GrenadePressTime = -1.0f;
+    m_p1GrenadeExplodedInHand = false;
+    m_p2GrenadeExplodedInHand = false;
     
     if (m_player.GetAnimation()) {
         m_player.GetAnimation()->Initialize(m_animManager, 1000);

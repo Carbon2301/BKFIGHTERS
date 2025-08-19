@@ -168,6 +168,9 @@ private:
     static constexpr float GUN_MIN_HOLD_ANIM1   = 0.15f;
     float GetGunRequiredTime() const { return GUN_MIN_REVERSE_TIME + GUN_MIN_HOLD_ANIM1; }
     void TryCompletePendingShots();
+    static constexpr float GUN_SHOT_COOLDOWN = 0.4f;
+    float m_p1NextShotAllowed = 0.0f;
+    float m_p2NextShotAllowed = 0.0f;
     const float CLOUD_MOVE_SPEED = 0.2f;
     const float CLOUD_SPACING = 1.74f;
     const float CLOUD_LEFT_BOUNDARY = -6.0f;

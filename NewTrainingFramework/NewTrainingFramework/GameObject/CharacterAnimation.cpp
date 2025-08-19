@@ -1205,6 +1205,7 @@ void CharacterAnimation::TriggerBatDemonSlash() {
     if (m_batSlashCooldownTimer > 0.0f) return;
     
     SoundManager::Instance().PlaySFXByID(30, 0);
+    SoundManager::Instance().PlayMusicByID(34, 0);
     
     if (m_animManager) {
         m_animManager->Play(1, false);

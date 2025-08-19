@@ -829,3 +829,7 @@ ID 33
 NAME "Button Click"
 FILE "../Resources/Music/Button_click.mp3"
 
+ID 34
+NAME "Wind"
+FILE "../Resources/Music/Wind.mp3"
+
