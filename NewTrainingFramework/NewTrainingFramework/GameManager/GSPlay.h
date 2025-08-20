@@ -42,7 +42,7 @@ private:
         float trailTimer = 0.0f;
     };
     std::vector<Bullet> m_bullets;
-    static constexpr int MAX_BULLETS = 1024;
+    static constexpr int MAX_BULLETS = 10000;
     const float BULLET_SPEED = 3.5f;
     const float BULLET_LIFETIME = 2.0f;
     const float BULLET_SPAWN_OFFSET_X = 0.12f;
