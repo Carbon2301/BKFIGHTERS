@@ -1,3 +1,1 @@
-# Ignore build outputs
-*.exe
-*.pdb
+.vs/
