@@ -1,65 +1,114 @@
-# 🥊 SuperFighters 2D – C++ SDL2
+# 🎮 BKFIGHTERS - 2D Game Engine
 
-## 🎯 Mục tiêu dự án
-Phát triển một trò chơi đối kháng 2D (fighting game) theo phong cách cổ điển như Street Fighter hoặc King of Fighters, sử dụng ngôn ngữ **C++** và thư viện **SDL2**.  
-Game cho phép người chơi chiến đấu với người chơi khác, có combo đơn giản, chiêu đặc biệt và hiệu ứng chiến đấu.
+[![C++](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
+[![OpenGL](https://img.shields.io/badge/OpenGL-ES3-green.svg)](https://www.opengl.org/)
+[![SDL2](https://img.shields.io/badge/SDL2-2.0-orange.svg)](https://www.libsdl.org/)
+[![Windows](https://img.shields.io/badge/Windows-10%2B-lightgrey.svg)](https://www.microsoft.com/windows/)
+
+> **A powerful 2D game engine framework built with C++, OpenGL ES3, and SDL2 for creating high-performance 2D games with advanced combat systems, physics, and visual effects.**
+
+## 🚀 Features
+
+### 🎯 Core Engine
+- **Modular Architecture**: Extensible framework with clean separation of concerns
+- **Real-time Rendering**: OpenGL ES3-based 2D graphics engine with efficient sprite rendering
+- **State Management**: Robust game state machine for seamless scene transitions
+- **Resource Management**: Centralized asset loading and management system
+- **Memory Management**: Custom memory allocator with leak detection
+
+### ⚔️ Combat System
+- **Multiplayer Combat**: 2-player fighting game with advanced combat mechanics
+- **Weapon System**: Multiple weapon types (Axe, Sword, Pipe, Guns, Bazooka)
+- **Special Characters**: Unique characters with special abilities:
+  - 🦇 **Bat Demon**: Slash attacks and aerial combat
+  - 🐺 **Werewolf**: Combo attacks and pounce abilities
+  - 🦊 **Kitsune**: Energy orb projectiles and mystical powers
+  - 👹 **Orc**: Meteor strikes and flame burst attacks
+- **Combat Mechanics**: Hitbox/hurtbox system, combo chains, damage calculation
+
+### 🎨 Visual & Audio
+- **Animation System**: Sprite-based character animations with frame-by-frame control
+- **Particle Effects**: Blood splatter, explosions, and visual feedback
+- **Audio System**: SDL2_mixer integration with music and sound effects
+- **UI System**: Interactive menus, settings, and HUD elements
+
+### 🔧 Technical Features
+- **Physics Engine**: Collision detection for walls, platforms, ladders, and teleporters
+- **Input Management**: Keyboard and mouse input handling with configurable controls
+- **Camera System**: Orthographic camera with viewport scaling
+- **Performance Optimization**: Efficient rendering pipeline and memory management
+- **Modern Graphics API**: OpenGL ES3 for enhanced rendering capabilities and performance
+
+## 🛠️ Installation & Setup
+
+### Option 1: Using Pre-built Executable (Recommended)
+
+1. **Download the Release**
+   ```bash
+   git clone https://github.com/Carbon2301/BKFIGHTERS
+   cd NewTrainingFramework
+   ```
+
+2. **Run the Game**
+   ```bash
+   # Navigate to the BIN directory
+   cd BIN
+   
+   # Run the executable
+   NewTrainingFramework.exe
+   ```
+
+### Option 2: Building from Source
+
+#### Build Steps
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/Carbon2301/BKFIGHTERS
+   cd NewTrainingFramework
+   ```
+
+2. **Open in Visual Studio**
+   ```bash
+   # Open the solution file
+   NewTrainingFramework.sln
+   ```
+
+3. **Build the Project**
+   - Set configuration to **Release** or **Debug**
+   - Build Solution (Ctrl+Shift+B)
+   - Executable will be generated in `BIN/` directory
+
+## 🎮 How to Play
+
+### Controls
+
+#### Player 1 (Left Side)
+- **Movement**: A, D keys
+- **Jump**: W key
+- **Crouch**: S key
+- **Melee Attack**: J key (Punch / Melee weapon)
+- **Shoot**: K key (Gun attack)
+- **Throw Bomb**: L key
+- **Special Form**: U key (Transform into special character)
+
+#### Player 2 (Right Side)
+- **Movement**: Left Arrow, Right Arrow keys
+- **Jump**: Up Arrow key
+- **Crouch**: Down Arrow key
+- **Melee Attack**: 1 key (Punch / Melee weapon)
+- **Shoot**: 2 key (Gun attack)
+- **Throw Bomb**: 3 key (Bomb throw)
+- **Special Form**: 4 key (Transform into special character)
+
+## 📞 Contact
+
+- **Developer**: Trinh Huu An
+- **Email**: trinhhuuan372@gmail.com
+- **GitHub**: https://github.com/Carbon2301
 
 ---
 
-## ⏰ Thời gian dự án
-**Tổng thời gian:** 3 tuần 
+<div align="center">
 
-**Thời gian dự kiến:** [28/07/2025] → [20/08/2025]
-
----
-
-## 🎮 Mô tả lối chơi
-
-- **Thể loại:** 2D Fighting
-- **Chế độ:**  
-  - Người chơi vs Người chơi (local)
-- **Tính năng chính:**
-  - Di chuyển trái/phải, nhảy, ngồi
-  - 2 đòn đánh cơ bản (cận chiến, đánh xa)
-  - Combo đơn giản (Punch + Kick)
-  - Kỹ năng đặc biệt (Super Move)
-  - Thanh máu, thanh năng lượng
-  - Màn hình chiến thắng, chơi lại
-
----
-
-## 🧰 Công nghệ sử dụng
-
-| Thành phần            | Mô tả                                  |
-|-----------------------|----------------------------------------|
-| **Ngôn ngữ**          | C++                                    |
-| **Thư viện**          | SDL2 (graphics, audio, input)          |
-| **IDE**               | Visual Studio 2022                     |
-| **Hệ điều hành**      | Windows 32-bit                         |
- 
----
-
-## 📆 Kế hoạch theo tuần
-
-### 🔹 Tuần 1: Cài đặt & gameplay cơ bản
-- Vẽ sân đấu, nhân vật 1 (idle, walk, punch)
-- Di chuyển trái/phải, nhảy
-- Cơ chế đánh trúng – va chạm – trừ máu
-- Hiển thị: thanh máu, năng lượng
-
-### 🔹 Tuần 2: Combo, UI
-- Combo đơn giản: Punch → Kick → Super
-- Thiết kế nhân vật thứ 2 (khác animation)
-- Màn hình: Start Menu, Game Over
-- Âm thanh hiệu ứng: đấm, đá, thắng
-
-### 🔹 Tuần 3: Hoàn thiện
-- Thêm kỹ năng đặc biệt (Super Move)
-- Rung màn hình, flash trúng đòn, hiệu ứng super
-- Tối ưu hiệu suất
-- Hoàn thành sản phẩm
-
-
-
-
-
+**Developed by Carbon x Gialinx**
+</div>
